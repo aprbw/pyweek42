@@ -39,11 +39,11 @@ class HourglassPlayer:
     WIDTH: int = 8
     HEIGHT: int = 12
 
-    def __init__(self, screen_w: int = 160, screen_h: int = 120):
+    def __init__(self, screen_w: int = 120, screen_h: int = 160):
         self.screen_w = screen_w
         self.screen_h = screen_h
         self.x: float = screen_w / 2.0
-        self.base_y: float = 38.0
+        self.base_y: float = 40.0
         self.y: float = self.base_y
         self.vx: float = 0.0
         self.friction: float = 0.82
@@ -168,7 +168,7 @@ class GlassShard:
 
 
 class EntityManager:
-    def __init__(self, screen_w: int = 160, screen_h: int = 120):
+    def __init__(self, screen_w: int = 120, screen_h: int = 160):
         self.screen_w = screen_w
         self.screen_h = screen_h
         self.player = HourglassPlayer(screen_w, screen_h)

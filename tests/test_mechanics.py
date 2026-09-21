@@ -36,7 +36,7 @@ def test_chronos_descent_and_hazard_gate():
     state.update_effective_scroll_speed()
 
     # 2. Assert lateral steering bounds
-    player = HourglassPlayer(screen_w=160, screen_h=120)
+    player = HourglassPlayer(screen_w=120, screen_h=160)
     # Steer left hard for 100 frames
     for _ in range(100):
         player.apply_input(left=True, right=False, up=False, down=False)
@@ -206,13 +206,13 @@ def test_vignette_boundary_gate():
     for r in test_radii:
         mock.rect_calls.clear()
         # Should render without throwing any exceptions
-        render_vignette(px=80.0, py=60.0, radius=r, screen_w=160, screen_h=120, pyxel_module=mock)
-        if r <= 100.0:
+        render_vignette(px=60.0, py=80.0, radius=r, screen_w=120, screen_h=160, pyxel_module=mock)
+        if r <= 80.0:
             assert len(mock.rect_calls) > 0
 
     # Edge test: player near screen borders
     mock.rect_calls.clear()
-    render_vignette(px=0.0, py=0.0, radius=40.0, screen_w=160, screen_h=120, pyxel_module=mock)
+    render_vignette(px=0.0, py=0.0, radius=40.0, screen_w=120, screen_h=160, pyxel_module=mock)
     assert len(mock.rect_calls) > 0
 
 
@@ -222,10 +222,10 @@ def test_vignette_boundary_gate():
 def test_wrath_entity_wipe_and_zero_yield():
     state = StateManager()
     state.start_game()
-    entities = EntityManager(160, 120)
+    entities = EntityManager(120, 160)
     # Spawn shards
-    entities.shards.append(GlassShard(80, 100))
-    entities.shards.append(GlassShard(90, 110))
+    entities.shards.append(GlassShard(60, 140))
+    entities.shards.append(GlassShard(70, 150))
     assert len(entities.shards) == 2
 
     bargains = BargainManager()
@@ -256,7 +256,7 @@ def test_sloth_speed_modifiers():
 def test_envy_and_lust_mechanics():
     state = StateManager()
     state.start_game()
-    entities = EntityManager(160, 120)
+    entities = EntityManager(120, 160)
     entities.bypassed_sand_pool = 10
 
     bargains = BargainManager()

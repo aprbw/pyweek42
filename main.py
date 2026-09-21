@@ -17,7 +17,7 @@ from engine.bargains import BargainManager, SinType
 from engine.audio import AudioManager
 
 
-def render_vignette(px: float, py: float, radius: float, screen_w: int = 160, screen_h: int = 120, pyxel_module=None):
+def render_vignette(px: float, py: float, radius: float, screen_w: int = 120, screen_h: int = 160, pyxel_module=None):
     """Draw circular darkness vignette mask centered at (px, py)."""
     if pyxel_module is None:
         return
@@ -41,8 +41,8 @@ def render_vignette(px: float, py: float, radius: float, screen_w: int = 160, sc
 
 
 class GrainOfDoubtApp:
-    SCREEN_WIDTH: int = 160
-    SCREEN_HEIGHT: int = 120
+    SCREEN_WIDTH: int = 120
+    SCREEN_HEIGHT: int = 160
 
     def __init__(self, headless: bool = False):
         self.headless = headless
@@ -235,14 +235,14 @@ class GrainOfDoubtApp:
         t = pyxel.frame_count * 0.05
         for y in range(0, self.SCREEN_HEIGHT, 2):
             # Left neck wall: gentle inward curve
-            curve = math.sin(y * 0.06 + t) * 2.5
-            lw = int(10 + curve)
+            curve = math.sin(y * 0.05 + t) * 2.5
+            lw = int(8 + curve)
             pyxel.rect(0, y, lw, 2, 1)
             pyxel.pset(lw, y, 5)
             pyxel.pset(lw + 1, y, 6)
 
             # Right neck wall
-            rw = int(self.SCREEN_WIDTH - 10 - curve)
+            rw = int(self.SCREEN_WIDTH - 8 - curve)
             pyxel.rect(rw, y, self.SCREEN_WIDTH - rw, 2, 1)
             pyxel.pset(rw, y, 5)
             pyxel.pset(rw - 1, y, 6)
@@ -320,8 +320,8 @@ class GrainOfDoubtApp:
     def draw_hud(self):
         # Hearts display (Top Left)
         for i in range(3):
-            hx = 4 + i * 9
-            hy = 4
+            hx = 3 + i * 8
+            hy = 3
             if i < self.state.hearts:
                 # Red heart
                 pyxel.rect(hx + 1, hy, 2, 1, 8)
@@ -337,18 +337,18 @@ class GrainOfDoubtApp:
 
         # Score (Top Right)
         score_str = f"{self.state.score:06d}"
-        pyxel.text(self.SCREEN_WIDTH - 42, 4, score_str, 10)
+        pyxel.text(self.SCREEN_WIDTH - 28, 3, score_str, 10)
 
         # Multiplier
         if self.state.score_multiplier > 1.05:
             mult_str = f"x{self.state.score_multiplier:.1f}"
-            pyxel.text(self.SCREEN_WIDTH - 42, 12, mult_str, 9)
+            pyxel.text(self.SCREEN_WIDTH - 28, 10, mult_str, 9)
 
         # Chronos Cycle Progress Bar (Top Center)
         if self.state.current_state == GameState.CHRONOS:
-            meter_w = 40
+            meter_w = 36
             meter_x = (self.SCREEN_WIDTH - meter_w) // 2
-            meter_y = 4
+            meter_y = 3
             progress = self.state.chronos_timer / float(self.state.CHRONOS_FRAMES)
             fill_w = int(meter_w * progress)
 
@@ -358,7 +358,7 @@ class GrainOfDoubtApp:
             pyxel.rectb(meter_x - 1, meter_y - 1, meter_w + 2, 5, 6)
 
             # Tiny label
-            pyxel.text(meter_x + 8, meter_y + 5, "CHRONOS", 6)
+            pyxel.text(meter_x + 6, meter_y + 4, "CHRONOS", 6)
 
         # Greed Kill-Timer Warning (Ominous countdown)
         if self.state.greed_timer_active and self.state.greed_kill_timer > 0:
@@ -366,18 +366,18 @@ class GrainOfDoubtApp:
             flash = (pyxel.frame_count // 4) % 2 == 0
             col = 8 if flash else 7
             msg = f"DEBT: {secs_left:.1f}s"
-            pyxel.text(self.SCREEN_WIDTH // 2 - 20, 18, msg, col)
+            pyxel.text(self.SCREEN_WIDTH // 2 - 20, 15, msg, col)
 
         # Wrath Zero Yield Warning
         if self.state.wrath_zero_yield_timer > 0:
-            pyxel.text(4, 14, "WRATH: NO YIELD", 2)
+            pyxel.text(3, 15, "ZERO YIELD", 2)
 
     def draw_kairos_modal(self):
         """Draw Kairos Circuit Breaker UI modal with 3 Faustian Bargains."""
-        modal_x = 10
-        modal_y = 12
-        modal_w = 140
-        modal_h = 96
+        modal_x = 5
+        modal_y = 10
+        modal_w = 110
+        modal_h = 142
 
         # Semi-dark backdrop
         pyxel.rect(modal_x, modal_y, modal_w, modal_h, 0)
@@ -385,101 +385,103 @@ class GrainOfDoubtApp:
         pyxel.rectb(modal_x + 1, modal_y + 1, modal_w - 2, modal_h - 2, 2)
 
         # Header
-        pyxel.text(modal_x + 18, modal_y + 4, "KAIROS CIRCUIT BREAKER", 7)
-        pyxel.text(modal_x + 30, modal_y + 11, "BORROW YOUR TIME", 8)
+        pyxel.text(modal_x + 8, modal_y + 4, "KAIROS CIRCUIT BREAKER", 7)
+        pyxel.text(modal_x + 22, modal_y + 11, "BORROW YOUR TIME", 8)
 
         # Countdown timer bar
-        timer_w = 110
-        timer_x = modal_x + 15
-        timer_y = modal_y + 19
+        timer_w = 90
+        timer_x = modal_x + 10
+        timer_y = modal_y + 18
         ratio = 1.0 - (self.state.kairos_timer / float(self.state.KAIROS_FRAMES))
         fill_w = max(0, int(timer_w * ratio))
         pyxel.rect(timer_x, timer_y, timer_w, 2, 1)
         pyxel.rect(timer_x, timer_y, fill_w, 2, 9)
 
-        # 3 Option cards
+        # 3 Option cards (generous vertical room)
         for i, (sin, defn, k) in enumerate(self.active_options):
-            cy = modal_y + 24 + i * 22
+            cy = modal_y + 23 + i * 36
             cw = modal_w - 8
             cx = modal_x + 4
 
             # Card background
-            pyxel.rect(cx, cy, cw, 20, 1)
-            pyxel.rectb(cx, cy, cw, 20, 6)
+            pyxel.rect(cx, cy, cw, 33, 1)
+            pyxel.rectb(cx, cy, cw, 33, 6)
 
             # Key badge
-            pyxel.rect(cx + 2, cy + 2, 14, 16, 8)
-            pyxel.text(cx + 6, cy + 8, f"[{i + 1}]", 7)
+            pyxel.rect(cx + 2, cy + 2, 13, 14, 8)
+            pyxel.text(cx + 4, cy + 6, f"[{i + 1}]", 7)
 
-            # Sin Name & Latin
-            title_txt = f"{defn.name.upper()} (k={k})"
-            pyxel.text(cx + 20, cy + 3, title_txt, 10)
+            # Sin Name & level
+            title_txt = f"{defn.name.upper()[:16]}"
+            pyxel.text(cx + 18, cy + 3, title_txt, 10)
+            pyxel.text(cx + 84, cy + 3, f"k={k}", 9)
 
             # Boon & Curse
             boon_val = defn.get_boon_value(k)
             curse_val = defn.get_curse_value(k)
-            boon_txt = f"+{defn.boon_name} ({boon_val:.1f}{defn.boon_unit})"
-            curse_txt = f"-{defn.curse_name} ({curse_val:.1f}{defn.curse_unit})"
-            pyxel.text(cx + 20, cy + 9, boon_txt, 11)
-            pyxel.text(cx + 20, cy + 14, curse_txt, 8)
+            boon_txt = f"+{defn.boon_name[:12]} ({boon_val:.1f})"
+            curse_txt = f"-{defn.curse_name[:12]} ({curse_val:.1f})"
+            pyxel.text(cx + 18, cy + 12, boon_txt, 11)
+            pyxel.text(cx + 18, cy + 21, curse_txt, 8)
 
         # Footer
-        pyxel.text(modal_x + 22, modal_y + 89, "PRESS 1, 2, OR 3 TO SEAL DEAL", 6)
+        pyxel.text(modal_x + 6, modal_y + 133, "PRESS 1, 2, OR 3 TO SEAL", 6)
 
     def draw_feedback_banner(self):
         fb = self.selected_feedback
         if not fb:
             return
-        pyxel.rect(14, 106, 132, 12, 0)
-        pyxel.rectb(14, 106, 132, 12, 10)
-        txt = f"PACT: {fb['sin'].upper()} SEALED!"
-        pyxel.text(20, 109, txt, 10)
+        pyxel.rect(6, 144, 108, 12, 0)
+        pyxel.rectb(6, 144, 108, 12, 10)
+        txt = f"PACT: {fb['sin'].upper()[:14]} SEALED"
+        pyxel.text(10, 147, txt, 10)
 
     def draw_title_screen(self):
         # Pulsing logo
-        title_y = 22
-        pyxel.text(48, title_y, "GRAIN OF DOUBT", 10)
-        pyxel.text(32, title_y + 9, "PYWEEK 42 : BORROWED TIME", 9)
+        title_y = 18
+        pyxel.text(32, title_y, "GRAIN OF DOUBT", 10)
+        pyxel.text(12, title_y + 9, "PYWEEK 42 : BORROWED TIME", 9)
 
         # Subtitle
-        pyxel.text(22, 42, "FALL DOWN THE COSMIC HOURGLASS", 7)
-        pyxel.text(26, 50, "COLLECT GOLDEN SAND TO SURVIVE", 6)
-        pyxel.text(24, 58, "DODGE LETHAL FALLING GLASS SHARDS", 6)
+        pyxel.text(14, 38, "FALL DOWN COSMIC VOID", 7)
+        pyxel.text(10, 46, "COLLECT GOLD SAND TO LIVE", 6)
+        pyxel.text(8, 54, "DODGE LETHAL GLASS SHARDS", 6)
 
         # Controls summary
-        pyxel.rect(20, 68, 120, 32, 1)
-        pyxel.rectb(20, 68, 120, 32, 5)
-        pyxel.text(24, 71, "A / D or LEFT / RIGHT : Lateral", 7)
-        pyxel.text(24, 78, "W / UP  : Aero-Brake (-25% Spd)", 6)
-        pyxel.text(24, 85, "S / DOWN: Deep Dive (+50% Spd)", 9)
-        pyxel.text(24, 92, "1, 2, 3 : Faustian Kairos Bargain", 8)
+        pyxel.rect(6, 68, 108, 62, 1)
+        pyxel.rectb(6, 68, 108, 62, 5)
+        pyxel.text(10, 72, "A/D, LEFT/RIGHT: Steer", 7)
+        pyxel.text(10, 82, "W / UP  : Brake (-25%)", 6)
+        pyxel.text(10, 92, "S / DOWN: Dive  (+50%)", 9)
+        pyxel.text(10, 102, "1, 2, 3 : Kairos Pact", 8)
+        pyxel.text(10, 114, "Q : Quit Game", 5)
 
         # Start prompt
         blink = (pyxel.frame_count // 12) % 2 == 0
         if blink:
-            pyxel.text(32, 106, "PRESS [SPACE] TO DESCEND", 7)
+            pyxel.text(14, 142, "PRESS [SPACE] TO DESCEND", 7)
 
     def draw_game_over_screen(self):
         # Dark overlay
-        pyxel.rect(16, 20, 128, 80, 0)
-        pyxel.rectb(16, 20, 128, 80, 8)
-        pyxel.rectb(18, 22, 124, 76, 2)
+        pyxel.rect(8, 18, 104, 124, 0)
+        pyxel.rectb(8, 18, 104, 124, 8)
+        pyxel.rectb(10, 20, 100, 120, 2)
 
-        pyxel.text(38, 28, "HOURGLASS SHATTERED", 8)
+        pyxel.text(22, 26, "HOURGLASS SHATTERED", 8)
 
         reason = self.state.death_reason or "Consumed by the Void"
-        pyxel.text(24, 40, reason[:28], 7)
+        pyxel.text(12, 38, reason[:22], 7)
 
         # Stats
-        pyxel.text(28, 54, f"FINAL SCORE : {self.state.score}", 10)
-        pyxel.text(28, 62, f"SAND REAPED : {self.state.total_sand_collected}", 6)
-        pyxel.text(28, 70, f"SHARDS EVADED: {self.state.total_shards_dodged}", 6)
-        pyxel.text(28, 78, f"PACTS SEALED : {len(self.bargains.history)}", 9)
+        pyxel.text(14, 54, f"FINAL SCORE : {self.state.score}", 10)
+        pyxel.text(14, 68, f"SAND REAPED : {self.state.total_sand_collected}", 6)
+        pyxel.text(14, 82, f"SHARDS DODGED: {self.state.total_shards_dodged}", 6)
+        pyxel.text(14, 96, f"PACTS SEALED : {len(self.bargains.history)}", 9)
 
         # Restart
         blink = (pyxel.frame_count // 10) % 2 == 0
         if blink:
-            pyxel.text(34, 88, "PRESS [R] TO RESTART", 7)
+            pyxel.text(18, 120, "PRESS [R] TO RESTART", 7)
 
 
 def main():

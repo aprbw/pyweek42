@@ -72,9 +72,9 @@ class StateManager:
         self.shake_intensity: float = 0.0
 
         # Visual Vignette
-        self.base_vignette_radius: float = 72.0
-        self.vignette_radius: float = 72.0
-        self.min_vignette_radius: float = 18.0
+        self.base_vignette_radius: float = 68.0
+        self.vignette_radius: float = 68.0
+        self.min_vignette_radius: float = 16.0
 
         # Post-mortem death reason
         self.death_reason: str = ""
