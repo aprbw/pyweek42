@@ -1,7 +1,9 @@
 # Grain of Doubt
 
-> **PyWeek 42 Entry ("Borrowed Time")**  
-> An endless retro downhill falling-hourglass arcade runner built with the **Pyxel** retro game engine.
+> **By Arian Prabowo**  
+> **PyWeek 42 Entry ("Borrowed Time")** — September 2026  
+> An endless retro downhill falling-hourglass arcade runner built with the **Pyxel** retro game engine.  
+> **Target Resolution:** $600 \times 800$ pixels ($3:4$ Portrait Aspect Ratio).
 
 [![Pyxel](https://img.shields.io/badge/Engine-Pyxel%202.9.9-blue)](https://github.com/kitao/pyxel)
 [![Python](https://img.shields.io/badge/Python-3.12-brightgreen)](https://www.python.org/)
@@ -15,21 +17,21 @@ You control a fragile hourglass falling through the neck of an infinite, crumbli
 Gravity is unstoppable—you cannot stop or reverse descent. You can only steer left or right to avoid razor-sharp falling glass shards while collecting glistening golden grains of sand.
 
 ### Chronos vs. Kairos (The Dual-Clock Engine)
-* **Chronos (8.0s descent):** Relentless kinetic tension. Steer, dive, brake, and dodge oncoming glass shards while reaping cascading sand motes.
-* **Kairos (2.0s circuit breaker):** Every 8 seconds, normal time freezes. You are confronted with **3 mandatory Faustian Bargains** drawn from the Seven Deadly Sins. You cannot skip—you must choose a sin.
+* **Chronos (8.0s descent):** Relentless kinetic tension. Steer left or right to dodge oncoming glass shards while reaping cascading sand motes. (No braking, no diving—terminal gravity is fixed).
+* **Kairos (2.0s circuit breaker):** Every 8 seconds, normal time freezes. You are confronted with **3 mandatory Faustian Bargain cards** drawn from the Seven Deadly Sins. You cannot skip—you must choose a sin.
 * **Faustian Bargains:** Every bargain grants an immediate survival boon at the cost of a permanent, compounding structural curse. Choosing the same sin repeatedly diminishes the boon while exponentially multiplying the curse ($Boon \propto 0.75^k$, $Curse \propto 1.50^k$).
 
 ---
 
 ## 🎮 Controls
 
+The game strictly features single-axis lateral navigation. **No aero-brake, no deep dive.**
+
 | Key | Action | Mechanic |
 | :--- | :--- | :--- |
-| `A` / `D` or `Left` / `Right` | Lateral Translation | Steer player horizontally ($\mu_x = 0.82$ damping friction) |
-| `W` or `Up` | Aero-Brake | Decreases descent velocity by $-25\%$ for precision collection |
-| `S` or `Down` | Deep Dive | Increases descent velocity by $+50\%$, multiplying score tick rate |
-| `1`, `2`, `3` | Seal Kairos Pact | Choose Faustian Bargain `[1]`, `[2]`, or `[3]` during time-freeze |
-| `Space` / `Enter` | Descend / Start | Begin run from title screen |
+| `A` / `D` or `Left` / `Right` | Lateral Steering | Steer hourglass horizontally ($\mu_x = 0.82$ viscous damping) |
+| `A` / `D` or `Left` / `Right` | Select Faustian Bargain | Move selection between Left, Center, and Right sin cards in Kairos |
+| `Space` / `Enter` | Descend / Start / Confirm | Start game or instantly confirm card in Kairos |
 | `R` | Restart | Restart following fatal hourglass shatter |
 | `Q` | Quit | Exit game |
 
@@ -37,25 +39,25 @@ Gravity is unstoppable—you cannot stop or reverse descent. You can only steer 
 
 ## 📜 The Seven Deadly Sins (Faustian Bargains)
 
-1. **Sands of Gluttony (*Gula*):**
+1. **Gluttony (*Gula*):**
    * *Boon:* Accelerates sand grain generation rate.
    * *Curse:* Multiplies hazard glass shard density.
-2. **Sands of Pride (*Superbia*):**
+2. **Pride (*Superbia*):**
    * *Boon:* Multiplies global score yield.
    * *Curse:* Increases descent velocity and temporal acceleration.
-3. **Sands of Greed (*Avaritia*):**
+3. **Greed (*Avaritia*):**
    * *Boon:* Converts all accrued dodges and collections into score multiplier.
    * *Curse:* Initializes an ominous deterministic sudden-death kill-timer.
-4. **Sands of Wrath (*Ira*):**
+4. **Wrath (*Ira*):**
    * *Boon:* Completely purges all active hazards from the screen.
    * *Curse:* Enforces zero-yield state (no sand points) for penalty duration.
-5. **Sands of Sloth (*Acedia*):**
+5. **Sloth (*Acedia*):**
    * *Boon:* Decelerates vertical hazard velocity to ease reaction.
    * *Curse:* Imposes permanent lateral drag on player movement.
-6. **Sands of Envy (*Invidia*):**
+6. **Envy (*Invidia*):**
    * *Boon:* Retroactively reclaims all bypassed sand motes for points.
    * *Curse:* Establishes a permanent sand repulsion field around the hourglass.
-7. **Sands of Lust (*Luxuria*):**
+7. **Lust (*Luxuria*):**
    * *Boon:* Activates temporary magnetic attraction field for golden sand.
    * *Curse:* Establishes a permanent magnetic attraction field for glass shards.
 

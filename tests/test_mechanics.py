@@ -1,5 +1,5 @@
 """Automated Unit Validation Suite for Grain of Doubt.
-Verifies all 5 gates defined in p02.md section 07.
+Verifies all 5 gates defined in p02.md / p03.md for 600x800 resolution and A/D controls.
 """
 import math
 import pytest
@@ -20,32 +20,19 @@ def test_chronos_descent_and_hazard_gate():
 
     # 1. Assert continuous downward descent (scroll_speed > 0)
     assert state.scroll_speed > 0.0
-
-    # Test Dive increases speed by 50%
     base_spd = state.scroll_speed
-    state.dive_active = True
-    state.update_effective_scroll_speed()
-    assert state.scroll_speed == pytest.approx(base_spd * 1.50)
 
-    # Test Brake decreases speed by 25%
-    state.dive_active = False
-    state.brake_active = True
-    state.update_effective_scroll_speed()
-    assert state.scroll_speed == pytest.approx(base_spd * 0.75)
-    state.brake_active = False
-    state.update_effective_scroll_speed()
-
-    # 2. Assert lateral steering bounds
-    player = HourglassPlayer(screen_w=120, screen_h=160)
+    # 2. Assert lateral steering bounds (A / D only)
+    player = HourglassPlayer(screen_w=600, screen_h=800)
     # Steer left hard for 100 frames
     for _ in range(100):
-        player.apply_input(left=True, right=False, up=False, down=False)
+        player.apply_input(left=True, right=False)
     assert player.x >= player.min_x
     assert player.x == pytest.approx(player.min_x, abs=0.01)
 
     # Steer right hard for 200 frames
     for _ in range(200):
-        player.apply_input(left=False, right=True, up=False, down=False)
+        player.apply_input(left=False, right=True)
     assert player.x <= player.max_x
     assert player.x == pytest.approx(player.max_x, abs=0.01)
 
@@ -151,7 +138,7 @@ def test_compounding_math_gate():
 # Gate 4: Greed Deterministic Kill-Timer Gate
 # ---------------------------------------------------------------------------
 def test_greed_deterministic_kill_timer_gate():
-    """Verify Sands of Greed initializes deterministic kill-timer terminating game upon expiration."""
+    """Verify Greed initializes deterministic kill-timer terminating game upon expiration."""
     state = StateManager()
     state.start_game()
     bargains = BargainManager()
@@ -200,19 +187,19 @@ def test_vignette_boundary_gate():
     assert state.vignette_radius >= state.min_vignette_radius
     assert state.vignette_radius > 0.0
 
-    # Test render_vignette execution across varied boundary conditions
+    # Test render_vignette execution across varied boundary conditions (600x800)
     mock = MockPyxel()
-    test_radii = [state.vignette_radius, state.min_vignette_radius, 0.0, -10.0, 50.0, 300.0]
+    test_radii = [state.vignette_radius, state.min_vignette_radius, 0.0, -10.0, 150.0, 1500.0]
     for r in test_radii:
         mock.rect_calls.clear()
         # Should render without throwing any exceptions
-        render_vignette(px=60.0, py=80.0, radius=r, screen_w=120, screen_h=160, pyxel_module=mock)
-        if r <= 80.0:
+        render_vignette(px=300.0, py=400.0, radius=r, screen_w=600, screen_h=800, pyxel_module=mock)
+        if r <= 450.0:
             assert len(mock.rect_calls) > 0
 
     # Edge test: player near screen borders
     mock.rect_calls.clear()
-    render_vignette(px=0.0, py=0.0, radius=40.0, screen_w=120, screen_h=160, pyxel_module=mock)
+    render_vignette(px=0.0, py=0.0, radius=200.0, screen_w=600, screen_h=800, pyxel_module=mock)
     assert len(mock.rect_calls) > 0
 
 
@@ -222,10 +209,10 @@ def test_vignette_boundary_gate():
 def test_wrath_entity_wipe_and_zero_yield():
     state = StateManager()
     state.start_game()
-    entities = EntityManager(120, 160)
+    entities = EntityManager(600, 800)
     # Spawn shards
-    entities.shards.append(GlassShard(60, 140))
-    entities.shards.append(GlassShard(70, 150))
+    entities.shards.append(GlassShard(300, 700))
+    entities.shards.append(GlassShard(350, 750))
     assert len(entities.shards) == 2
 
     bargains = BargainManager()
@@ -256,7 +243,7 @@ def test_sloth_speed_modifiers():
 def test_envy_and_lust_mechanics():
     state = StateManager()
     state.start_game()
-    entities = EntityManager(120, 160)
+    entities = EntityManager(600, 800)
     entities.bypassed_sand_pool = 10
 
     bargains = BargainManager()

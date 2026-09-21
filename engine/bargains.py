@@ -36,13 +36,14 @@ class BargainDefinition:
         return self.curse_base * (1.50 ** k)
 
 
+# Sin names are just the Sin, without "Sands of"
 BARGAIN_REGISTRY: Dict[SinType, BargainDefinition] = {
     SinType.GLUTTONY: BargainDefinition(
         sin=SinType.GLUTTONY,
-        name="Sands of Gluttony",
+        name="Gluttony",
         latin_name="Gula",
-        boon_name="+Sand Spawns",
-        curse_name="+Hazard Spawns",
+        boon_name="+Sand Yield",
+        curse_name="+Hazard Rate",
         boon_base=2.0,
         curse_base=2.0,
         boon_unit="x",
@@ -50,7 +51,7 @@ BARGAIN_REGISTRY: Dict[SinType, BargainDefinition] = {
     ),
     SinType.PRIDE: BargainDefinition(
         sin=SinType.PRIDE,
-        name="Sands of Pride",
+        name="Pride",
         latin_name="Superbia",
         boon_name="Score Mult",
         curse_name="Descent Speed",
@@ -61,10 +62,10 @@ BARGAIN_REGISTRY: Dict[SinType, BargainDefinition] = {
     ),
     SinType.GREED: BargainDefinition(
         sin=SinType.GREED,
-        name="Sands of Greed",
+        name="Greed",
         latin_name="Avaritia",
-        boon_name="Score Harvest Mult",
-        curse_name="Kill-Timer Acceleration",
+        boon_name="Harvest Bounty",
+        curse_name="Kill-Timer Rate",
         boon_base=5.0,
         curse_base=1.5,
         boon_unit="pts/ent",
@@ -72,10 +73,10 @@ BARGAIN_REGISTRY: Dict[SinType, BargainDefinition] = {
     ),
     SinType.WRATH: BargainDefinition(
         sin=SinType.WRATH,
-        name="Sands of Wrath",
+        name="Wrath",
         latin_name="Ira",
         boon_name="Hazard Purge",
-        curse_name="Zero Yield Penalty",
+        curse_name="Zero Yield Period",
         boon_base=300.0,  # 10.0 seconds (frames)
         curse_base=300.0,  # 10.0 seconds (frames)
         boon_unit="frames",
@@ -83,10 +84,10 @@ BARGAIN_REGISTRY: Dict[SinType, BargainDefinition] = {
     ),
     SinType.SLOTH: BargainDefinition(
         sin=SinType.SLOTH,
-        name="Sands of Sloth",
+        name="Sloth",
         latin_name="Acedia",
-        boon_name="Hazard Deceleration",
-        curse_name="Player Lateral Drag",
+        boon_name="Hazard Drag",
+        curse_name="Lateral Drag",
         boon_base=0.40,
         curse_base=0.25,
         boon_unit="drag",
@@ -94,23 +95,23 @@ BARGAIN_REGISTRY: Dict[SinType, BargainDefinition] = {
     ),
     SinType.ENVY: BargainDefinition(
         sin=SinType.ENVY,
-        name="Sands of Envy",
+        name="Envy",
         latin_name="Invidia",
         boon_name="Harvest Bypassed",
-        curse_name="Sand Repulsion Field",
-        boon_base=100.0,  # % of bypassed retrieved
-        curse_base=28.0,   # radius in pixels
+        curse_name="Sand Repel Field",
+        boon_base=100.0,   # % of bypassed retrieved
+        curse_base=140.0,  # radius in pixels (scaled for 600x800)
         boon_unit="%",
         curse_unit="px radius",
     ),
     SinType.LUST: BargainDefinition(
         sin=SinType.LUST,
-        name="Sands of Lust",
+        name="Lust",
         latin_name="Luxuria",
         boon_name="Sand Magnet Field",
         curse_name="Hazard Magnet Field",
-        boon_base=44.0,  # radius in pixels
-        curse_base=36.0,  # radius in pixels
+        boon_base=220.0,  # radius in pixels (scaled for 600x800)
+        curse_base=180.0,  # radius in pixels (scaled for 600x800)
         boon_unit="px radius",
         curse_unit="px radius",
     ),
@@ -210,7 +211,7 @@ class BargainManager:
         # Shrink vignette as visual atmospheric consequence of borrowing time
         state.vignette_radius = max(
             state.min_vignette_radius,
-            state.vignette_radius - 3.5
+            state.vignette_radius - 18.0
         )
 
         self.selection_counts[sin] += 1

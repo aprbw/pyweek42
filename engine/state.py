@@ -1,6 +1,5 @@
 """Dual-Clock Temporal Engine and Game State Manager for Grain of Doubt."""
 from enum import Enum, auto
-import math
 
 
 class GameState(Enum):
@@ -16,7 +15,7 @@ class StateManager:
     KAIROS_FRAMES: int = 60    # 2.0 seconds
     INVULNERABLE_FRAMES: int = 30  # 1.0 second
     SHAKE_FRAMES: int = 8
-    SHAKE_INTENSITY: float = 4.0
+    SHAKE_INTENSITY: float = 12.0
 
     def __init__(self, initial_hearts: int = 3):
         self.initial_hearts = initial_hearts
@@ -33,13 +32,11 @@ class StateManager:
         self.kairos_timer: int = 0   # 0 to KAIROS_FRAMES
         self.cycle_count: int = 0
 
-        # Descent & multipliers
-        self.base_scroll_speed: float = 2.0
-        self.scroll_speed: float = 2.0
+        # Descent & multipliers (No dive / air brake - pure constant lateral runner)
+        self.base_scroll_speed: float = 10.0
+        self.scroll_speed: float = 10.0
         self.score_multiplier: float = 1.0
         self.speed_multiplier: float = 1.0
-        self.dive_active: bool = False
-        self.brake_active: bool = False
 
         # Entity tracking & Greed kill-timer
         self.total_entities_spawned: int = 0
@@ -71,10 +68,10 @@ class StateManager:
         self.shake_timer: int = 0
         self.shake_intensity: float = 0.0
 
-        # Visual Vignette
-        self.base_vignette_radius: float = 68.0
-        self.vignette_radius: float = 68.0
-        self.min_vignette_radius: float = 16.0
+        # Visual Vignette (Scaled for 600x800)
+        self.base_vignette_radius: float = 340.0
+        self.vignette_radius: float = 340.0
+        self.min_vignette_radius: float = 90.0
 
         # Post-mortem death reason
         self.death_reason: str = ""
@@ -99,13 +96,8 @@ class StateManager:
         if self.current_state != GameState.CHRONOS:
             self.scroll_speed = 0.0
             return
-
         base = self.base_scroll_speed * self.speed_multiplier
-        if self.dive_active:
-            base *= 1.50
-        elif self.brake_active:
-            base *= 0.75
-        self.scroll_speed = max(0.5, base)
+        self.scroll_speed = max(2.5, base)
 
     def trigger_game_over(self, reason: str = "Hourglass Shattered"):
         self.current_state = GameState.GAMEOVER
@@ -130,8 +122,6 @@ class StateManager:
         if self.wrath_zero_yield_timer > 0:
             return
         points = int(base_points * self.score_multiplier)
-        if self.dive_active:
-            points = int(points * 1.5)
         self.score += points
         self.total_sand_collected += 1
 
@@ -164,7 +154,7 @@ class StateManager:
             if self.greed_kill_timer > 0:
                 self.greed_kill_timer -= 1
                 if self.greed_kill_timer <= 0:
-                    self.trigger_game_over("Debt Collector: Sands of Greed Expired")
+                    self.trigger_game_over("Debt Collector: Greed Expired")
                     return
 
         # State specific timers

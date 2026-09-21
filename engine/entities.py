@@ -1,4 +1,4 @@
-"""Entities, Kinematics, Hitboxes, and Particle Physics."""
+"""Entities, Kinematics, Hitboxes, and Particle Physics for 600x800 resolution."""
 import math
 import random
 from typing import List, Tuple
@@ -16,7 +16,7 @@ def aabb_overlap(
 
 
 class Particle:
-    def __init__(self, x: float, y: float, vx: float, vy: float, color: int, life: int):
+    def __init__(self, x: float, y: float, vx: float, vy: float, color: int, life: int, size: int = 2):
         self.x = x
         self.y = y
         self.vx = vx
@@ -24,6 +24,7 @@ class Particle:
         self.color = color
         self.max_life = life
         self.life = life
+        self.size = size
 
     def update(self):
         self.x += self.vx
@@ -36,20 +37,20 @@ class Particle:
 
 
 class HourglassPlayer:
-    WIDTH: int = 8
-    HEIGHT: int = 12
+    WIDTH: int = 40
+    HEIGHT: int = 60
 
-    def __init__(self, screen_w: int = 120, screen_h: int = 160):
+    def __init__(self, screen_w: int = 600, screen_h: int = 800):
         self.screen_w = screen_w
         self.screen_h = screen_h
         self.x: float = screen_w / 2.0
-        self.base_y: float = 40.0
+        self.base_y: float = 200.0
         self.y: float = self.base_y
         self.vx: float = 0.0
         self.friction: float = 0.82
-        self.base_accel: float = 1.35
-        self.min_x: float = 8.0
-        self.max_x: float = screen_w - 8.0
+        self.base_accel: float = 6.0
+        self.min_x: float = 40.0
+        self.max_x: float = screen_w - 40.0
         self.sand_drain_phase: float = 0.0
 
     def reset(self):
@@ -58,7 +59,8 @@ class HourglassPlayer:
         self.vx = 0.0
         self.sand_drain_phase = 0.0
 
-    def apply_input(self, left: bool, right: bool, up: bool, down: bool, speed_mod: float = 1.0):
+    def apply_input(self, left: bool, right: bool, speed_mod: float = 1.0):
+        """Only lateral A/D and Left/Right arrow controls."""
         ax = 0.0
         effective_accel = self.base_accel * speed_mod
         if left and not right:
@@ -70,16 +72,11 @@ class HourglassPlayer:
         self.x += self.vx
         self.x = max(self.min_x, min(self.max_x, self.x))
 
-        # Vertical visual shift for dive / brake
-        target_y = self.base_y
-        if down:
-            target_y += 5.0
-        elif up:
-            target_y -= 4.0
-        self.y += (target_y - self.y) * 0.25
+        # Steady vertical reference frame
+        self.y = self.base_y
 
         # Animate sand draining
-        self.sand_drain_phase += 0.1
+        self.sand_drain_phase += 0.15
 
     def get_hitbox(self) -> Tuple[float, float, float, float]:
         """Returns (center_x, center_y, width, height)"""
@@ -87,10 +84,10 @@ class HourglassPlayer:
 
 
 class SandGrain:
-    WIDTH: float = 2.0
-    HEIGHT: float = 2.0
-    HITBOX_W: float = 6.0
-    HITBOX_H: float = 6.0
+    WIDTH: float = 10.0
+    HEIGHT: float = 10.0
+    HITBOX_W: float = 30.0
+    HITBOX_H: float = 30.0
 
     def __init__(self, x: float, y: float):
         self.x = x
@@ -112,16 +109,16 @@ class SandGrain:
 
         if attract_radius > 0 and dist < attract_radius:
             # Lust Boon: Magnet pull toward player
-            pull = 1.8 * (1.0 - dist / attract_radius)
+            pull = 8.5 * (1.0 - dist / attract_radius)
             self.x -= (dx / dist) * pull
             self.y -= (dy / dist) * pull
 
         elif repel_radius > 0 and dist < repel_radius:
             # Envy Curse: Repulsion push away from player
-            push = 2.2 * (1.0 - dist / repel_radius)
+            push = 10.0 * (1.0 - dist / repel_radius)
             self.x += (dx / dist) * push
 
-        if self.y < -8:
+        if self.y < -40:
             self.alive = False
             self.bypassed = True
 
@@ -130,10 +127,10 @@ class SandGrain:
 
 
 class GlassShard:
-    WIDTH: float = 4.0
-    HEIGHT: float = 8.0
-    HITBOX_W: float = 4.0
-    HITBOX_H: float = 6.0
+    WIDTH: float = 20.0
+    HEIGHT: float = 40.0
+    HITBOX_W: float = 20.0
+    HITBOX_H: float = 30.0
 
     def __init__(self, x: float, y: float):
         self.x = x
@@ -141,7 +138,7 @@ class GlassShard:
         self.alive = True
         self.rotation_angle = random.uniform(0, 6.28)
         self.spin_speed = random.choice([-0.12, -0.08, 0.08, 0.12])
-        self.lateral_drift = random.uniform(-0.25, 0.25)
+        self.lateral_drift = random.uniform(-1.0, 1.0)
 
     def update(self, scroll_speed: float, hazard_speed_mod: float,
                player_x: float, player_y: float, attract_radius: float = 0.0):
@@ -156,11 +153,11 @@ class GlassShard:
             dy = self.y - player_y
             dist = math.sqrt(dx * dx + dy * dy)
             if 0 < dist < attract_radius:
-                pull = 1.4 * (1.0 - dist / attract_radius)
+                pull = 6.5 * (1.0 - dist / attract_radius)
                 self.x -= (dx / dist) * pull
                 self.y -= (dy / dist) * pull
 
-        if self.y < -12:
+        if self.y < -60:
             self.alive = False
 
     def get_hitbox(self) -> Tuple[float, float, float, float]:
@@ -168,7 +165,7 @@ class GlassShard:
 
 
 class EntityManager:
-    def __init__(self, screen_w: int = 120, screen_h: int = 160):
+    def __init__(self, screen_w: int = 600, screen_h: int = 800):
         self.screen_w = screen_w
         self.screen_h = screen_h
         self.player = HourglassPlayer(screen_w, screen_h)
@@ -186,19 +183,19 @@ class EntityManager:
         self.bypassed_sand_pool = 0
         self.spawn_accumulator = 0.0
 
-    def spawn_particles(self, x: float, y: float, count: int, colors: List[int], speed_range=(0.5, 2.0)):
+    def spawn_particles(self, x: float, y: float, count: int, colors: List[int], speed_range=(2.0, 8.0), size=3):
         for _ in range(count):
             angle = random.uniform(0, 6.28)
             spd = random.uniform(*speed_range)
             vx = math.cos(angle) * spd
             vy = math.sin(angle) * spd
             color = random.choice(colors)
-            life = random.randint(8, 16)
-            self.particles.append(Particle(x, y, vx, vy, color, life))
+            life = random.randint(10, 20)
+            self.particles.append(Particle(x, y, vx, vy, color, life, size=size))
 
     def wipe_all_hazards(self):
         for shard in self.shards:
-            self.spawn_particles(shard.x, shard.y, 6, [6, 7])
+            self.spawn_particles(shard.x, shard.y, 10, [6, 7], size=4)
         self.shards.clear()
 
     def reclaim_bypassed_sand(self) -> int:
@@ -210,11 +207,12 @@ class EntityManager:
         if wrath_active:
             return
 
-        self.spawn_accumulator += spawn_rate_mult
+        # Entity generation rate reduced by half as requested
+        self.spawn_accumulator += (spawn_rate_mult * 0.50)
         while self.spawn_accumulator >= 1.0:
             self.spawn_accumulator -= 1.0
-            spawn_y = self.screen_h + random.uniform(4, 18)
-            spawn_x = random.uniform(16, self.screen_w - 16)
+            spawn_y = self.screen_h + random.uniform(20, 80)
+            spawn_x = random.uniform(60, self.screen_w - 60)
 
             # 60% chance sand grain, 40% chance glass shard
             if random.random() < 0.60:
@@ -226,12 +224,10 @@ class EntityManager:
         if state.current_state != state.current_state.__class__.CHRONOS:
             return
 
-        # Player input & motion
+        # Player input & motion (Only lateral left/right)
         self.player.apply_input(
             left=getattr(state, "_input_left", False),
             right=getattr(state, "_input_right", False),
-            up=getattr(state, "_input_up", False),
-            down=getattr(state, "_input_down", False),
             speed_mod=state.sloth_player_speed_mod,
         )
 
@@ -261,7 +257,7 @@ class EntityManager:
             sb = sand.get_hitbox()
             if aabb_overlap(px_box[0], px_box[1], px_box[2], px_box[3], sb[0], sb[1], sb[2], sb[3]):
                 state.add_score(base_points=100)
-                self.spawn_particles(sand.x, sand.y, 5, [9, 10], speed_range=(0.8, 1.8))
+                self.spawn_particles(sand.x, sand.y, 8, [9, 10], speed_range=(3.0, 7.0), size=3)
                 continue
 
             remaining_sands.append(sand)
@@ -286,7 +282,7 @@ class EntityManager:
             if aabb_overlap(px_box[0], px_box[1], px_box[2], px_box[3], shb[0], shb[1], shb[2], shb[3]):
                 damaged = state.damage_player()
                 if damaged:
-                    self.spawn_particles(shard.x, shard.y, 8, [6, 7, 8], speed_range=(1.2, 2.8))
+                    self.spawn_particles(shard.x, shard.y, 14, [6, 7, 8], speed_range=(5.0, 12.0), size=4)
                 continue
 
             remaining_shards.append(shard)
@@ -298,8 +294,8 @@ class EntityManager:
             p.update()
 
         # Hourglass sand drip trail particles
-        if random.random() < 0.35:
+        if random.random() < 0.40:
             self.particles.append(
-                Particle(self.player.x + random.uniform(-1, 1), self.player.y + 4,
-                         random.uniform(-0.2, 0.2), random.uniform(-0.5, -0.2), 10, 8)
+                Particle(self.player.x + random.uniform(-4, 4), self.player.y + 20,
+                         random.uniform(-0.6, 0.6), random.uniform(-2.0, -0.8), 10, 10, size=2)
             )
