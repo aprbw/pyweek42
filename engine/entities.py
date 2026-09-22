@@ -96,11 +96,16 @@ class SandGrain:
         self.alive = True
         self.bypassed = False
         self.shimmer_phase = random.uniform(0, 6.28)
+        self.lateral_drift = random.uniform(-0.4, 0.4)
 
     def update(self, scroll_speed: float, player_x: float, player_y: float,
                repel_radius: float = 0.0, attract_radius: float = 0.0):
         self.y -= scroll_speed * self.speed_variance
         self.shimmer_phase += 0.2
+
+        # Small x-axis motion (gentle drift + oscillation)
+        self.x += self.lateral_drift + math.sin(self.shimmer_phase * 0.4) * 0.4
+        self.x = max(55.0, min(545.0, self.x))
 
         # Physics fields (Envy Repel / Lust Attract)
         dx = self.x - player_x
@@ -146,7 +151,10 @@ class GlassShard:
                player_x: float, player_y: float, attract_radius: float = 0.0):
         effective_speed = scroll_speed * hazard_speed_mod * self.speed_variance
         self.y -= effective_speed
-        self.x += self.lateral_drift
+
+        # Small x-axis motion (drift + flutter)
+        self.x += self.lateral_drift + math.sin(self.rotation_angle) * 0.6
+        self.x = max(50.0, min(550.0, self.x))
         self.rotation_angle += self.spin_speed
 
         # Lust Curse: Glass shards pulled toward player

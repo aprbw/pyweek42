@@ -17,7 +17,7 @@ class StateManager:
     SHAKE_FRAMES: int = 8
     SHAKE_INTENSITY: float = 12.0
 
-    def __init__(self, initial_hearts: int = 3):
+    def __init__(self, initial_hearts: int = 5):
         self.initial_hearts = initial_hearts
         self.reset()
 
@@ -26,6 +26,7 @@ class StateManager:
         self.hearts: int = self.initial_hearts
         self.score: int = 0
         self.distance: float = 0.0
+        self.total_frames: int = 0
 
         # Temporal clock counters
         self.chronos_timer: int = 0  # 0 to CHRONOS_FRAMES
@@ -68,9 +69,9 @@ class StateManager:
         self.shake_timer: int = 0
         self.shake_intensity: float = 0.0
 
-        # Visual Vignette (Initial 800.0 = no fog of war)
-        self.base_vignette_radius: float = 800.0
-        self.vignette_radius: float = 800.0
+        # Visual Vignette (Initial 1000.0 = completely clear full screen vision)
+        self.base_vignette_radius: float = 1000.0
+        self.vignette_radius: float = 1000.0
         self.min_vignette_radius: float = 90.0
 
         # Post-mortem death reason
@@ -156,6 +157,9 @@ class StateManager:
                 if self.greed_kill_timer <= 0:
                     self.trigger_game_over("Debt Collector: Greed Expired")
                     return
+
+        # Total lifetime frames
+        self.total_frames += 1
 
         # State specific timers
         if self.current_state == GameState.CHRONOS:

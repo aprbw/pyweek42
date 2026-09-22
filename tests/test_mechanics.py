@@ -14,7 +14,10 @@ from main import render_vignette
 # Gate 1: Chronos Descent & Hazard Gate
 # ---------------------------------------------------------------------------
 def test_chronos_descent_and_hazard_gate():
-    state = StateManager(initial_hearts=3)
+    state = StateManager()  # Defaults to 5 hearts
+    assert state.hearts == 5
+    assert state.base_vignette_radius == 1000.0
+    assert state.vignette_radius == 1000.0
     state.start_game()
     assert state.current_state == GameState.CHRONOS
 
@@ -36,33 +39,30 @@ def test_chronos_descent_and_hazard_gate():
     assert player.x <= player.max_x
     assert player.x == pytest.approx(player.max_x, abs=0.01)
 
-    # 3. Assert collision with glass shards depletes hearts
+    # 3. Assert collision with glass shards depletes hearts from 5
     # Damage 1
     hit = state.damage_player()
     assert hit is True
-    assert state.hearts == 2
+    assert state.hearts == 4
     assert state.invulnerable_timer == StateManager.INVULNERABLE_FRAMES
     assert state.shake_intensity > 0.0
 
     # Collision during invulnerability does not double damage
     hit_during_invuln = state.damage_player()
     assert hit_during_invuln is False
-    assert state.hearts == 2
+    assert state.hearts == 4
 
     # Expire invulnerability
     for _ in range(state.INVULNERABLE_FRAMES):
         state.update_timers()
     assert state.invulnerable_timer == 0
 
-    # Damage 2
-    state.damage_player()
-    assert state.hearts == 1
+    # Deplete remaining hearts to 0
+    for h in range(3, -1, -1):
+        state.damage_player()
+        for _ in range(state.INVULNERABLE_FRAMES):
+            state.update_timers()
 
-    for _ in range(state.INVULNERABLE_FRAMES):
-        state.update_timers()
-
-    # Damage 3: lethal hit -> Game Over
-    state.damage_player()
     assert state.hearts == 0
     assert state.current_state == GameState.GAMEOVER
     assert state.scroll_speed == 0.0
@@ -87,10 +87,10 @@ def test_kairos_timing_gate():
     assert state.current_state == GameState.KAIROS
     assert state.scroll_speed == 0.0  # Freezes kinematics
 
-    # Test choice transition resumes Chronos
+    # Test choice transition resumes Chronos with 2 bargain options
     bargains = BargainManager()
-    options = bargains.draw_options(3)
-    assert len(options) == 3
+    options = bargains.draw_options(2)
+    assert len(options) == 2
     # Apply first option
     bargains.apply_bargain(options[0][0], state)
     state.resume_chronos()

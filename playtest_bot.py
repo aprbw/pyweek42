@@ -31,7 +31,7 @@ def run_single_episode(
 
     sins_chosen: List[SinType] = []
     active_options = []
-    cursor_idx = 1
+    cursor_idx = 0
 
     for frame in range(max_frames):
         if state.current_state == GameState.CHRONOS:
@@ -44,8 +44,8 @@ def run_single_episode(
             entities.update(state)
 
             if state.current_state == GameState.KAIROS:
-                active_options = bargains.draw_options(3)
-                cursor_idx = 1
+                active_options = bargains.draw_options(2)
+                cursor_idx = 0
                 bot.target_card_index = None
 
         elif state.current_state == GameState.KAIROS:
