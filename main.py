@@ -135,6 +135,9 @@ class GrainOfDoubtApp:
         self.selected_card_index: int = 0  # 0=Left, 1=Right
         self.selected_feedback: Optional[dict] = None
         self.feedback_timer: int = 0
+        self.dev_mode: bool = False
+        self.touch_left: bool = False
+        self.touch_right: bool = False
 
         # Cosmic void background stars (parallax)
         self.stars = [
@@ -173,16 +176,36 @@ class GrainOfDoubtApp:
         if pyxel is None:
             return
 
-        # ONLY A / D and Left / Right arrows
-        left = pyxel.btn(pyxel.KEY_LEFT) or pyxel.btn(pyxel.KEY_A)
-        right = pyxel.btn(pyxel.KEY_RIGHT) or pyxel.btn(pyxel.KEY_D)
+        # Keyboard input: A / D and Left / Right arrows
+        k_left = pyxel.btn(pyxel.KEY_LEFT) or pyxel.btn(pyxel.KEY_A)
+        k_right = pyxel.btn(pyxel.KEY_RIGHT) or pyxel.btn(pyxel.KEY_D)
 
-        self.state._input_left = left
-        self.state._input_right = right
+        # Mobile touch / mouse input: 2 on-screen buttons
+        t_left = False
+        t_right = False
+        if pyxel.btn(pyxel.MOUSE_BUTTON_LEFT):
+            mx = pyxel.mouse_x
+            my = pyxel.mouse_y
+            # Bottom touch zone / button press
+            if my >= 350:
+                if mx < self.SCREEN_WIDTH / 2.0:
+                    t_left = True
+                else:
+                    t_right = True
+
+        self.touch_left = t_left
+        self.touch_right = t_right
+
+        self.state._input_left = k_left or t_left
+        self.state._input_right = k_right or t_right
 
     def update(self):
         if pyxel is None:
             return
+
+        # Toggle Dev mode dynamically with '`' (backtick / grave)
+        if pyxel.btnp(pyxel.KEY_BACKQUOTE):
+            self.dev_mode = not self.dev_mode
 
         # Toggle Bot mode dynamically with 'B' key
         if pyxel.btnp(pyxel.KEY_B):
@@ -217,11 +240,12 @@ class GrainOfDoubtApp:
 
         # State dispatch
         if self.state.current_state == GameState.TITLE:
-            # Start game with any lateral key or space/enter, or auto-start if bot mode
+            # Start game with any lateral key, space/enter, or mouse/touch tap
             if (self.bot_mode or
                 pyxel.btnp(pyxel.KEY_LEFT) or pyxel.btnp(pyxel.KEY_RIGHT) or
                 pyxel.btnp(pyxel.KEY_A) or pyxel.btnp(pyxel.KEY_D) or
-                pyxel.btnp(pyxel.KEY_SPACE) or pyxel.btnp(pyxel.KEY_RETURN)):
+                pyxel.btnp(pyxel.KEY_SPACE) or pyxel.btnp(pyxel.KEY_RETURN) or
+                pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT)):
                 self.start_new_game()
 
         elif self.state.current_state == GameState.CHRONOS:
@@ -266,6 +290,13 @@ class GrainOfDoubtApp:
                 move_left = pyxel.btnp(pyxel.KEY_LEFT) or pyxel.btnp(pyxel.KEY_A)
                 move_right = pyxel.btnp(pyxel.KEY_RIGHT) or pyxel.btnp(pyxel.KEY_D)
 
+                # Touch/mouse tap to select/confirm Kairos cards
+                if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
+                    if pyxel.mouse_x < self.SCREEN_WIDTH / 2.0:
+                        move_left = True
+                    else:
+                        move_right = True
+
                 if move_left:
                     if self.selected_card_index == 1:
                         self.selected_card_index = 0
@@ -304,10 +335,11 @@ class GrainOfDoubtApp:
                     self.auto_restart_timer = 0
                     self.start_new_game()
             else:
-                # Restart with any control key
+                # Restart with any control key or touch
                 if (pyxel.btnp(pyxel.KEY_LEFT) or pyxel.btnp(pyxel.KEY_RIGHT) or
                     pyxel.btnp(pyxel.KEY_A) or pyxel.btnp(pyxel.KEY_D) or
-                    pyxel.btnp(pyxel.KEY_R) or pyxel.btnp(pyxel.KEY_SPACE) or pyxel.btnp(pyxel.KEY_RETURN)):
+                    pyxel.btnp(pyxel.KEY_R) or pyxel.btnp(pyxel.KEY_SPACE) or pyxel.btnp(pyxel.KEY_RETURN) or
+                    pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT)):
                     self.start_new_game()
 
     def draw(self):
@@ -402,8 +434,12 @@ class GrainOfDoubtApp:
             pyxel,
         )
 
-        # Draw HUD (Score, Hearts, Active Pacts, Elapsed Time, Version, Kill timer)
+        # Draw HUD (Score, Hearts, Active Pacts, Elapsed Time)
         self.draw_hud()
+
+        # Draw on-screen mobile touch buttons during Chronos descent
+        if self.state.current_state == GameState.CHRONOS:
+            self.draw_touch_buttons()
 
         # Draw active modal overlays
         if self.state.current_state == GameState.KAIROS:
@@ -414,6 +450,10 @@ class GrainOfDoubtApp:
         # Selected feedback banner
         if self.feedback_timer > 0 and self.selected_feedback:
             self.draw_feedback_banner()
+
+        # Developer debug overlay (toggled with '`')
+        if self.dev_mode:
+            self.draw_dev_overlay()
 
         # Capture video frame for MP4 export
         self.video_recorder.record_frame(pyxel)
@@ -590,9 +630,6 @@ class GrainOfDoubtApp:
         flash_time = (pyxel.frame_count // 15) % 2 == 0
         draw_text_scaled(self.SCREEN_WIDTH // 2 - 56, 16, time_str, 10 if flash_time else 7, scale=2)
 
-        # Version stamp
-        draw_text_scaled(self.SCREEN_WIDTH - 52, self.SCREEN_HEIGHT - 14, self.VERSION, 5, scale=1)
-
         # Score (Top Right)
         score_str = f"SCORE: {self.state.score:06d}"
         draw_text_scaled(self.SCREEN_WIDTH - 240, 16, score_str, 10, scale=2)
@@ -602,23 +639,18 @@ class GrainOfDoubtApp:
             mult_str = f"x{self.state.score_multiplier:.1f}"
             draw_text_scaled(self.SCREEN_WIDTH - 120, 36, mult_str, 9, scale=2)
 
-        # Bot Auto-Play Indicator
-        if self.bot_mode:
-            pyxel.rect(self.SCREEN_WIDTH - 245, 54, 235, 18, 0)
-            pyxel.rectb(self.SCREEN_WIDTH - 245, 54, 235, 18, 11)
-            draw_text_scaled(self.SCREEN_WIDTH - 238, 59, "[BOT ON: 80% SPD, 20% BLIND]", 11, scale=1)
-        else:
-            draw_text_scaled(self.SCREEN_WIDTH - 110, 59, "[B] BOT: OFF", 5, scale=1)
+        # Minimal Status Badges when active (Full details in Dev Mode '`')
+        if self.bot_mode and not self.dev_mode:
+            pyxel.rect(self.SCREEN_WIDTH - 90, 42, 80, 16, 0)
+            pyxel.rectb(self.SCREEN_WIDTH - 90, 42, 80, 16, 11)
+            draw_text_scaled(self.SCREEN_WIDTH - 84, 46, "[BOT ON]", 11, scale=1)
 
-        # Video Recording Indicator
-        if self.video_recorder.is_recording:
-            flash = (pyxel.frame_count // 6) % 2 == 0
-            if flash:
-                pyxel.circ(self.SCREEN_WIDTH - 235, 84, 4, 8)
+        if self.video_recorder.is_recording and not self.dev_mode:
             rec_secs = self.video_recorder.frames_recorded // 30
-            draw_text_scaled(self.SCREEN_WIDTH - 225, 80, f"REC: {rec_secs:02d}s", 8 if flash else 7, scale=1)
-        else:
-            draw_text_scaled(self.SCREEN_WIDTH - 110, 80, "[V] REC: OFF", 5, scale=1)
+            flash = (pyxel.frame_count // 6) % 2 == 0
+            pyxel.rect(self.SCREEN_WIDTH - 90, 62, 80, 16, 0)
+            pyxel.rectb(self.SCREEN_WIDTH - 90, 62, 80, 16, 8)
+            draw_text_scaled(self.SCREEN_WIDTH - 84, 66, f"REC {rec_secs:02d}s", 8 if flash else 7, scale=1)
 
         # Greed Borrowed Time Warning Indicator
         if self.state.greed_active:
@@ -749,18 +781,23 @@ class GrainOfDoubtApp:
         draw_text_scaled(90, 380, "CONTROLS & HOW TO PLAY (INFINITE SKI-FREE ARENA)", 10, scale=1)
         draw_text_scaled(90, 405, "A / D or LEFT / RIGHT ARROWS", 7, scale=2)
         draw_text_scaled(110, 435, "Steer Lateral Descent to Catch Sand & Dodge Glass", 6, scale=1)
-        draw_text_scaled(90, 470, "KAIROS TIME-FREEZE (2 PACTS)", 8, scale=2)
-        draw_text_scaled(110, 500, "Steer Left or Right to Seal Faustian Sin", 6, scale=1)
-        draw_text_scaled(90, 535, "SHORTCUTS", 9, scale=1)
-        draw_text_scaled(110, 555, "[B] Toggle Bot Mode  |  [V] Toggle Video Rec", 7, scale=1)
-        draw_text_scaled(110, 575, "[Q] Quit Game        |  [R] Quick Restart", 5, scale=1)
+        draw_text_scaled(90, 465, "MOBILE / TOUCH CONTROLS", 10, scale=1)
+        draw_text_scaled(90, 485, "< LEFT BUTTON  |  RIGHT BUTTON >", 7, scale=2)
+        draw_text_scaled(110, 515, "Steer Lateral Descent & Choose Bargains", 6, scale=1)
+        draw_text_scaled(90, 545, "SHORTCUTS", 9, scale=1)
+        draw_text_scaled(110, 565, "[`] Dev Mode  |  [B] Bot Mode  |  [V] Video Rec", 7, scale=1)
+        draw_text_scaled(110, 585, "[Q] Quit Game |  [R] Quick Restart", 5, scale=1)
 
         # Start prompt
         blink = (pyxel.frame_count // 12) % 2 == 0
         if blink:
-            draw_text_scaled(168, 675, "STEER [A]/[D] OR ARROW TO DESCEND", 7, scale=2)
+            draw_text_scaled(120, 650, "PRESS [A]/[D], ARROWS OR TOUCH BUTTONS", 7, scale=2)
 
-        draw_text_scaled(self.SCREEN_WIDTH - 52, self.SCREEN_HEIGHT - 14, self.VERSION, 5, scale=1)
+        # Draw the 2 mobile buttons at bottom of title screen
+        self.draw_touch_buttons()
+
+        if self.dev_mode:
+            draw_text_scaled(self.SCREEN_WIDTH - 80, self.SCREEN_HEIGHT - 14, f"[DEV] {self.VERSION}", 11, scale=1)
 
     def draw_game_over_screen(self):
         # Dark overlay box
@@ -786,20 +823,85 @@ class GrainOfDoubtApp:
         draw_text_scaled(80, 380, f"SHARDS EVADED : {self.state.total_shards_dodged:6d}", 6, scale=2)
         draw_text_scaled(80, 425, f"PACTS SEALED  : {len(self.bargains.history):6d}", 8, scale=2)
 
-        # Active pact breakdown
-        active_pacts = [(s.name, k) for s, k in self.bargains.selection_counts.items() if k > 0]
-        if active_pacts:
-            pact_str = ", ".join([f"{name}(k={k})" for name, k in active_pacts])
-            draw_text_scaled(70, 515, f"ACTIVE PACTS: {pact_str}"[:60], 9, scale=1)
+        # Draw active pact list
+        pact_summary = [f"{sin.name} k={k}" for sin, k in self.bargains.selection_counts.items() if k > 0]
+        if pact_summary:
+            pact_txt = "ACTIVE PACTS  : " + " | ".join(pact_summary)
+            draw_text_scaled(80, 460, pact_txt[:42], 10, scale=1)
         else:
-            draw_text_scaled(70, 515, "ACTIVE PACTS: NONE (CLEAN SOUL)", 5, scale=1)
+            draw_text_scaled(80, 460, "ACTIVE PACTS  : NONE", 5, scale=1)
 
-        # Restart prompt
         blink = (pyxel.frame_count // 10) % 2 == 0
         if blink:
             draw_text_scaled(160, 580, "PRESS ANY KEY TO DESCEND AGAIN", 7, scale=2)
 
-        draw_text_scaled(self.SCREEN_WIDTH - 52, self.SCREEN_HEIGHT - 14, self.VERSION, 5, scale=1)
+        if self.dev_mode:
+            draw_text_scaled(self.SCREEN_WIDTH - 80, self.SCREEN_HEIGHT - 14, f"[DEV] {self.VERSION}", 11, scale=1)
+
+    def draw_touch_buttons(self):
+        """Draw 2 high-contrast arcade buttons for mobile browser touch play."""
+        btn_y = 690
+        btn_h = 75
+        btn_w = 250
+
+        # Left Button [x=30, y=690, w=250, h=75]
+        lx = 30
+        if self.touch_left:
+            # Pressed feedback: illuminated fill with gold border
+            pyxel.rect(lx, btn_y, btn_w, btn_h, 5)
+            pyxel.rectb(lx, btn_y, btn_w, btn_h, 10)
+            pyxel.rectb(lx + 2, btn_y + 2, btn_w - 4, btn_h - 4, 7)
+            draw_text_scaled(lx + 70, btn_y + 24, "< LEFT", 10, scale=3)
+        else:
+            # Unpressed: dark translucent box with cyan border
+            pyxel.rect(lx, btn_y, btn_w, btn_h, 0)
+            pyxel.rectb(lx, btn_y, btn_w, btn_h, 6)
+            pyxel.rectb(lx + 2, btn_y + 2, btn_w - 4, btn_h - 4, 1)
+            draw_text_scaled(lx + 70, btn_y + 24, "< LEFT", 7, scale=3)
+
+        # Right Button [x=320, y=690, w=250, h=75]
+        rx = 320
+        if self.touch_right:
+            # Pressed feedback: illuminated fill with gold border
+            pyxel.rect(rx, btn_y, btn_w, btn_h, 5)
+            pyxel.rectb(rx, btn_y, btn_w, btn_h, 10)
+            pyxel.rectb(rx + 2, btn_y + 2, btn_w - 4, btn_h - 4, 7)
+            draw_text_scaled(rx + 65, btn_y + 24, "RIGHT >", 10, scale=3)
+        else:
+            # Unpressed: dark translucent box with cyan border
+            pyxel.rect(rx, btn_y, btn_w, btn_h, 0)
+            pyxel.rectb(rx, btn_y, btn_w, btn_h, 6)
+            pyxel.rectb(rx + 2, btn_y + 2, btn_w - 4, btn_h - 4, 1)
+            draw_text_scaled(rx + 65, btn_y + 24, "RIGHT >", 7, scale=3)
+
+    def draw_dev_overlay(self):
+        """Render developer debug overlay when toggled with '`'."""
+        box_x = 12
+        box_y = 65
+        box_w = 330
+        box_h = 165
+
+        # Translucent dark panel with neon mint border
+        pyxel.rect(box_x, box_y, box_w, box_h, 0)
+        pyxel.rectb(box_x, box_y, box_w, box_h, 11)
+        pyxel.rectb(box_x + 1, box_y + 1, box_w - 2, box_h - 2, 3)
+
+        draw_text_scaled(box_x + 8, box_y + 6, f"[DEV MODE] (press ` to close)", 11, scale=1)
+        draw_text_scaled(box_x + 8, box_y + 20, f"VERSION     : {self.VERSION}", 7, scale=1)
+
+        bot_str = "ON (80% SPD, 20% BLIND)" if self.bot_mode else "OFF ([B])"
+        draw_text_scaled(box_x + 8, box_y + 34, f"BOT MODE    : {bot_str}", 10, scale=1)
+
+        rec_str = f"ACTIVE ({self.video_recorder.frames_recorded // 30}s)" if self.video_recorder.is_recording else "OFF ([V])"
+        draw_text_scaled(box_x + 8, box_y + 48, f"VIDEO REC   : {rec_str}", 8, scale=1)
+
+        draw_text_scaled(box_x + 8, box_y + 62, f"STATE       : {self.state.current_state.name} | CYCLE: {self.state.cycle_count}", 6, scale=1)
+        draw_text_scaled(box_x + 8, box_y + 76, f"PLAYER POS  : X={self.entities.player.x:.1f} | VX={self.entities.player.vx:.2f}", 7, scale=1)
+        draw_text_scaled(box_x + 8, box_y + 90, f"SCROLL SPEED: {self.state.scroll_speed:.1f} (x{self.state.speed_multiplier:.2f})", 9, scale=1)
+        draw_text_scaled(box_x + 8, box_y + 104, f"SPAWN RATE  : x{self.state.spawn_rate_multiplier:.2f} (acc={self.entities.spawn_accumulator:.2f})", 9, scale=1)
+        draw_text_scaled(box_x + 8, box_y + 118, f"VIGNETTE R  : {self.state.vignette_radius:.1f} px", 6, scale=1)
+        draw_text_scaled(box_x + 8, box_y + 132, f"ACTIVE ENTS : Sands={len(self.entities.sands)} | Shards={len(self.entities.shards)}", 7, scale=1)
+        draw_text_scaled(box_x + 8, box_y + 146, f"TOTAL FRAMES: {self.state.total_frames} ({self.state.total_frames / 30.0:.1f}s)", 5, scale=1)
 
 
 def main():

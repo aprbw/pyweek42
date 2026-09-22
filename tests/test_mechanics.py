@@ -335,3 +335,45 @@ def test_video_recorder_produces_colored_frames():
         bright_bytes = [b for b in raw_rgb if b > 50]
         assert len(bright_bytes) > 10000, "Recorded frame was pitch black! Pal8 layout failed!"
 
+
+def test_dev_mode_toggle_and_mobile_touch_controls():
+    """Verify dev mode toggle, home screen copy, and mobile touch button mechanics."""
+    from main import GrainOfDoubtApp
+    import pyxel
+
+    app = GrainOfDoubtApp(headless=True)
+    assert app.dev_mode is False
+    assert app.touch_left is False
+    assert app.touch_right is False
+
+    # Verify title screen copy doesn't say "kairos timefreeze 2pact"
+    import inspect
+    title_src = inspect.getsource(app.draw_title_screen)
+    assert "KAIROS TIME-FREEZE (2 PACTS)" not in title_src
+    assert "kairos timefreeze 2pact" not in title_src.lower()
+
+    # Simulate mobile touch input on left side
+    pyxel.mouse_x = 100
+    pyxel.mouse_y = 700
+    # Mock btn to return True for MOUSE_BUTTON_LEFT
+    orig_btn = pyxel.btn
+    try:
+        pyxel.btn = lambda k: (k == pyxel.MOUSE_BUTTON_LEFT)
+        app.update_input()
+        assert app.touch_left is True
+        assert app.touch_right is False
+        assert app.state._input_left is True
+        assert app.state._input_right is False
+
+        # Simulate mobile touch input on right side
+        pyxel.mouse_x = 500
+        pyxel.mouse_y = 700
+        app.update_input()
+        assert app.touch_left is False
+        assert app.touch_right is True
+        assert app.state._input_left is False
+        assert app.state._input_right is True
+    finally:
+        pyxel.btn = orig_btn
+
+
