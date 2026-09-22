@@ -97,11 +97,11 @@ BARGAIN_REGISTRY: Dict[SinType, BargainDefinition] = {
         sin=SinType.ENVY,
         name="Envy",
         latin_name="Invidia",
-        boon_name="Harvest Bypassed",
-        curse_name="Sand Repel Field",
-        boon_base=100.0,   # % of bypassed retrieved
-        curse_base=140.0,  # radius in pixels (scaled for 600x800)
-        boon_unit="%",
+        boon_name="Reap Screen Sands",
+        curse_name="Vignette Vision",
+        boon_base=1.0,
+        curse_base=260.0,
+        boon_unit="screen",
         curse_unit="px radius",
     ),
     SinType.LUST: BargainDefinition(
@@ -170,19 +170,19 @@ class BargainManager:
             harvest_score = int(accrued * boon_val)
             state.score += harvest_score
 
-            # Greed Borrowed Time: No sudden-death instant kill timer!
-            # Instead plunges the world into escalating borrowed time tension:
-            # - Triggers ominous blood-red background / amber flare atmosphere
-            # - Accelerates descent pace and entity spawns
-            # - Halves the vignette vision area
+            # Greed Borrowed Time:
+            # - Random duration between 10.0 and 18.0 seconds (300 to 540 frames)
+            # - During Borrowed Time: blood crimson sky, speed + spawn escalation,
+            #   and collecting sand multiplies score by 110% instead of +1
+            duration_sec = random.uniform(10.0, 18.0)
+            duration_frames = int(duration_sec * 30.0)
             state.greed_active = True
             state.greed_level += 1
+            state.greed_timer = duration_frames
+            state.greed_duration = duration_frames
             state.speed_multiplier += 0.20 * curse_val
             state.spawn_rate_multiplier += 0.25 * curse_val
             state.update_effective_scroll_speed()
-
-            # Greed curse: Halve visual area (radius reduced to ~70.7%, e.g., 1000 -> 707 -> 500)
-            state.vignette_radius = max(state.min_vignette_radius, state.vignette_radius * 0.7071)
 
         elif sin == SinType.WRATH:
             # Hazard wipe duration (boon) & zero yield duration (curse)
@@ -199,26 +199,26 @@ class BargainManager:
             state.sloth_player_speed_mod = max(0.35, state.sloth_player_speed_mod - (curse_val * 0.2))
 
         elif sin == SinType.ENVY:
-            # Retroactively claim bypassed sand
+            # Boon: Reap all sands currently visible on the screen
+            collected = 0
             if entities_manager:
-                reclaimed = entities_manager.reclaim_bypassed_sand()
-                points = int(reclaimed * 1 * (boon_val / 100.0) * state.score_multiplier)
-                state.score += points
-            # Permanent sand repulsion field
-            state.envy_repel_radius = max(state.envy_repel_radius, curse_val)
+                cam_x = entities_manager.player.x - entities_manager.screen_w / 2.0
+                collected = entities_manager.collect_all_screen_sands(cam_x)
+                for _ in range(collected):
+                    state.add_score(1)
+
+            # Curse: Imposes the Vignette Vision tunnel vision mask
+            state.envy_level += 1
+            state.vignette_radius = max(
+                state.min_vignette_radius,
+                260.0 * (0.80 ** (state.envy_level - 1))
+            )
 
         elif sin == SinType.LUST:
             # Temporary sand magnet vs permanent hazard magnet
             state.lust_attract_timer = 300  # 10s
             state.lust_attract_radius = boon_val
             state.lust_hazard_attract_radius = max(state.lust_hazard_attract_radius, curse_val)
-
-        # Shrink vignette as visual atmospheric consequence of borrowing time (gentle for non-Greed)
-        if sin != SinType.GREED:
-            state.vignette_radius = max(
-                state.min_vignette_radius,
-                state.vignette_radius - 12.0
-            )
 
         self.selection_counts[sin] += 1
         self.history.append(sin)

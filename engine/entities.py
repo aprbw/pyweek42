@@ -211,6 +211,26 @@ class EntityManager:
         self.bypassed_sand_pool = 0
         return count
 
+    def collect_all_screen_sands(self, camera_x: float = None) -> int:
+        """Collect all sand grains currently visible on the screen."""
+        if camera_x is None:
+            camera_x = self.player.x - self.screen_w / 2.0
+        min_x = camera_x
+        max_x = camera_x + self.screen_w
+        min_y = 0.0
+        max_y = float(self.screen_h)
+
+        collected = 0
+        remaining = []
+        for s in self.sands:
+            if min_x <= s.x <= max_x and min_y <= s.y <= max_y:
+                collected += 1
+                self.spawn_particles(s.x, s.y, 8, [9, 10, 7], size=3)
+            else:
+                remaining.append(s)
+        self.sands = remaining
+        return collected
+
     def spawn_wave(self, spawn_rate_mult: float, wrath_active: bool, camera_x: float = None, pride_level: int = 0):
         if wrath_active:
             return

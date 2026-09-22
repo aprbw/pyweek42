@@ -1,7 +1,7 @@
 # Grain of Doubt
 
 > **By Arian Prabowo**  
-> **Version:** v0.6.0  
+> **Version:** v0.7.0  
 > **PyWeek 42 Entry ("Borrowed Time")** — September 2026  
 > An endless retro downhill falling-hourglass arcade runner built with the **Pyxel** retro game engine.  
 > **Target Resolution:** $600 \times 800$ pixels ($3:4$ Portrait Aspect Ratio, Infinite Horizontal Arena).
@@ -36,37 +36,37 @@ Steer left or right to avoid razor-sharp falling glass shards while collecting g
 | `Space` / `Enter` or Tap Screen | Start / Restart | Start game or restart after a 2.0s post-mortem lockout (debounced) |
 | `~` / `` ` `` (Backtick) | Dev Mode Overlay | Toggle developer telemetry overlay (hidden on title screen unless active) |
 | `1` - `7` (in Dev Mode) | Fixed Faustian Pact | Instant-apply sin pact in canonical order (1:Pride .. 7:Sloth) |
-| `B` | Playtest Bot | Toggle autonomous GOFAI kinematic playtesting bot |
-| `V` | Video Recording | Toggle MP4 video capture to disk |
+| `B` (in Dev Mode) | Playtest Bot | Toggle autonomous GOFAI kinematic playtesting bot (dev mode only) |
+| `V` (in Dev Mode) | Video Recording | Toggle MP4 video capture to disk (dev mode only) |
 | `Q` | Quit | Exit game |
 
 ---
 
-## 📜 The Seven Deadly Sins (Faustian Bargains)
+## 📜 The Seven Deadly Sins (Faustian Bargains & Exact Parameters)
 
-*Presented in Gregorian / Catholic Canonical Order:*
+*Presented in Gregorian / Catholic Canonical Order with exact mathematical values ($k \ge 0$ is the repeat pact count):*
 
 1. **Pride:**
-   * *Boon:* Spawns golden sand in clusters (pairs on 1st pact, triplets on 2nd, quadruplets on 3rd; 1 sand = 1 point).
-   * *Curse:* Increases descent velocity.
+   * *Boon:* Spawns golden sand in clusters: $+1$ grain per pact level (1st pact: pairs $= 2$ grains; 2nd: triplets $= 3$; 3rd: quadruplets $= 4$; grains share trajectory with non-overlapping offsets; 1 sand = 1 point).
+   * *Curse:* Increases descent velocity multiplier by $+25\% \times 1.5^k$ ($+0.50$ on 1st pact, $+0.75$ on 2nd, $+1.125$ on 3rd).
 2. **Greed:**
-   * *Boon:* Converts all accrued sand collections and shard dodges into an instant score bounty.
-   * *Curse:* Triggers Borrowed Time for 10 to 18 seconds (escalated speed, halved vision, blood crimson void).
+   * *Boon:* Instant bounty harvest granting $(N_{sands\_collected} + N_{shards\_dodged}) \times 5.0 \times 0.75^k$ points ($5.0$ pts/entity on 1st pact, $3.75$ on 2nd, $2.81$ on 3rd).
+   * *Curse:* Triggers **Borrowed Time** for a randomized window of **10.0 to 18.0 seconds** ($300$ to $540$ frames). Void erupts into blood crimson with ember stars, descent velocity increases by $+20\% \times 1.5^k$, spawn density increases by $+25\% \times 1.5^k$, and collecting sand **multiplies current score by 110%** ($Score \leftarrow \max(Score + 1, \lfloor Score \times 1.10 \rfloor)$) instead of adding 1 point! Remaining duration is displayed in the Dev Mode telemetry overlay.
 3. **Lust:**
-   * *Boon:* Activates magnetic attraction field pulling in golden sand.
-   * *Curse:* Establishes magnetic attraction field pulling in glass shards.
+   * *Boon:* Generates a golden sand magnetic attraction vortex with a radius of $220.0 \times 0.75^k$ px ($220$px on 1st pact, $165$px on 2nd, $124$px on 3rd) active for 10.0 seconds ($300$ frames).
+   * *Curse:* Generates a permanent lethal glass shard magnetic attraction vortex with a radius of $180.0 \times 1.5^k$ px ($180$px on 1st pact, $270$px on 2nd, $405$px on 3rd).
 4. **Envy:**
-   * *Boon:* Retroactively reclaims all bypassed sand motes for bonus points.
-   * *Curse:* Establishes a permanent sand repulsion field around the hourglass.
+   * *Boon:* Instantly reaps all golden sand grains currently visible on the screen, immediately awarding their score and triggering radiant particle bursts.
+   * *Curse:* Inflicts **Vignette Vision**, restricting your visual range to a dark circular tunnel vision mask with radius $260.0 \times 0.80^k$ px ($260$px on 1st pact, $208$px on 2nd, $166$px on 3rd, minimum $90$px).
 5. **Gluttony:**
-   * *Boon:* Accelerates sand grain generation rate.
-   * *Curse:* Multiplies hazard glass shard density.
+   * *Boon:* Accelerates global sand grain and entity generation rate multiplier by $+80\% \times 0.75^k$ ($+0.80$ on 1st pact, $+0.60$ on 2nd, $+0.45$ on 3rd).
+   * *Curse:* Multiplies hazard glass shard density and spawn rate by $+80\% \times 1.5^k$ ($+0.80$ on 1st pact, $+1.20$ on 2nd, $+1.80$ on 3rd).
 6. **Wrath:**
-   * *Boon:* Purges all active hazards from the screen.
-   * *Curse:* Enforces zero-yield state (no sand points) for 10 seconds.
+   * *Boon:* Purges 100% of active glass shards from the screen and grants hazard immunity for $10.0 \times 0.75^k$ seconds ($300$ frames on 1st pact, $225$ frames on 2nd, $169$ frames on 3rd).
+   * *Curse:* Zero-Yield state: collected sands award 0 points for $10.0 \times 1.5^k$ seconds ($300$ frames on 1st pact, $450$ frames on 2nd, $675$ frames on 3rd).
 7. **Sloth:**
-   * *Boon:* Decelerates vertical hazard velocity to ease reaction.
-   * *Curse:* Imposes permanent lateral drag on player movement.
+   * *Boon:* Decelerates vertical hazard fall velocity by $12\% \times 0.75^k$ ($0.12$ reduction on 1st pact, $0.09$ on 2nd, down to minimum $0.30$ modifier).
+   * *Curse:* Imposes lateral drag on hourglass steering, reducing horizontal translation speed by $5\% \times 1.5^k$ ($0.05$ reduction on 1st pact, $0.075$ on 2nd, down to minimum $0.35$ modifier).
 
 ---
 

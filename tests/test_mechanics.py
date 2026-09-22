@@ -137,14 +137,13 @@ def test_compounding_math_gate():
 # Gate 4: Greed Borrowed Time Mechanics Gate
 # ---------------------------------------------------------------------------
 def test_greed_borrowed_time_mechanics_gate():
-    """Verify Greed activates Borrowed Time without instant kill-timer, cuts vignette, and scales tension."""
+    """Verify Greed activates Borrowed Time for 10-18s, multiplies score by 110% on sand, and scales tension."""
     state = StateManager()
     state.start_game()
     bargains = BargainManager()
 
     assert not state.greed_active
     assert state.greed_level == 0
-    initial_vignette = state.vignette_radius
     initial_spd = state.speed_multiplier
     initial_spawn = state.spawn_rate_multiplier
 
@@ -152,16 +151,30 @@ def test_greed_borrowed_time_mechanics_gate():
     bargains.apply_bargain(SinType.GREED, state)
     assert state.greed_active is True
     assert state.greed_level == 1
-    assert state.vignette_radius < initial_vignette  # 50% area cut (~70.7% radius)
+    # Random timer between 10.0 and 18.0s (300 to 540 frames)
+    assert 300 <= state.greed_timer <= 540
     assert state.speed_multiplier > initial_spd      # Borrowed time pace escalation
     assert state.spawn_rate_multiplier > initial_spawn
 
-    # Verify NO sudden death kill timer from Greed: advancing 1000 frames in Chronos does NOT kill the player
-    for _ in range(1000):
+    # Verify sand collection during Greed multiplies score by 110% instead of +1
+    state.score = 10
+    state.add_score(1)
+    assert state.score == 11  # 10 * 1.10 = 11
+
+    state.score = 100
+    state.add_score(1)
+    assert state.score == 110  # 100 * 1.10 = 110
+
+    # Advance frames in Chronos until timer expires: greed_active becomes False
+    duration = state.greed_timer
+    for _ in range(duration):
         state.update_timers()
         if state.current_state == GameState.KAIROS:
             state.resume_chronos()
-        assert state.current_state != GameState.GAMEOVER, "Greed must not arbitrarily terminate game via kill timer!"
+        assert state.current_state != GameState.GAMEOVER, "Greed must not kill the player!"
+
+    assert state.greed_timer == 0
+    assert state.greed_active is False
 
 
 # ---------------------------------------------------------------------------
@@ -246,17 +259,29 @@ def test_sloth_speed_modifiers():
 
 
 def test_envy_and_lust_mechanics():
+    from engine.entities import SandGrain
     state = StateManager()
     state.start_game()
     entities = EntityManager(600, 800)
-    entities.bypassed_sand_pool = 10
+    entities.player.x = 300.0
+
+    # Add 2 on-screen sands and 1 far off-screen sand
+    entities.sands = [
+        SandGrain(300.0, 400.0),
+        SandGrain(320.0, 450.0),
+        SandGrain(10000.0, 400.0),
+    ]
 
     bargains = BargainManager()
-    # Envy claims bypassed sand
+    assert state.vignette_radius == 1000.0
+    initial_score = state.score
+
+    # Envy reaps all on-screen sands immediately (boon) and applies vignette vision (curse)
     bargains.apply_bargain(SinType.ENVY, state, entities)
-    assert entities.bypassed_sand_pool == 0
-    assert state.score > 0
-    assert state.envy_repel_radius > 0.0
+    assert len(entities.sands) == 1
+    assert entities.sands[0].x == 10000.0
+    assert state.score >= initial_score + 2
+    assert state.vignette_radius == 260.0  # Vignette Vision curse activated!
 
     # Lust activates sand and hazard magnetic fields
     bargains.apply_bargain(SinType.LUST, state, entities)
@@ -376,6 +401,22 @@ def test_dev_mode_toggle_and_mobile_touch_controls():
         assert app.touch_right is True
         assert app.state._input_left is False
         assert app.state._input_right is True
+
+        # Verify B and V key toggles only work when dev_mode is True
+        app.dev_mode = False
+        app.bot_mode = False
+        orig_btnp = pyxel.btnp
+        try:
+            pyxel.btnp = lambda k: (k == pyxel.KEY_B)
+            app.update()
+            assert app.bot_mode is False  # Cannot toggle without dev mode!
+
+            # Enable dev mode: now KEY_B toggles bot_mode
+            app.dev_mode = True
+            app.update()
+            assert app.bot_mode is True   # Enabled in dev mode!
+        finally:
+            pyxel.btnp = orig_btnp
     finally:
         pyxel.btn = orig_btn
 

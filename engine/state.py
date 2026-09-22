@@ -45,7 +45,10 @@ class StateManager:
         self.total_shards_dodged: int = 0
         self.greed_active: bool = False
         self.greed_level: int = 0
+        self.greed_timer: int = 0       # Remaining frames of Borrowed Time
+        self.greed_duration: int = 0    # Initial frames of Borrowed Time
         self.pride_level: int = 0
+        self.envy_level: int = 0
 
         # Wrath zero-yield timer
         self.wrath_wipe_timer: int = 0
@@ -122,9 +125,16 @@ class StateManager:
     def add_score(self, base_points: int = 1):
         if self.wrath_zero_yield_timer > 0:
             return
-        points = int(base_points * self.score_multiplier)
-        self.score += points
         self.total_sand_collected += 1
+        if self.greed_active:
+            # During Greed Borrowed Time: sand multiplies current score by 110%
+            if self.score <= 0:
+                self.score = 1
+            else:
+                self.score = max(self.score + 1, int(self.score * 1.10))
+        else:
+            points = int(base_points * self.score_multiplier)
+            self.score += points
 
     def update_timers(self):
         """Advance timers for the current frame."""
@@ -158,6 +168,13 @@ class StateManager:
             self.chronos_timer += 1
             self.distance += self.scroll_speed
             self.update_effective_scroll_speed()
+
+            # Greed Borrowed Time timer countdown
+            if self.greed_active and self.greed_timer > 0:
+                self.greed_timer -= 1
+                if self.greed_timer <= 0:
+                    self.greed_active = False
+
             if self.chronos_timer >= self.CHRONOS_FRAMES:
                 self.trigger_kairos()
 

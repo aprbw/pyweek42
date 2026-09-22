@@ -30,7 +30,7 @@ def render_vignette(px: float, py: float, radius: float, screen_w: int = 600, sc
     Middle ring (r_inner < distance <= r_outer): 50% alpha dithered shadow.
     Inner core (distance <= r_inner): 100% clear unobstructed vision.
     """
-    if pyxel_module is None:
+    if pyxel_module is None or radius >= 900.0:
         return
     r_outer = max(25.0, float(radius))
     r_inner = max(15.0, r_outer * 0.70)
@@ -139,7 +139,7 @@ def is_mobile_environment() -> bool:
 
 
 class GrainOfDoubtApp:
-    VERSION: str = "v0.6.0"
+    VERSION: str = "v0.7.0"
     SCREEN_WIDTH: int = 600
     SCREEN_HEIGHT: int = 800
 
@@ -250,13 +250,13 @@ class GrainOfDoubtApp:
         if pyxel.btnp(pyxel.KEY_BACKQUOTE):
             self.dev_mode = not self.dev_mode
 
-        # Toggle Bot mode dynamically with 'B' key
-        if pyxel.btnp(pyxel.KEY_B):
+        # Toggle Bot mode dynamically with 'B' key (dev mode only)
+        if self.dev_mode and pyxel.btnp(pyxel.KEY_B):
             self.bot_mode = not self.bot_mode
             self.bot.reset()
 
-        # Toggle Video Recording with 'V' key
-        if pyxel.btnp(pyxel.KEY_V):
+        # Toggle Video Recording with 'V' key (dev mode only)
+        if self.dev_mode and pyxel.btnp(pyxel.KEY_V):
             self.video_recorder.toggle(pyxel)
 
         # In Dev Mode: Number keys 1 to 7 apply fixed pacts directly (Canonical Order)
@@ -834,6 +834,12 @@ class GrainOfDoubtApp:
                 group_name = ["Pair", "Triplet", "Quadruplet", "Quintet"][min(3, k)]
                 draw_text_scaled(cx + 16, col_y + 144, "Sand Clusters", 7, scale=2)
                 draw_text_scaled(cx + 16, col_y + 168, f"{group_name} ({k+2}x)", 11, scale=2)
+            elif sin == SinType.ENVY:
+                draw_text_scaled(cx + 16, col_y + 144, "Reap Screen Sand", 7, scale=2)
+                draw_text_scaled(cx + 16, col_y + 168, "All Visible Sands", 11, scale=2)
+            elif sin == SinType.GREED:
+                draw_text_scaled(cx + 16, col_y + 144, "Bounty Harvest", 7, scale=2)
+                draw_text_scaled(cx + 16, col_y + 168, f"+{boon_val:.1f} pts/dodge", 11, scale=2)
             else:
                 draw_text_scaled(cx + 16, col_y + 144, f"+{defn.boon_name}", 7, scale=2)
                 draw_text_scaled(cx + 16, col_y + 168, f"{boon_val:.1f} {defn.boon_unit}", 11, scale=2)
@@ -846,7 +852,10 @@ class GrainOfDoubtApp:
             draw_text_scaled(cx + 16, col_y + 220, "CON (FOREVER):", 8, scale=2)
             if sin == SinType.GREED:
                 draw_text_scaled(cx + 16, col_y + 244, "Borrowed Time", 7, scale=2)
-                draw_text_scaled(cx + 16, col_y + 268, "10-18s Tension", 8, scale=2)
+                draw_text_scaled(cx + 16, col_y + 268, "10-18s +10% Sand", 8, scale=2)
+            elif sin == SinType.ENVY:
+                draw_text_scaled(cx + 16, col_y + 244, "Vignette Vision", 7, scale=2)
+                draw_text_scaled(cx + 16, col_y + 268, f"{int(curse_val)}px Radius", 8, scale=2)
             else:
                 draw_text_scaled(cx + 16, col_y + 244, f"-{defn.curse_name}", 7, scale=2)
                 draw_text_scaled(cx + 16, col_y + 268, f"{curse_val:.1f} {defn.curse_unit}", 8, scale=2)
@@ -901,8 +910,7 @@ class GrainOfDoubtApp:
             draw_text_scaled(60, 550, "[`] DEV MODE  |  [B] BOT  |  [V] REC", 11, scale=2)
             draw_text_scaled(60, 580, "[Q] QUIT GAME |  [R] RESTART", 5, scale=2)
         else:
-            draw_text_scaled(60, 550, "[B] BOT MODE  |  [V] VIDEO REC", 7, scale=2)
-            draw_text_scaled(60, 580, "[Q] QUIT GAME |  [R] RESTART", 5, scale=2)
+            draw_text_scaled(60, 550, "[Q] QUIT GAME  |  [R] RESTART", 5, scale=2)
 
         # Start prompt
         blink = (pyxel.frame_count // 12) % 2 == 0
@@ -1037,7 +1045,8 @@ class GrainOfDoubtApp:
         # Line 5: State and Timer telemetry
         elapsed = self.state.total_frames / 30.0
         st_name = self.state.current_state.name
-        draw_text_scaled(box_x + 12, box_y + 120, f"STATE:{st_name} | CYCLE:{self.state.cycle_count} | TIME:{elapsed:4.1f}s | PRIDE:{self.state.pride_level}", 6, scale=2)
+        greed_str = f"{self.state.greed_timer / 30.0:4.1f}s" if self.state.greed_active else "OFF"
+        draw_text_scaled(box_x + 12, box_y + 120, f"STATE:{st_name} | GREED:{greed_str} | TIME:{elapsed:4.1f}s | PRIDE:{self.state.pride_level}", 6, scale=2)
 
 
 def main():
