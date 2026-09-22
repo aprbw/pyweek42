@@ -7,7 +7,7 @@ echo "1. Running unit test suite..."
 .venv/bin/pytest tests/ -v
 
 echo "2. Cleaning old bundle files..."
-rm -f *.pyxapp *.html
+rm -f *.pyxapp *.html tests/*.mp4 *.mp4
 
 echo "3. Packaging pyxapp..."
 .venv/bin/pyxel package . main.py
@@ -25,7 +25,7 @@ for fname in ['grain_of_doubt.html']:
     # Disable default virtual gamepad cross so our tailored 2-button touch layout is used
     content = content.replace('gamepad: \"enabled\"', 'gamepad: \"disabled\"')
     
-    # Inject mobile viewport and touch-action meta & styling
+    # Inject mobile viewport, responsive 3:4 aspect-ratio containment styling, and mobile flag
     mobile_head = '''<!doctype html>
 <html lang=\"en\">
 <head>
@@ -40,17 +40,44 @@ for fname in ['grain_of_doubt.html']:
     height: 100%;
     background: #000;
     overflow: hidden;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
     touch-action: none;
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
   }
-  #pyxel-screen, canvas#canvas {
+  div#pyxel-screen {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    width: min(100vw, calc(100vh * 3 / 4)) !important;
+    height: min(100vh, calc(100vw * 4 / 3)) !important;
+    aspect-ratio: 3 / 4 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    background-color: #000 !important;
+    margin: auto !important;
+    touch-action: none !important;
+  }
+  canvas#canvas {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    image-rendering: pixelated !important;
     touch-action: none !important;
   }
 </style>
 </head>
 <body>
+<script>
+window.__PYXEL_IS_MOBILE__ = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+</script>
 '''
     if '<!doctype html>' in content:
         content = content.replace('<!doctype html>', mobile_head, 1)

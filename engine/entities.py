@@ -123,7 +123,7 @@ class SandGrain:
             push = 10.0 * (1.0 - dist / repel_radius)
             self.x += (dx / dist) * push
 
-        if self.y < -40 or abs(self.x - player_x) > 1500.0:
+        if self.y < -40 or abs(self.x - player_x) > 3500.0:
             self.alive = False
             self.bypassed = True
 
@@ -165,7 +165,7 @@ class GlassShard:
                 self.x -= (dx / dist) * pull
                 self.y -= (dy / dist) * pull
 
-        if self.y < -60 or abs(self.x - player_x) > 1500.0:
+        if self.y < -60 or abs(self.x - player_x) > 3500.0:
             self.alive = False
 
     def get_hitbox(self) -> Tuple[float, float, float, float]:
@@ -218,13 +218,18 @@ class EntityManager:
         if camera_x is None:
             camera_x = self.player.x - self.screen_w / 2.0
 
-        # Calibrated generation rate for engaging retro-arcade challenge (~40-60s survival curve)
-        self.spawn_accumulator += (spawn_rate_mult * 0.45)
+        # Kinematic Spawn Horizon Math:
+        # v_x_max = (6.0 * 0.82) / (1 - 0.82) = 27.33 px/frame
+        # t_fall = (850 - 200) / 7.5 = 86.7 frames
+        # Max travel dx = 86.7 * 27.33 = 2369 px (~3.95 screens)
+        # Margin = 4.5 screens = 2700.0 px on either side of camera
+        margin = 2700.0
+        span_w = self.screen_w + 2.0 * margin
+        density_scale = span_w / 880.0
+        self.spawn_accumulator += (spawn_rate_mult * 0.45 * density_scale)
         while self.spawn_accumulator >= 1.0:
             self.spawn_accumulator -= 1.0
             spawn_y = self.screen_h + random.uniform(20, 80)
-            # Focused spawn horizon centered around camera viewport with 140px buffer
-            margin = 140.0
             spawn_x = random.uniform(camera_x - margin, camera_x + self.screen_w + margin)
 
             # 55% chance sand grain, 45% chance glass shard

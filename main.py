@@ -109,8 +109,37 @@ def draw_text_scaled(x: int, y: int, s: str, col: int, scale: int = 1, img_bank:
     pyxel.blt(blt_x, blt_y, img_bank, 0, 0, w, h, colkey=0, scale=scale)
 
 
+CANONICAL_SINS: List[SinType] = [
+    SinType.PRIDE,
+    SinType.GREED,
+    SinType.LUST,
+    SinType.ENVY,
+    SinType.GLUTTONY,
+    SinType.WRATH,
+    SinType.SLOTH,
+]
+
+
+def is_mobile_environment() -> bool:
+    if "--mobile" in sys.argv:
+        return True
+    if sys.platform == "emscripten":
+        try:
+            import js
+            if getattr(js.window, "__PYXEL_IS_MOBILE__", False):
+                return True
+            nav = getattr(js, "navigator", None)
+            if nav:
+                max_touch = getattr(nav, "maxTouchPoints", 0)
+                ua = str(getattr(nav, "userAgent", "")).lower()
+                return max_touch > 0 or any(m in ua for m in ["android", "iphone", "ipad", "ipod", "mobile"])
+        except Exception:
+            pass
+    return False
+
+
 class GrainOfDoubtApp:
-    VERSION: str = "v0.5.0"
+    VERSION: str = "v0.6.0"
     SCREEN_WIDTH: int = 600
     SCREEN_HEIGHT: int = 800
 
@@ -120,11 +149,14 @@ class GrainOfDoubtApp:
         bot_mode: bool = False,
         record_video: bool = False,
         video_filename: str = "borrowed_time_bot.mp4",
+        mobile_mode: bool = False,
     ):
         self.headless = headless
         self.bot_mode = bot_mode
+        self.is_mobile = mobile_mode or is_mobile_environment()
         self.bot = PlayTestingBot()
         self.auto_restart_timer: int = 0
+        self.game_over_timer: int = 0
         self.video_recorder = VideoRecorder(output_path=video_filename, width=self.SCREEN_WIDTH, height=self.SCREEN_HEIGHT, fps=30)
         self.record_video_on_start = record_video
         self.state = StateManager()
@@ -140,16 +172,8 @@ class GrainOfDoubtApp:
         self.touch_right: bool = False
 
         # Cosmic void background stars (parallax)
-        self.stars = [
-            [
-                random.uniform(0, self.SCREEN_WIDTH),
-                random.uniform(0, self.SCREEN_HEIGHT),
-                random.choice([1, 5, 6]),
-                random.choice([2, 3]),
-                random.uniform(0.3, 0.8),
-            ]
-            for _ in range(64)
-        ]
+        self.stars: List[List[float]] = []
+        self.reset_stars()
 
         if not headless and pyxel is not None:
             pyxel.init(
@@ -164,6 +188,19 @@ class GrainOfDoubtApp:
                 self.video_recorder.start(pyxel)
             pyxel.run(self.update, self.draw)
 
+    def reset_stars(self):
+        """Reset parallax starfield uniformly across viewport."""
+        self.stars = [
+            [
+                random.uniform(0, self.SCREEN_WIDTH),
+                random.uniform(0, self.SCREEN_HEIGHT),
+                random.choice([1, 5, 6]),
+                random.choice([2, 3]),
+                random.uniform(0.3, 0.8),
+            ]
+            for _ in range(64)
+        ]
+
     def start_new_game(self):
         self.state.start_game()
         self.entities.reset()
@@ -171,6 +208,12 @@ class GrainOfDoubtApp:
         self.active_options.clear()
         self.selected_card_index = 0
         self.selected_feedback = None
+        self.feedback_timer = 0
+        self.auto_restart_timer = 0
+        self.game_over_timer = 0
+        self.touch_left = False
+        self.touch_right = False
+        self.reset_stars()
 
     def update_input(self):
         if pyxel is None:
@@ -216,16 +259,16 @@ class GrainOfDoubtApp:
         if pyxel.btnp(pyxel.KEY_V):
             self.video_recorder.toggle(pyxel)
 
-        # In Dev Mode: Number keys 1 to 7 apply fixed pacts directly
+        # In Dev Mode: Number keys 1 to 7 apply fixed pacts directly (Canonical Order)
         if self.dev_mode:
             pact_keys = [
-                (pyxel.KEY_1, SinType.GLUTTONY),
-                (pyxel.KEY_2, SinType.PRIDE),
-                (pyxel.KEY_3, SinType.GREED),
-                (pyxel.KEY_4, SinType.WRATH),
-                (pyxel.KEY_5, SinType.SLOTH),
-                (pyxel.KEY_6, SinType.ENVY),
-                (pyxel.KEY_7, SinType.LUST),
+                (pyxel.KEY_1, SinType.PRIDE),
+                (pyxel.KEY_2, SinType.GREED),
+                (pyxel.KEY_3, SinType.LUST),
+                (pyxel.KEY_4, SinType.ENVY),
+                (pyxel.KEY_5, SinType.GLUTTONY),
+                (pyxel.KEY_6, SinType.WRATH),
+                (pyxel.KEY_7, SinType.SLOTH),
             ]
             for key, sin in pact_keys:
                 if pyxel.btnp(key):
@@ -335,8 +378,15 @@ class GrainOfDoubtApp:
             # Advance Kairos timer
             self.state.update_timers()
 
-            # Confirm selection on timeout or manual seal
-            if instant_seal or self.state.current_state == GameState.CHRONOS:
+            # Check if 2.0s timeout expired without choice: Instant Death!
+            if self.state.current_state == GameState.GAMEOVER:
+                self.audio.play_death(pyxel)
+                self.game_over_timer = 0
+                self.auto_restart_timer = 0
+                return
+
+            # Confirm selection on manual seal
+            if instant_seal:
                 if 0 <= self.selected_card_index < len(self.active_options):
                     chosen_sin, _, _ = self.active_options[self.selected_card_index]
                     feedback = self.bargains.apply_bargain(chosen_sin, self.state, self.entities)
@@ -348,18 +398,20 @@ class GrainOfDoubtApp:
                     self.bot.reset_kairos()
 
         elif self.state.current_state == GameState.GAMEOVER:
+            self.game_over_timer += 1
             if self.bot_mode:
                 self.auto_restart_timer += 1
-                if self.auto_restart_timer >= 60:
+                if self.auto_restart_timer >= 60 and self.game_over_timer >= 60:
                     self.auto_restart_timer = 0
                     self.start_new_game()
             else:
-                # Restart with any control key or touch
-                if (pyxel.btnp(pyxel.KEY_LEFT) or pyxel.btnp(pyxel.KEY_RIGHT) or
-                    pyxel.btnp(pyxel.KEY_A) or pyxel.btnp(pyxel.KEY_D) or
-                    pyxel.btnp(pyxel.KEY_R) or pyxel.btnp(pyxel.KEY_SPACE) or pyxel.btnp(pyxel.KEY_RETURN) or
-                    pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT)):
-                    self.start_new_game()
+                # Require minimum 2.0s (60 frames) debounce before allowing restart
+                if self.game_over_timer >= 60:
+                    if (pyxel.btnp(pyxel.KEY_LEFT) or pyxel.btnp(pyxel.KEY_RIGHT) or
+                        pyxel.btnp(pyxel.KEY_A) or pyxel.btnp(pyxel.KEY_D) or
+                        pyxel.btnp(pyxel.KEY_R) or pyxel.btnp(pyxel.KEY_SPACE) or pyxel.btnp(pyxel.KEY_RETURN) or
+                        pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT)):
+                        self.start_new_game()
 
     def draw(self):
         if pyxel is None:
@@ -456,8 +508,8 @@ class GrainOfDoubtApp:
         # Draw HUD (Score, Hearts, Active Pacts, Elapsed Time)
         self.draw_hud()
 
-        # Draw on-screen mobile touch buttons during Chronos descent
-        if self.state.current_state == GameState.CHRONOS:
+        # Draw on-screen mobile touch buttons during Chronos descent (mobile only)
+        if self.state.current_state == GameState.CHRONOS and self.is_mobile:
             self.draw_touch_buttons()
 
         # Draw active modal overlays
@@ -479,7 +531,7 @@ class GrainOfDoubtApp:
 
     def draw_cosmic_nebula_streams(self, cam_x: int, prog: float = 0.0):
         """Draw ethereal celestial aurora ribbons across infinite horizontal void."""
-        t = pyxel.frame_count * (0.04 + prog * 0.06)
+        t = self.state.total_frames * (0.04 + prog * 0.06)
         if self.state.greed_active:
             flash = (pyxel.frame_count // 4) % 2 == 0
             col_inner = 8 if flash else 9  # Burning crimson/orange flares
@@ -613,12 +665,19 @@ class GrainOfDoubtApp:
         pyxel.line(x2, y2, x0, y0, 6)
 
     def draw_hud(self):
-        # Hearts display (Top Left) - up to 5 hearts
+        # Universal Dither Alpha on HUD containers
+        # 1. Hearts container (Top Left)
+        if hasattr(pyxel, "dither"):
+            pyxel.dither(0.60)
+        pyxel.rect(10, 8, 172, 30, 0)
+        if hasattr(pyxel, "dither"):
+            pyxel.dither(1.0)
+        pyxel.rectb(10, 8, 172, 30, 1)
+
         for i in range(5):
             hx = 16 + i * 32
-            hy = 14
+            hy = 12
             if i < self.state.hearts:
-                # Red heart
                 pyxel.rect(hx + 4, hy, 8, 4, 8)
                 pyxel.rect(hx + 16, hy, 8, 4, 8)
                 pyxel.rect(hx, hy + 4, 28, 8, 8)
@@ -629,34 +688,53 @@ class GrainOfDoubtApp:
             else:
                 pyxel.rectb(hx, hy + 4, 28, 16, 5)
 
-        # Active Pacts Display (Under hearts)
-        active_pacts = [(sin, k) for sin, k in self.bargains.selection_counts.items() if k > 0]
-        if active_pacts:
-            pact_items = [f"{sin.name} k={k}" for sin, k in active_pacts]
-            pact_text = "PACTS: " + " | ".join(pact_items)
-            pact_w = min(480, len(pact_text) * 8 + 16)
-            pyxel.rect(14, 44, pact_w, 22, 0)
-            pyxel.rectb(14, 44, pact_w, 22, 10 if (pyxel.frame_count // 10) % 2 == 0 else 9)
-            draw_text_scaled(18, 48, pact_text, 10, scale=2)
-        else:
-            pyxel.rect(14, 44, 150, 22, 0)
-            pyxel.rectb(14, 44, 150, 22, 1)
-            draw_text_scaled(18, 48, "PACTS: NONE", 5, scale=2)
+        # 2. Elapsed Time container (Top Center)
+        if hasattr(pyxel, "dither"):
+            pyxel.dither(0.60)
+        pyxel.rect(self.SCREEN_WIDTH // 2 - 76, 8, 152, 30, 0)
+        if hasattr(pyxel, "dither"):
+            pyxel.dither(1.0)
+        pyxel.rectb(self.SCREEN_WIDTH // 2 - 76, 8, 152, 30, 1)
 
-        # Elapsed Time (Top Center)
         elapsed_sec = self.state.total_frames / 30.0
         time_str = f"TIME: {elapsed_sec:04.1f}s"
         flash_time = (pyxel.frame_count // 15) % 2 == 0
-        draw_text_scaled(self.SCREEN_WIDTH // 2 - 56, 16, time_str, 10 if flash_time else 7, scale=2)
+        draw_text_scaled(self.SCREEN_WIDTH // 2 - 62, 14, time_str, 10 if flash_time else 7, scale=2)
 
-        # Score (Top Right)
+        # 3. Score container (Top Right)
+        if hasattr(pyxel, "dither"):
+            pyxel.dither(0.60)
+        pyxel.rect(self.SCREEN_WIDTH - 250, 8, 240, 30, 0)
+        if hasattr(pyxel, "dither"):
+            pyxel.dither(1.0)
+        pyxel.rectb(self.SCREEN_WIDTH - 250, 8, 240, 30, 1)
+
         score_str = f"SCORE: {self.state.score:06d}"
-        draw_text_scaled(self.SCREEN_WIDTH - 240, 16, score_str, 10, scale=2)
+        draw_text_scaled(self.SCREEN_WIDTH - 240, 14, score_str, 10, scale=2)
 
         # Multiplier
         if self.state.score_multiplier > 1.05:
             mult_str = f"x{self.state.score_multiplier:.1f}"
-            draw_text_scaled(self.SCREEN_WIDTH - 120, 36, mult_str, 9, scale=2)
+            draw_text_scaled(self.SCREEN_WIDTH - 90, 42, mult_str, 9, scale=2)
+
+        # 4. Vertical Pacts List in Catholic Canonical Order (All 7 always listed)
+        pacts_box_w = 146
+        pacts_box_h = 140
+        if hasattr(pyxel, "dither"):
+            pyxel.dither(0.60)
+        pyxel.rect(10, 44, pacts_box_w, pacts_box_h, 0)
+        if hasattr(pyxel, "dither"):
+            pyxel.dither(1.0)
+        pyxel.rectb(10, 44, pacts_box_w, pacts_box_h, 1)
+
+        draw_text_scaled(16, 48, "PACTS (7)", 6, scale=2)
+        for idx, sin in enumerate(CANONICAL_SINS):
+            k = self.bargains.selection_counts.get(sin, 0)
+            row_y = 66 + idx * 16
+            sin_lbl = sin.name[:7].upper()
+            line_txt = f"{sin_lbl:<7} {k}"
+            col = 10 if k > 0 else 5
+            draw_text_scaled(16, row_y, line_txt, col, scale=2)
 
         # Minimal Status Badges when active (Full details in Dev Mode '`')
         if self.bot_mode and not self.dev_mode:
@@ -680,7 +758,7 @@ class GrainOfDoubtApp:
 
         # Wrath Zero Yield Warning
         if self.state.wrath_zero_yield_timer > 0:
-            draw_text_scaled(16, 72, "WRATH: ZERO YIELD", 8, scale=2)
+            draw_text_scaled(16, 190, "WRATH: ZERO YIELD", 8, scale=2)
 
     def draw_kairos_modal(self):
         """Draw 2-column Kairos modal navigated strictly via Left/Right arrows or A/D."""
@@ -689,8 +767,12 @@ class GrainOfDoubtApp:
         modal_w = 540
         modal_h = 680
 
-        # Modal backdrop
+        # Modal backdrop with dither alpha
+        if hasattr(pyxel, "dither"):
+            pyxel.dither(0.85)
         pyxel.rect(modal_x, modal_y, modal_w, modal_h, 0)
+        if hasattr(pyxel, "dither"):
+            pyxel.dither(1.0)
         pyxel.rectb(modal_x, modal_y, modal_w, modal_h, 8)
         pyxel.rectb(modal_x + 2, modal_y + 2, modal_w - 4, modal_h - 4, 2)
 
@@ -698,21 +780,24 @@ class GrainOfDoubtApp:
         draw_text_scaled(modal_x + 70, modal_y + 16, "KAIROS CIRCUIT BREAKER", 7, scale=2)
         draw_text_scaled(modal_x + 150, modal_y + 38, "BORROW YOUR TIME", 8, scale=2)
 
-        # 2.0s countdown timer bar
-        timer_w = 440
-        timer_x = modal_x + 50
-        timer_y = modal_y + 62
-        ratio = 1.0 - (self.state.kairos_timer / float(self.state.KAIROS_FRAMES))
-        fill_w = max(0, int(timer_w * ratio))
-        pyxel.rect(timer_x, timer_y, timer_w, 6, 1)
-        pyxel.rect(timer_x, timer_y, fill_w, 6, 9)
-
         # 2 Wide Columns matching Left and Right
-        col_w = 236
-        col_gap = 24
-        start_x = modal_x + 22
-        col_y = modal_y + 82
-        col_h = 520
+        col_w = 228
+        col_gap = 20
+        start_x = modal_x + 32
+        col_y = modal_y + 70
+        col_h = 530
+
+        # 2.0s vertical side timers draining top going down (Empty space drops from top to bottom)
+        ratio = max(0.0, min(1.0, 1.0 - (self.state.kairos_timer / float(self.state.KAIROS_FRAMES))))
+        fill_h = int(col_h * ratio)
+        drain_offset = col_h - fill_h
+        bar_col = (8 if (pyxel.frame_count // 3) % 2 == 0 else 9) if ratio < 0.30 else 10
+
+        for bar_x in [modal_x + 8, modal_x + modal_w - 20]:
+            pyxel.rect(bar_x, col_y, 12, col_h, 0)
+            if fill_h > 0:
+                pyxel.rect(bar_x, col_y + drain_offset, 12, fill_h, bar_col)
+            pyxel.rectb(bar_x, col_y, 12, col_h, 6)
 
         col_labels = ["< STEER LEFT <", "> STEER RIGHT >"]
 
@@ -776,7 +861,7 @@ class GrainOfDoubtApp:
 
         # Footer instructions
         draw_text_scaled(modal_x + 50, modal_y + modal_h - 44, "STEER LEFT OR RIGHT TO SELECT", 7, scale=2)
-        draw_text_scaled(modal_x + 90, modal_y + modal_h - 22, "AUTO-SEALS ON TIMEOUT", 6, scale=2)
+        draw_text_scaled(modal_x + 60, modal_y + modal_h - 22, "CHOOSE OR DIE: 2.0s TIME LIMIT", 8, scale=2)
 
     def draw_feedback_banner(self):
         fb = self.selected_feedback
@@ -824,47 +909,61 @@ class GrainOfDoubtApp:
         if blink:
             draw_text_scaled(60, 652, "PRESS ARROWS OR TOUCH BUTTONS TO START", 7, scale=2)
 
-        # Draw the 2 mobile buttons at bottom of title screen
-        self.draw_touch_buttons()
+        # Draw the 2 mobile buttons at bottom of title screen (mobile only)
+        if self.is_mobile:
+            self.draw_touch_buttons()
 
         if self.dev_mode:
             draw_text_scaled(self.SCREEN_WIDTH - 120, self.SCREEN_HEIGHT - 20, f"[DEV] {self.VERSION}", 11, scale=2)
 
     def draw_game_over_screen(self):
-        # Dark overlay box
-        pyxel.rect(40, 80, 520, 640, 0)
-        pyxel.rectb(40, 80, 520, 640, 8)
-        pyxel.rectb(44, 84, 512, 632, 2)
+        # Dark overlay box with dither alpha
+        if hasattr(pyxel, "dither"):
+            pyxel.dither(0.80)
+        pyxel.rect(40, 60, 520, 680, 0)
+        if hasattr(pyxel, "dither"):
+            pyxel.dither(1.0)
+        pyxel.rectb(40, 60, 520, 680, 8)
+        pyxel.rectb(44, 64, 512, 672, 2)
 
-        draw_text_scaled(186, 105, "HOURGLASS SHATTERED", 8, scale=3)
-        draw_text_scaled(260, 142, self.VERSION, 6, scale=2)
-        draw_text_scaled(210, 164, "BY ARIAN PRABOWO", 6, scale=2)
+        draw_text_scaled(186, 75, "HOURGLASS SHATTERED", 8, scale=3)
+        draw_text_scaled(260, 108, self.VERSION, 6, scale=2)
+        draw_text_scaled(210, 128, "BY ARIAN PRABOWO", 6, scale=2)
 
         reason = self.state.death_reason or "Consumed by the Void"
-        draw_text_scaled(70, 192, reason[:36], 7, scale=2)
+        draw_text_scaled(70, 150, reason[:36], 7, scale=2)
 
-        # Inner stats container
-        pyxel.rect(60, 225, 480, 280, 1)
-        pyxel.rectb(60, 225, 480, 280, 5)
+        # Inner stats container with dither alpha
+        if hasattr(pyxel, "dither"):
+            pyxel.dither(0.65)
+        pyxel.rect(60, 175, 480, 420, 1)
+        if hasattr(pyxel, "dither"):
+            pyxel.dither(1.0)
+        pyxel.rectb(60, 175, 480, 420, 5)
 
         time_survived = self.state.total_frames / 30.0
-        draw_text_scaled(80, 245, f"TIME SURVIVED : {time_survived:6.1f} SECONDS", 10, scale=2)
-        draw_text_scaled(80, 290, f"FINAL SCORE   : {self.state.score:6d}", 10, scale=2)
-        draw_text_scaled(80, 335, f"SAND REAPED   : {self.state.total_sand_collected:6d}", 9, scale=2)
-        draw_text_scaled(80, 380, f"SHARDS EVADED : {self.state.total_shards_dodged:6d}", 6, scale=2)
-        draw_text_scaled(80, 425, f"PACTS SEALED  : {len(self.bargains.history):6d}", 8, scale=2)
+        draw_text_scaled(80, 190, f"TIME SURVIVED : {time_survived:6.1f} SECONDS", 10, scale=2)
+        draw_text_scaled(80, 218, f"FINAL SCORE   : {self.state.score:6d}", 10, scale=2)
+        draw_text_scaled(80, 246, f"SAND REAPED   : {self.state.total_sand_collected:6d}", 9, scale=2)
+        draw_text_scaled(80, 274, f"SHARDS EVADED : {self.state.total_shards_dodged:6d}", 6, scale=2)
+        draw_text_scaled(80, 302, f"PACTS SEALED  : {len(self.bargains.history):6d}", 8, scale=2)
 
-        # Draw active pact list
-        pact_summary = [f"{sin.name} k={k}" for sin, k in self.bargains.selection_counts.items() if k > 0]
-        if pact_summary:
-            pact_txt = "ACTIVE PACTS  : " + " | ".join(pact_summary)
-            draw_text_scaled(80, 470, pact_txt[:38], 10, scale=2)
+        # Draw all 7 canonical sins vertically
+        draw_text_scaled(80, 332, "PACT SUMMARY (CANONICAL ORDER):", 9, scale=2)
+        for idx, sin in enumerate(CANONICAL_SINS):
+            k = self.bargains.selection_counts.get(sin, 0)
+            col = 10 if k > 0 else 5
+            row_y = 356 + idx * 20
+            draw_text_scaled(100, row_y, f"{idx+1}. {sin.name.upper():<9} : LEVEL k={k}", col, scale=2)
+
+        # 2-Second Debounce prompt
+        if self.game_over_timer < 60:
+            rem = (60 - self.game_over_timer + 29) // 30
+            draw_text_scaled(150, 620, f"MOURN THY LOSS ({rem}s)...", 8, scale=2)
         else:
-            draw_text_scaled(80, 470, "ACTIVE PACTS  : NONE", 5, scale=2)
-
-        blink = (pyxel.frame_count // 10) % 2 == 0
-        if blink:
-            draw_text_scaled(100, 580, "PRESS ANY KEY OR TAP TO RESTART", 7, scale=2)
+            blink = (pyxel.frame_count // 10) % 2 == 0
+            if blink:
+                draw_text_scaled(100, 620, "PRESS ANY KEY OR TAP TO RESTART", 7, scale=2)
 
         if self.dev_mode:
             draw_text_scaled(self.SCREEN_WIDTH - 120, self.SCREEN_HEIGHT - 20, f"[DEV] {self.VERSION}", 11, scale=2)
@@ -877,33 +976,25 @@ class GrainOfDoubtApp:
 
         # Left Button [x=30, y=690, w=250, h=75]
         lx = 30
-        if self.touch_left:
-            # Pressed feedback: illuminated fill with gold border
-            pyxel.rect(lx, btn_y, btn_w, btn_h, 5)
-            pyxel.rectb(lx, btn_y, btn_w, btn_h, 10)
-            pyxel.rectb(lx + 2, btn_y + 2, btn_w - 4, btn_h - 4, 7)
-            draw_text_scaled(lx + 70, btn_y + 24, "< LEFT", 10, scale=3)
-        else:
-            # Unpressed: dark translucent box with cyan border
-            pyxel.rect(lx, btn_y, btn_w, btn_h, 0)
-            pyxel.rectb(lx, btn_y, btn_w, btn_h, 6)
-            pyxel.rectb(lx + 2, btn_y + 2, btn_w - 4, btn_h - 4, 1)
-            draw_text_scaled(lx + 70, btn_y + 24, "< LEFT", 7, scale=3)
+        if hasattr(pyxel, "dither"):
+            pyxel.dither(0.60 if self.touch_left else 0.30)
+        pyxel.rect(lx, btn_y, btn_w, btn_h, 5 if self.touch_left else 1)
+        if hasattr(pyxel, "dither"):
+            pyxel.dither(1.0)
+        pyxel.rectb(lx, btn_y, btn_w, btn_h, 10 if self.touch_left else 6)
+        pyxel.rectb(lx + 2, btn_y + 2, btn_w - 4, btn_h - 4, 7 if self.touch_left else 1)
+        draw_text_scaled(lx + 70, btn_y + 24, "< LEFT", 10 if self.touch_left else 7, scale=3)
 
         # Right Button [x=320, y=690, w=250, h=75]
         rx = 320
-        if self.touch_right:
-            # Pressed feedback: illuminated fill with gold border
-            pyxel.rect(rx, btn_y, btn_w, btn_h, 5)
-            pyxel.rectb(rx, btn_y, btn_w, btn_h, 10)
-            pyxel.rectb(rx + 2, btn_y + 2, btn_w - 4, btn_h - 4, 7)
-            draw_text_scaled(rx + 65, btn_y + 24, "RIGHT >", 10, scale=3)
-        else:
-            # Unpressed: dark translucent box with cyan border
-            pyxel.rect(rx, btn_y, btn_w, btn_h, 0)
-            pyxel.rectb(rx, btn_y, btn_w, btn_h, 6)
-            pyxel.rectb(rx + 2, btn_y + 2, btn_w - 4, btn_h - 4, 1)
-            draw_text_scaled(rx + 65, btn_y + 24, "RIGHT >", 7, scale=3)
+        if hasattr(pyxel, "dither"):
+            pyxel.dither(0.60 if self.touch_right else 0.30)
+        pyxel.rect(rx, btn_y, btn_w, btn_h, 5 if self.touch_right else 1)
+        if hasattr(pyxel, "dither"):
+            pyxel.dither(1.0)
+        pyxel.rectb(rx, btn_y, btn_w, btn_h, 10 if self.touch_right else 6)
+        pyxel.rectb(rx + 2, btn_y + 2, btn_w - 4, btn_h - 4, 7 if self.touch_right else 1)
+        draw_text_scaled(rx + 65, btn_y + 24, "RIGHT >", 10 if self.touch_right else 7, scale=3)
 
     def draw_dev_overlay(self):
         """Render developer debug overlay at bottom of screen with alpha transparency."""
@@ -928,7 +1019,7 @@ class GrainOfDoubtApp:
         draw_text_scaled(box_x + 12, box_y + 8, f"[DEV MODE] (` close) {self.VERSION} | BOT:{bot_str} | REC:{rec_str}", 11, scale=2)
 
         # Line 2: Number keys 1-7 for fixed pacts
-        draw_text_scaled(box_x + 12, box_y + 36, "PACTS: 1:GLUT 2:PRIDE 3:GREED 4:WRATH 5:SLOTH 6:ENVY 7:LUST", 10, scale=2)
+        draw_text_scaled(box_x + 12, box_y + 36, "PACTS: 1:PRIDE 2:GREED 3:LUST 4:ENVY 5:GLUT 6:WRATH 7:SLOTH", 10, scale=2)
 
         # Line 3: Player and Camera telemetry
         px = self.entities.player.x
@@ -952,6 +1043,7 @@ class GrainOfDoubtApp:
 def main():
     bot_flag = "--bot" in sys.argv
     video_flag = ("--video" in sys.argv or "--record" in sys.argv or "--export-video" in sys.argv)
+    mobile_flag = "--mobile" in sys.argv
     video_file = "borrowed_time_bot.mp4"
     for i, arg in enumerate(sys.argv):
         if arg in ["--video", "--record", "--export-video"] and i + 1 < len(sys.argv) and not sys.argv[i + 1].startswith("-"):
@@ -967,6 +1059,7 @@ def main():
         bot_mode=bot_flag,
         record_video=video_flag,
         video_filename=video_file,
+        mobile_mode=mobile_flag,
     )
 
 

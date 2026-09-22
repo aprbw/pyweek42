@@ -1,9 +1,10 @@
 # Grain of Doubt
 
 > **By Arian Prabowo**  
+> **Version:** v0.6.0  
 > **PyWeek 42 Entry ("Borrowed Time")** — September 2026  
 > An endless retro downhill falling-hourglass arcade runner built with the **Pyxel** retro game engine.  
-> **Target Resolution:** $600 \times 800$ pixels ($3:4$ Portrait Aspect Ratio).
+> **Target Resolution:** $600 \times 800$ pixels ($3:4$ Portrait Aspect Ratio, Infinite Horizontal Arena).
 
 **PLAY! https://aprbw.github.io/pyweek42/index.html**
 
@@ -19,9 +20,9 @@ You control a fragile hourglass falling through the neck of an infinite, crumbli
 Steer left or right to avoid razor-sharp falling glass shards while collecting glistening golden grains of sand.
 
 ### Chronos vs. Kairos (The Dual-Clock Engine)
-* **Chronos (8.0s descent):** Relentless kinetic tension. Steer left or right to dodge oncoming glass shards while reaping cascading sand motes.
-* **Kairos (2.0s circuit breaker):** Every 8 seconds, normal time freezes. You are presented with **2 Faustian Bargain cards** drawn from the Seven Deadly Sins. You cannot skip—steer left or right to seal your pact.
-* **Faustian Bargains:** Every bargain grants an immediate survival boon at the cost of a permanent curse. Repeatedly choosing the same sin compounds the curse.
+* **Chronos (8.0s descent):** Relentless kinetic tension. Steer left or right across an infinitely wide horizontal arena ($\pm 4.5$ screen procedural generation horizon) to dodge oncoming glass shards while reaping cascading sand motes.
+* **Kairos (2.0s circuit breaker):** Every 8 seconds, normal time freezes. You are presented with **2 Faustian Bargain cards** drawn from the Seven Deadly Sins. You must choose within 2.0 seconds—if you hesitate, doubt shatters your vessel (*Paralyzed by Doubt: Kairos Expired*). A vertical side timer drains from top to bottom.
+* **Faustian Bargains:** Every bargain grants an immediate survival boon at the cost of a permanent curse. Repeatedly choosing sins compounds their effects.
 
 ---
 
@@ -30,10 +31,11 @@ Steer left or right to avoid razor-sharp falling glass shards while collecting g
 | Control | Action | Mechanic |
 | :--- | :--- | :--- |
 | `A` / `D` or `Left` / `Right` | Lateral Steering | Steer hourglass horizontally ($\mu_x = 0.82$ viscous damping) |
-| Touch `< LEFT` / `RIGHT >` | Mobile Touch Steering | On-screen arcade buttons or tap bottom half of screen on mobile browser |
-| `Left` / `Right` or Tap Card | Select Faustian Bargain | Steer left or right during Kairos to choose between the 2 bargain cards |
-| `Space` / `Enter` or Tap Screen | Start / Restart | Start game or restart following fatal hourglass shatter |
-| `~` / `` ` `` (Backtick) | Dev Mode Overlay | Toggle developer telemetry overlay (version, bot status, speeds, entity counts) |
+| Touch `< LEFT` / `RIGHT >` | Mobile Touch Steering | Semi-transparent on-screen buttons (visible on mobile only) or bottom screen tap |
+| `Left` / `Right` or Tap Card | Select Faustian Bargain | Steer left or right during Kairos to choose between the 2 bargain cards within 2.0s |
+| `Space` / `Enter` or Tap Screen | Start / Restart | Start game or restart after a 2.0s post-mortem lockout (debounced) |
+| `~` / `` ` `` (Backtick) | Dev Mode Overlay | Toggle developer telemetry overlay (hidden on title screen unless active) |
+| `1` - `7` (in Dev Mode) | Fixed Faustian Pact | Instant-apply sin pact in canonical order (1:Pride .. 7:Sloth) |
 | `B` | Playtest Bot | Toggle autonomous GOFAI kinematic playtesting bot |
 | `V` | Video Recording | Toggle MP4 video capture to disk |
 | `Q` | Quit | Exit game |
@@ -42,27 +44,29 @@ Steer left or right to avoid razor-sharp falling glass shards while collecting g
 
 ## 📜 The Seven Deadly Sins (Faustian Bargains)
 
-1. **Gluttony:**
-   * *Boon:* Accelerates sand grain generation rate.
-   * *Curse:* Multiplies hazard glass shard density.
-2. **Pride:**
-   * *Boon:* Doubles score multiplier (2x points on all collections and dodges).
+*Presented in Gregorian / Catholic Canonical Order:*
+
+1. **Pride:**
+   * *Boon:* Spawns golden sand in clusters (pairs on 1st pact, triplets on 2nd, quadruplets on 3rd; 1 sand = 1 point).
    * *Curse:* Increases descent velocity.
-3. **Greed:**
+2. **Greed:**
    * *Boon:* Converts all accrued sand collections and shard dodges into an instant score bounty.
    * *Curse:* Triggers Borrowed Time for 10 to 18 seconds (escalated speed, halved vision, blood crimson void).
-4. **Wrath:**
-   * *Boon:* Purges all active hazards from the screen.
-   * *Curse:* Enforces zero-yield state (no sand points) for 10 seconds.
-5. **Sloth:**
-   * *Boon:* Decelerates vertical hazard velocity to ease reaction.
-   * *Curse:* Imposes permanent lateral drag on player movement.
-6. **Envy:**
-   * *Boon:* Retroactively reclaims all bypassed sand motes for bonus points.
-   * *Curse:* Establishes a permanent sand repulsion field around the hourglass.
-7. **Lust:**
+3. **Lust:**
    * *Boon:* Activates magnetic attraction field pulling in golden sand.
    * *Curse:* Establishes magnetic attraction field pulling in glass shards.
+4. **Envy:**
+   * *Boon:* Retroactively reclaims all bypassed sand motes for bonus points.
+   * *Curse:* Establishes a permanent sand repulsion field around the hourglass.
+5. **Gluttony:**
+   * *Boon:* Accelerates sand grain generation rate.
+   * *Curse:* Multiplies hazard glass shard density.
+6. **Wrath:**
+   * *Boon:* Purges all active hazards from the screen.
+   * *Curse:* Enforces zero-yield state (no sand points) for 10 seconds.
+7. **Sloth:**
+   * *Boon:* Decelerates vertical hazard velocity to ease reaction.
+   * *Curse:* Imposes permanent lateral drag on player movement.
 
 ---
 

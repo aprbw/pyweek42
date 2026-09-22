@@ -97,7 +97,7 @@ def test_kairos_timing_gate():
     assert state.scroll_speed > 0.0
     assert state.chronos_timer == 0
 
-    # Test timeout transition (if no input for 60 frames / 2.0s)
+    # Test timeout transition (if no input for 60 frames / 2.0s -> Instant Death)
     state.trigger_kairos()
     assert state.current_state == GameState.KAIROS
     for _ in range(59):
@@ -105,10 +105,10 @@ def test_kairos_timing_gate():
         assert state.current_state == GameState.KAIROS
         assert state.scroll_speed == 0.0
 
-    # 60th frame of Kairos triggers timeout back to Chronos
+    # 60th frame of Kairos triggers instant death (Paralyzed by Doubt)
     state.update_timers()
-    assert state.current_state == GameState.CHRONOS
-    assert state.scroll_speed > 0.0
+    assert state.current_state == GameState.GAMEOVER
+    assert "Paralyzed by Doubt" in state.death_reason
 
 
 # ---------------------------------------------------------------------------
@@ -156,9 +156,11 @@ def test_greed_borrowed_time_mechanics_gate():
     assert state.speed_multiplier > initial_spd      # Borrowed time pace escalation
     assert state.spawn_rate_multiplier > initial_spawn
 
-    # Verify NO sudden death kill timer: advancing 1000 frames does NOT kill the player
+    # Verify NO sudden death kill timer from Greed: advancing 1000 frames in Chronos does NOT kill the player
     for _ in range(1000):
         state.update_timers()
+        if state.current_state == GameState.KAIROS:
+            state.resume_chronos()
         assert state.current_state != GameState.GAMEOVER, "Greed must not arbitrarily terminate game via kill timer!"
 
 
@@ -392,13 +394,15 @@ def test_pride_sand_clusters_and_one_point_per_sand():
     entities = EntityManager(screen_w=600, screen_h=800)
     bargains = BargainManager()
 
+    # Calibrated single-wave spawn rate matching the expanded 4.5 screens (6000px) span
+    single_wave_rate = 880.0 / (entities.screen_w + 2.0 * 2700.0) / 0.45
+
     # Initially pride_level is 0 -> spawn 1 sand grain per wave
     random.seed(42)
-    entities.spawn_accumulator = 1.0
-    # Force sand spawn
+    entities.spawn_accumulator = 0.0
     with pytest.MonkeyPatch().context() as mp:
         mp.setattr(random, "random", lambda: 0.1)  # Force sand
-        entities.spawn_wave(1.0, wrath_active=False, camera_x=0.0, pride_level=state.pride_level)
+        entities.spawn_wave(single_wave_rate, wrath_active=False, camera_x=0.0, pride_level=state.pride_level)
     assert len(entities.sands) == 1
 
     # Apply 1st Pride -> pride_level becomes 1 (Pairs)
@@ -406,10 +410,10 @@ def test_pride_sand_clusters_and_one_point_per_sand():
     assert state.pride_level == 1
 
     entities.sands.clear()
-    entities.spawn_accumulator = 1.0
+    entities.spawn_accumulator = 0.0
     with pytest.MonkeyPatch().context() as mp:
         mp.setattr(random, "random", lambda: 0.1)  # Force sand
-        entities.spawn_wave(1.0, wrath_active=False, camera_x=0.0, pride_level=state.pride_level)
+        entities.spawn_wave(single_wave_rate, wrath_active=False, camera_x=0.0, pride_level=state.pride_level)
     # Group size must be 2 (pair)
     assert len(entities.sands) == 2
     s1, s2 = entities.sands[0], entities.sands[1]
@@ -425,16 +429,16 @@ def test_pride_sand_clusters_and_one_point_per_sand():
     assert state.pride_level == 2
 
     entities.sands.clear()
-    entities.spawn_accumulator = 1.0
+    entities.spawn_accumulator = 0.0
     with pytest.MonkeyPatch().context() as mp:
         mp.setattr(random, "random", lambda: 0.1)  # Force sand
-        entities.spawn_wave(1.0, wrath_active=False, camera_x=0.0, pride_level=state.pride_level)
+        entities.spawn_wave(single_wave_rate, wrath_active=False, camera_x=0.0, pride_level=state.pride_level)
     # Group size must be 3 (triplet)
     assert len(entities.sands) == 3
 
 
 def test_dev_mode_fixed_pacts_and_title_screen_shortcut():
-    """Verify dev mode keys 1-7 apply fixed pacts and title screen hides dev shortcut unless active."""
+    """Verify dev mode keys 1-7 apply fixed pacts in canonical Catholic order."""
     from main import GrainOfDoubtApp
     import pyxel
 
@@ -443,28 +447,95 @@ def test_dev_mode_fixed_pacts_and_title_screen_shortcut():
 
     # Dev mode is OFF initially
     assert not app.dev_mode
-    # Test dev mode toggle with backtick
     orig_btnp = pyxel.btnp
     try:
         pyxel.btnp = lambda k: (k == pyxel.KEY_BACKQUOTE)
         app.update()
         assert app.dev_mode is True
 
-        # When dev mode is active, test key 2 applies PRIDE
+        # In canonical order: key 1 applies PRIDE
         initial_pride = app.state.pride_level
-        pyxel.btnp = lambda k: (k == pyxel.KEY_2)
+        pyxel.btnp = lambda k: (k == pyxel.KEY_1)
         app.update()
         assert app.state.pride_level == initial_pride + 1
         assert app.selected_feedback is not None
         assert app.selected_feedback["sin"] == "Pride"
 
-        # Test key 4 applies WRATH
-        pyxel.btnp = lambda k: (k == pyxel.KEY_4)
+        # Key 6 applies WRATH
+        pyxel.btnp = lambda k: (k == pyxel.KEY_6)
         app.update()
         assert app.state.wrath_wipe_timer > 0
         assert app.selected_feedback["sin"] == "Wrath"
     finally:
         pyxel.btnp = orig_btnp
+
+
+def test_canonical_sins_order_and_vertical_list():
+    """Assert the 7 deadly sins adhere strictly to Catholic Gregorian canonical order (SALIGIA)."""
+    from main import CANONICAL_SINS
+
+    expected = [
+        SinType.PRIDE,
+        SinType.GREED,
+        SinType.LUST,
+        SinType.ENVY,
+        SinType.GLUTTONY,
+        SinType.WRATH,
+        SinType.SLOTH,
+    ]
+    assert CANONICAL_SINS == expected
+    assert len(CANONICAL_SINS) == 7
+
+
+def test_game_over_2s_debounce_lockout():
+    """Verify Game Over enforces 2.0s (60 frames) lockout before allowing restart."""
+    from main import GrainOfDoubtApp
+    import pyxel
+
+    app = GrainOfDoubtApp(headless=True)
+    app.start_new_game()
+
+    # Force Game Over
+    app.state.trigger_game_over("Test Hourglass Shattered")
+    assert app.state.current_state == GameState.GAMEOVER
+    assert app.game_over_timer == 0
+
+    orig_btnp = pyxel.btnp
+    try:
+        # Even if user presses restart key immediately (frame 1..59), ignore input!
+        pyxel.btnp = lambda k: True
+        for frame in range(1, 60):
+            app.update()
+            assert app.game_over_timer == frame
+            assert app.state.current_state == GameState.GAMEOVER, "Must lock out restart input during 2s debounce!"
+
+        # Frame 60 reached, input now unlocks and triggers restart
+        app.update()
+        assert app.state.current_state == GameState.CHRONOS
+        assert app.game_over_timer == 0
+    finally:
+        pyxel.btnp = orig_btnp
+
+
+def test_infinite_arena_4_point_5_screens_spawn_margin():
+    """Verify procedural wave generator produces items across 4.5 screens (+-2700px) margin."""
+    entities = EntityManager(screen_w=600, screen_h=800)
+    entities.reset()
+
+    # Spawn wave at camera_x = 1000
+    camera_x = 1000.0
+    entities.spawn_wave(spawn_rate_mult=10.0, wrath_active=False, camera_x=camera_x)
+
+    all_xs = [s.x for s in entities.sands] + [sh.x for sh in entities.shards]
+    assert len(all_xs) > 0
+
+    # Minimum and maximum possible bounds: [1000 - 2700, 1000 + 600 + 2700] = [-1700, 4300]
+    for x in all_xs:
+        assert (camera_x - 2750.0) <= x <= (camera_x + 600.0 + 2750.0)
+
+    # Over multiple spawns, verify broad distribution beyond former 140px limits
+    spanned_outside_140 = any(abs(x - (camera_x + 300.0)) > 600.0 for x in all_xs)
+    assert spanned_outside_140, "Entities must populate the wide +-2700px horizon!"
 
 
 

@@ -164,5 +164,5 @@ class StateManager:
         elif self.current_state == GameState.KAIROS:
             self.kairos_timer += 1
             if self.kairos_timer >= self.KAIROS_FRAMES:
-                # Default timeout: no boon, resume Chronos
-                self.resume_chronos()
+                # 2.0s expired without sealing a bargain: Hourglass shatters!
+                self.trigger_game_over("Paralyzed by Doubt: Kairos Expired")
