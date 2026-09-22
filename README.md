@@ -1,7 +1,7 @@
 # Grain of Doubt
 
 > **By Arian Prabowo**  
-> **Version:** v1.0.0  
+> **Version:** v0.10.0  
 > **PyWeek 42 Entry ("Borrowed Time")** — September 2026  
 > An endless retro downhill falling-hourglass arcade runner built with the **Pyxel** retro game engine.  
 > **Target Resolution:** $600 \times 800$ pixels ($3:4$ Portrait Aspect Ratio, Infinite Horizontal Arena).
@@ -155,7 +155,7 @@ python3 -m http.server 8000
 
 ## 📝 Changelog
 
-### v1.0.0 (September 2026)
+### v0.10.0 (September 2026)
 * **X Key Dual-Behaviour:**
   * On **Title Screen**: `X` quits the game (no-op in browser).
   * **During Gameplay** (Chronos / Kairos / Game Over): `X` returns to the Title menu without quitting.
