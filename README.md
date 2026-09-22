@@ -5,6 +5,8 @@
 > An endless retro downhill falling-hourglass arcade runner built with the **Pyxel** retro game engine.  
 > **Target Resolution:** $600 \times 800$ pixels ($3:4$ Portrait Aspect Ratio).
 
+**PLAY! https://aprbw.github.io/pyweek42/index.html**
+
 [![Pyxel](https://img.shields.io/badge/Engine-Pyxel%202.9.9-blue)](https://github.com/kitao/pyxel)
 [![Python](https://img.shields.io/badge/Python-3.12-brightgreen)](https://www.python.org/)
 [![Status](https://img.shields.io/badge/Tests-Passing-success)](#automated-validation-gates)
