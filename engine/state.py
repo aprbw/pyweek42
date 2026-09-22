@@ -45,6 +45,7 @@ class StateManager:
         self.total_shards_dodged: int = 0
         self.greed_active: bool = False
         self.greed_level: int = 0
+        self.pride_level: int = 0
 
         # Wrath zero-yield timer
         self.wrath_wipe_timer: int = 0
@@ -118,7 +119,7 @@ class StateManager:
             self.trigger_game_over("Hourglass Shattered by Hazard")
         return True
 
-    def add_score(self, base_points: int = 100):
+    def add_score(self, base_points: int = 1):
         if self.wrath_zero_yield_timer > 0:
             return
         points = int(base_points * self.score_multiplier)

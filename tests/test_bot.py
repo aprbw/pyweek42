@@ -135,7 +135,7 @@ def test_bot_deterministic_sand_collection():
             break
 
     assert collected, "Bot failed to steer and collect isolated sand grain!"
-    assert state.score >= 100
+    assert state.score >= 1  # 1 sand is 1 point!
 
 
 def test_bot_bargain_policy_never_greed():

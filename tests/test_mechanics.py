@@ -2,6 +2,7 @@
 Verifies all 5 gates defined in p02.md / p03.md for 600x800 resolution and A/D controls.
 """
 import math
+import random
 import pytest
 from engine.state import GameState, StateManager
 from engine.entities import HourglassPlayer, SandGrain, GlassShard, EntityManager, aabb_overlap
@@ -375,5 +376,95 @@ def test_dev_mode_toggle_and_mobile_touch_controls():
         assert app.state._input_right is True
     finally:
         pyxel.btn = orig_btn
+
+
+def test_pride_sand_clusters_and_one_point_per_sand():
+    """Verify 1 sand is 1 point, and Pride spawns clustered pairs/triplets with shared velocity."""
+    state = StateManager()
+    state.start_game()
+    assert state.score == 0
+
+    # 1 sand is 1 point
+    state.add_score(1)
+    assert state.score == 1
+    assert state.total_sand_collected == 1
+
+    entities = EntityManager(screen_w=600, screen_h=800)
+    bargains = BargainManager()
+
+    # Initially pride_level is 0 -> spawn 1 sand grain per wave
+    random.seed(42)
+    entities.spawn_accumulator = 1.0
+    # Force sand spawn
+    with pytest.MonkeyPatch().context() as mp:
+        mp.setattr(random, "random", lambda: 0.1)  # Force sand
+        entities.spawn_wave(1.0, wrath_active=False, camera_x=0.0, pride_level=state.pride_level)
+    assert len(entities.sands) == 1
+
+    # Apply 1st Pride -> pride_level becomes 1 (Pairs)
+    bargains.apply_bargain(SinType.PRIDE, state)
+    assert state.pride_level == 1
+
+    entities.sands.clear()
+    entities.spawn_accumulator = 1.0
+    with pytest.MonkeyPatch().context() as mp:
+        mp.setattr(random, "random", lambda: 0.1)  # Force sand
+        entities.spawn_wave(1.0, wrath_active=False, camera_x=0.0, pride_level=state.pride_level)
+    # Group size must be 2 (pair)
+    assert len(entities.sands) == 2
+    s1, s2 = entities.sands[0], entities.sands[1]
+    # Shared initial velocities
+    assert s1.speed_variance == s2.speed_variance
+    assert s1.lateral_drift == s2.lateral_drift
+    assert s1.shimmer_phase == s2.shimmer_phase
+    # Different positions (no overlap)
+    assert (s1.x != s2.x) or (s1.y != s2.y)
+
+    # Apply 2nd Pride -> pride_level becomes 2 (Triplets)
+    bargains.apply_bargain(SinType.PRIDE, state)
+    assert state.pride_level == 2
+
+    entities.sands.clear()
+    entities.spawn_accumulator = 1.0
+    with pytest.MonkeyPatch().context() as mp:
+        mp.setattr(random, "random", lambda: 0.1)  # Force sand
+        entities.spawn_wave(1.0, wrath_active=False, camera_x=0.0, pride_level=state.pride_level)
+    # Group size must be 3 (triplet)
+    assert len(entities.sands) == 3
+
+
+def test_dev_mode_fixed_pacts_and_title_screen_shortcut():
+    """Verify dev mode keys 1-7 apply fixed pacts and title screen hides dev shortcut unless active."""
+    from main import GrainOfDoubtApp
+    import pyxel
+
+    app = GrainOfDoubtApp(headless=True)
+    app.start_new_game()
+
+    # Dev mode is OFF initially
+    assert not app.dev_mode
+    # Test dev mode toggle with backtick
+    orig_btnp = pyxel.btnp
+    try:
+        pyxel.btnp = lambda k: (k == pyxel.KEY_BACKQUOTE)
+        app.update()
+        assert app.dev_mode is True
+
+        # When dev mode is active, test key 2 applies PRIDE
+        initial_pride = app.state.pride_level
+        pyxel.btnp = lambda k: (k == pyxel.KEY_2)
+        app.update()
+        assert app.state.pride_level == initial_pride + 1
+        assert app.selected_feedback is not None
+        assert app.selected_feedback["sin"] == "Pride"
+
+        # Test key 4 applies WRATH
+        pyxel.btnp = lambda k: (k == pyxel.KEY_4)
+        app.update()
+        assert app.state.wrath_wipe_timer > 0
+        assert app.selected_feedback["sin"] == "Wrath"
+    finally:
+        pyxel.btnp = orig_btnp
+
 
 

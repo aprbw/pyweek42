@@ -53,11 +53,11 @@ BARGAIN_REGISTRY: Dict[SinType, BargainDefinition] = {
         sin=SinType.PRIDE,
         name="Pride",
         latin_name="Superbia",
-        boon_name="Score Mult",
+        boon_name="Sand Clusters",
         curse_name="Descent Speed",
         boon_base=2.0,
         curse_base=2.0,
-        boon_unit="x",
+        boon_unit="cluster",
         curse_unit="x",
     ),
     SinType.GREED: BargainDefinition(
@@ -159,15 +159,15 @@ class BargainManager:
             state.spawn_rate_multiplier += (boon_val * 0.4)
 
         elif sin == SinType.PRIDE:
-            # Score multiplier vs Speed multiplier
-            state.score_multiplier += (boon_val * 0.5)
+            # Sand Cluster increment (pair, triplet...) vs Speed multiplier
+            state.pride_level += 1
             state.speed_multiplier += (curse_val * 0.25)
             state.update_effective_scroll_speed()
 
         elif sin == SinType.GREED:
-            # Accrued entities multiplier added to score
+            # Accrued entities multiplier added to score (1 sand = 1 pt)
             accrued = state.total_sand_collected + state.total_shards_dodged
-            harvest_score = int(accrued * boon_val * 10)
+            harvest_score = int(accrued * boon_val)
             state.score += harvest_score
 
             # Greed Borrowed Time: No sudden-death instant kill timer!
@@ -202,7 +202,7 @@ class BargainManager:
             # Retroactively claim bypassed sand
             if entities_manager:
                 reclaimed = entities_manager.reclaim_bypassed_sand()
-                points = int(reclaimed * 100 * (boon_val / 100.0) * state.score_multiplier)
+                points = int(reclaimed * 1 * (boon_val / 100.0) * state.score_multiplier)
                 state.score += points
             # Permanent sand repulsion field
             state.envy_repel_radius = max(state.envy_repel_radius, curse_val)

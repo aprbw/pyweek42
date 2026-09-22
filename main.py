@@ -110,7 +110,7 @@ def draw_text_scaled(x: int, y: int, s: str, col: int, scale: int = 1, img_bank:
 
 
 class GrainOfDoubtApp:
-    VERSION: str = "v0.4.0"
+    VERSION: str = "v0.5.0"
     SCREEN_WIDTH: int = 600
     SCREEN_HEIGHT: int = 800
 
@@ -215,6 +215,25 @@ class GrainOfDoubtApp:
         # Toggle Video Recording with 'V' key
         if pyxel.btnp(pyxel.KEY_V):
             self.video_recorder.toggle(pyxel)
+
+        # In Dev Mode: Number keys 1 to 7 apply fixed pacts directly
+        if self.dev_mode:
+            pact_keys = [
+                (pyxel.KEY_1, SinType.GLUTTONY),
+                (pyxel.KEY_2, SinType.PRIDE),
+                (pyxel.KEY_3, SinType.GREED),
+                (pyxel.KEY_4, SinType.WRATH),
+                (pyxel.KEY_5, SinType.SLOTH),
+                (pyxel.KEY_6, SinType.ENVY),
+                (pyxel.KEY_7, SinType.LUST),
+            ]
+            for key, sin in pact_keys:
+                if pyxel.btnp(key):
+                    fb = self.bargains.apply_bargain(sin, self.state, self.entities)
+                    self.selected_feedback = fb
+                    self.feedback_timer = 90
+                    if self.state.current_state == GameState.KAIROS:
+                        self.state.resume_chronos()
 
         # Enforce speed handicap in physics when bot is active
         self.state._bot_speed_handicap = self.bot.config.speed_handicap if self.bot_mode else 1.0
@@ -615,14 +634,14 @@ class GrainOfDoubtApp:
         if active_pacts:
             pact_items = [f"{sin.name} k={k}" for sin, k in active_pacts]
             pact_text = "PACTS: " + " | ".join(pact_items)
-            pact_w = min(360, len(pact_text) * 4 + 14)
-            pyxel.rect(14, 44, pact_w, 18, 0)
-            pyxel.rectb(14, 44, pact_w, 18, 10 if (pyxel.frame_count // 10) % 2 == 0 else 9)
-            draw_text_scaled(18, 49, pact_text, 10, scale=1)
+            pact_w = min(480, len(pact_text) * 8 + 16)
+            pyxel.rect(14, 44, pact_w, 22, 0)
+            pyxel.rectb(14, 44, pact_w, 22, 10 if (pyxel.frame_count // 10) % 2 == 0 else 9)
+            draw_text_scaled(18, 48, pact_text, 10, scale=2)
         else:
-            pyxel.rect(14, 44, 160, 18, 0)
-            pyxel.rectb(14, 44, 160, 18, 1)
-            draw_text_scaled(18, 49, "PACTS: NONE (0 ACTIVE)", 5, scale=1)
+            pyxel.rect(14, 44, 150, 22, 0)
+            pyxel.rectb(14, 44, 150, 22, 1)
+            draw_text_scaled(18, 48, "PACTS: NONE", 5, scale=2)
 
         # Elapsed Time (Top Center)
         elapsed_sec = self.state.total_frames / 30.0
@@ -641,16 +660,16 @@ class GrainOfDoubtApp:
 
         # Minimal Status Badges when active (Full details in Dev Mode '`')
         if self.bot_mode and not self.dev_mode:
-            pyxel.rect(self.SCREEN_WIDTH - 90, 42, 80, 16, 0)
-            pyxel.rectb(self.SCREEN_WIDTH - 90, 42, 80, 16, 11)
-            draw_text_scaled(self.SCREEN_WIDTH - 84, 46, "[BOT ON]", 11, scale=1)
+            pyxel.rect(self.SCREEN_WIDTH - 110, 42, 100, 20, 0)
+            pyxel.rectb(self.SCREEN_WIDTH - 110, 42, 100, 20, 11)
+            draw_text_scaled(self.SCREEN_WIDTH - 105, 46, "[BOT ON]", 11, scale=2)
 
         if self.video_recorder.is_recording and not self.dev_mode:
             rec_secs = self.video_recorder.frames_recorded // 30
             flash = (pyxel.frame_count // 6) % 2 == 0
-            pyxel.rect(self.SCREEN_WIDTH - 90, 62, 80, 16, 0)
-            pyxel.rectb(self.SCREEN_WIDTH - 90, 62, 80, 16, 8)
-            draw_text_scaled(self.SCREEN_WIDTH - 84, 66, f"REC {rec_secs:02d}s", 8 if flash else 7, scale=1)
+            pyxel.rect(self.SCREEN_WIDTH - 110, 66, 100, 20, 0)
+            pyxel.rectb(self.SCREEN_WIDTH - 110, 66, 100, 20, 8)
+            draw_text_scaled(self.SCREEN_WIDTH - 105, 70, f"REC {rec_secs:02d}s", 8 if flash else 7, scale=2)
 
         # Greed Borrowed Time Warning Indicator
         if self.state.greed_active:
@@ -661,7 +680,7 @@ class GrainOfDoubtApp:
 
         # Wrath Zero Yield Warning
         if self.state.wrath_zero_yield_timer > 0:
-            draw_text_scaled(16, 70, "WRATH: ZERO YIELD", 2, scale=2)
+            draw_text_scaled(16, 72, "WRATH: ZERO YIELD", 8, scale=2)
 
     def draw_kairos_modal(self):
         """Draw 2-column Kairos modal navigated strictly via Left/Right arrows or A/D."""
@@ -713,91 +732,103 @@ class GrainOfDoubtApp:
 
             # Directional badge
             badge_col = 8 if is_selected else 1
-            pyxel.rect(cx + 14, col_y + 12, col_w - 28, 26, badge_col)
-            draw_text_scaled(cx + 40, col_y + 19, col_labels[i], 7, scale=1)
+            pyxel.rect(cx + 14, col_y + 12, col_w - 28, 28, badge_col)
+            draw_text_scaled(cx + 26, col_y + 18, col_labels[i], 7, scale=2)
 
-            # Pure Sin Name
-            draw_text_scaled(cx + 16, col_y + 52, defn.name.upper(), 10 if is_selected else 7, scale=2)
-            draw_text_scaled(cx + 16, col_y + 76, f"({defn.latin_name})", 6, scale=1)
-            draw_text_scaled(cx + 16, col_y + 94, f"LEVEL: k={k}", 9, scale=1)
+            # Pure Sin Name (NO LATIN NAME)
+            draw_text_scaled(cx + 16, col_y + 50, defn.name.upper(), 10 if is_selected else 7, scale=3)
+            draw_text_scaled(cx + 16, col_y + 82, f"LEVEL: k={k}", 9, scale=2)
 
             # Visual divider
-            pyxel.line(cx + 14, col_y + 112, cx + col_w - 14, col_y + 112, 6)
+            pyxel.line(cx + 14, col_y + 106, cx + col_w - 14, col_y + 106, 6)
 
             # Boon section
             boon_val = defn.get_boon_value(k)
-            draw_text_scaled(cx + 16, col_y + 128, "PRO (NOW):", 11, scale=1)
-            draw_text_scaled(cx + 16, col_y + 146, f"+{defn.boon_name}", 7, scale=1)
-            draw_text_scaled(cx + 16, col_y + 166, f"{boon_val:.1f} {defn.boon_unit}", 11, scale=2)
+            draw_text_scaled(cx + 16, col_y + 120, "PRO (NOW):", 11, scale=2)
+            if sin == SinType.PRIDE:
+                group_name = ["Pair", "Triplet", "Quadruplet", "Quintet"][min(3, k)]
+                draw_text_scaled(cx + 16, col_y + 144, "Sand Clusters", 7, scale=2)
+                draw_text_scaled(cx + 16, col_y + 168, f"{group_name} ({k+2}x)", 11, scale=2)
+            else:
+                draw_text_scaled(cx + 16, col_y + 144, f"+{defn.boon_name}", 7, scale=2)
+                draw_text_scaled(cx + 16, col_y + 168, f"{boon_val:.1f} {defn.boon_unit}", 11, scale=2)
 
             # Visual divider
-            pyxel.line(cx + 14, col_y + 220, cx + col_w - 14, col_y + 220, 2)
+            pyxel.line(cx + 14, col_y + 206, cx + col_w - 14, col_y + 206, 2)
 
             # Curse section
             curse_val = defn.get_curse_value(k)
-            draw_text_scaled(cx + 16, col_y + 240, "CON (FOREVER):", 8, scale=1)
-            draw_text_scaled(cx + 16, col_y + 258, f"-{defn.curse_name}", 7, scale=1)
-            draw_text_scaled(cx + 16, col_y + 278, f"{curse_val:.1f} {defn.curse_unit}", 8, scale=2)
+            draw_text_scaled(cx + 16, col_y + 220, "CON (FOREVER):", 8, scale=2)
+            if sin == SinType.GREED:
+                draw_text_scaled(cx + 16, col_y + 244, "Borrowed Time", 7, scale=2)
+                draw_text_scaled(cx + 16, col_y + 268, "10-18s Tension", 8, scale=2)
+            else:
+                draw_text_scaled(cx + 16, col_y + 244, f"-{defn.curse_name}", 7, scale=2)
+                draw_text_scaled(cx + 16, col_y + 268, f"{curse_val:.1f} {defn.curse_unit}", 8, scale=2)
 
-            # Compounding formula indicator
-            draw_text_scaled(cx + 16, col_y + 380, "COMPOUNDING FORMULA:", 6, scale=1)
-            draw_text_scaled(cx + 16, col_y + 400, "Boon: 0.75^k  (Diminishing)", 6, scale=1)
-            draw_text_scaled(cx + 16, col_y + 420, "Curse: 1.50^k (Compounding)", 8, scale=1)
+            # Compounding note
+            draw_text_scaled(cx + 16, col_y + 350, "COMPOUNDS PER PACT", 6, scale=2)
 
             # Selection status
             if is_selected:
-                pyxel.rect(cx + 14, col_y + col_h - 44, col_w - 28, 30, 10)
-                draw_text_scaled(cx + 56, col_y + col_h - 34, "SELECTED", 0, scale=1)
+                pyxel.rect(cx + 14, col_y + col_h - 48, col_w - 28, 34, 10)
+                draw_text_scaled(cx + 52, col_y + col_h - 40, "SELECTED", 0, scale=2)
 
         # Footer instructions
-        draw_text_scaled(modal_x + 80, modal_y + modal_h - 44, "STEER [A]/[D] OR ARROWS TO SELECT PACT", 7, scale=1)
-        draw_text_scaled(modal_x + 110, modal_y + modal_h - 26, "SEALS AUTOMATICALLY UPON TIMEOUT", 6, scale=1)
+        draw_text_scaled(modal_x + 50, modal_y + modal_h - 44, "STEER LEFT OR RIGHT TO SELECT", 7, scale=2)
+        draw_text_scaled(modal_x + 90, modal_y + modal_h - 22, "AUTO-SEALS ON TIMEOUT", 6, scale=2)
 
     def draw_feedback_banner(self):
         fb = self.selected_feedback
         if not fb:
             return
-        pyxel.rect(40, 720, 520, 44, 0)
-        pyxel.rectb(40, 720, 520, 44, 10)
+        # Position banner safely above bottom window / buttons
+        pyxel.rect(40, 540, 520, 44, 0)
+        pyxel.rectb(40, 540, 520, 44, 10)
         txt = f"PACT SEALED: {fb['sin'].upper()}!"
-        draw_text_scaled(80, 734, txt, 10, scale=2)
+        draw_text_scaled(70, 554, txt, 10, scale=2)
 
     def draw_title_screen(self):
         # Pulsing logo centered
-        draw_text_scaled(188, 90, "GRAIN OF DOUBT", 10, scale=4)
-        draw_text_scaled(200, 140, "PYWEEK 42 : BORROWED TIME", 9, scale=2)
-        draw_text_scaled(272, 164, self.VERSION, 9, scale=1)
-        draw_text_scaled(236, 178, "BY ARIAN PRABOWO", 7, scale=2)
+        draw_text_scaled(188, 70, "GRAIN OF DOUBT", 10, scale=4)
+        draw_text_scaled(160, 125, "PYWEEK 42 : BORROWED TIME", 9, scale=2)
+        draw_text_scaled(236, 155, "BY ARIAN PRABOWO", 7, scale=2)
 
         # Subtitles centered
-        draw_text_scaled(180, 225, "FALL DOWN THE COSMIC HOURGLASS", 7, scale=2)
-        draw_text_scaled(180, 260, "COLLECT GOLDEN SAND TO SURVIVE", 6, scale=2)
-        draw_text_scaled(168, 295, "DODGE LETHAL FALLING GLASS SHARDS", 6, scale=2)
+        draw_text_scaled(110, 195, "FALL DOWN THE COSMIC HOURGLASS", 7, scale=2)
+        draw_text_scaled(110, 225, "COLLECT GOLDEN SAND TO SURVIVE", 6, scale=2)
+        draw_text_scaled(95, 255, "DODGE LETHAL FALLING GLASS SHARDS", 6, scale=2)
 
         # Controls box
-        pyxel.rect(60, 360, 480, 270, 1)
-        pyxel.rectb(60, 360, 480, 270, 5)
+        pyxel.rect(40, 300, 520, 335, 1)
+        pyxel.rectb(40, 300, 520, 335, 5)
 
-        draw_text_scaled(90, 380, "CONTROLS & HOW TO PLAY (INFINITE SKI-FREE ARENA)", 10, scale=1)
-        draw_text_scaled(90, 405, "A / D or LEFT / RIGHT ARROWS", 7, scale=2)
-        draw_text_scaled(110, 435, "Steer Lateral Descent to Catch Sand & Dodge Glass", 6, scale=1)
-        draw_text_scaled(90, 465, "MOBILE / TOUCH CONTROLS", 10, scale=1)
-        draw_text_scaled(90, 485, "< LEFT BUTTON  |  RIGHT BUTTON >", 7, scale=2)
-        draw_text_scaled(110, 515, "Steer Lateral Descent & Choose Bargains", 6, scale=1)
-        draw_text_scaled(90, 545, "SHORTCUTS", 9, scale=1)
-        draw_text_scaled(110, 565, "[`] Dev Mode  |  [B] Bot Mode  |  [V] Video Rec", 7, scale=1)
-        draw_text_scaled(110, 585, "[Q] Quit Game |  [R] Quick Restart", 5, scale=1)
+        draw_text_scaled(60, 320, "CONTROLS & HOW TO PLAY", 10, scale=2)
+        draw_text_scaled(60, 350, "A / D  or  LEFT / RIGHT ARROWS", 7, scale=2)
+        draw_text_scaled(60, 380, "Steer descent to catch sand & dodge glass", 6, scale=2)
+
+        draw_text_scaled(60, 420, "MOBILE / TOUCH CONTROLS", 10, scale=2)
+        draw_text_scaled(60, 450, "< LEFT BUTTON   |   RIGHT BUTTON >", 7, scale=2)
+        draw_text_scaled(60, 480, "Tap buttons or screen half to steer", 6, scale=2)
+
+        draw_text_scaled(60, 520, "SHORTCUTS", 9, scale=2)
+        if self.dev_mode:
+            draw_text_scaled(60, 550, "[`] DEV MODE  |  [B] BOT  |  [V] REC", 11, scale=2)
+            draw_text_scaled(60, 580, "[Q] QUIT GAME |  [R] RESTART", 5, scale=2)
+        else:
+            draw_text_scaled(60, 550, "[B] BOT MODE  |  [V] VIDEO REC", 7, scale=2)
+            draw_text_scaled(60, 580, "[Q] QUIT GAME |  [R] RESTART", 5, scale=2)
 
         # Start prompt
         blink = (pyxel.frame_count // 12) % 2 == 0
         if blink:
-            draw_text_scaled(120, 650, "PRESS [A]/[D], ARROWS OR TOUCH BUTTONS", 7, scale=2)
+            draw_text_scaled(60, 652, "PRESS ARROWS OR TOUCH BUTTONS TO START", 7, scale=2)
 
         # Draw the 2 mobile buttons at bottom of title screen
         self.draw_touch_buttons()
 
         if self.dev_mode:
-            draw_text_scaled(self.SCREEN_WIDTH - 80, self.SCREEN_HEIGHT - 14, f"[DEV] {self.VERSION}", 11, scale=1)
+            draw_text_scaled(self.SCREEN_WIDTH - 120, self.SCREEN_HEIGHT - 20, f"[DEV] {self.VERSION}", 11, scale=2)
 
     def draw_game_over_screen(self):
         # Dark overlay box
@@ -806,15 +837,15 @@ class GrainOfDoubtApp:
         pyxel.rectb(44, 84, 512, 632, 2)
 
         draw_text_scaled(186, 105, "HOURGLASS SHATTERED", 8, scale=3)
-        draw_text_scaled(275, 142, self.VERSION, 6, scale=1)
-        draw_text_scaled(236, 156, "BY ARIAN PRABOWO", 6, scale=1)
+        draw_text_scaled(260, 142, self.VERSION, 6, scale=2)
+        draw_text_scaled(210, 164, "BY ARIAN PRABOWO", 6, scale=2)
 
         reason = self.state.death_reason or "Consumed by the Void"
-        draw_text_scaled(70, 185, reason[:36], 7, scale=2)
+        draw_text_scaled(70, 192, reason[:36], 7, scale=2)
 
         # Inner stats container
-        pyxel.rect(60, 225, 480, 270, 1)
-        pyxel.rectb(60, 225, 480, 270, 5)
+        pyxel.rect(60, 225, 480, 280, 1)
+        pyxel.rectb(60, 225, 480, 280, 5)
 
         time_survived = self.state.total_frames / 30.0
         draw_text_scaled(80, 245, f"TIME SURVIVED : {time_survived:6.1f} SECONDS", 10, scale=2)
@@ -827,16 +858,16 @@ class GrainOfDoubtApp:
         pact_summary = [f"{sin.name} k={k}" for sin, k in self.bargains.selection_counts.items() if k > 0]
         if pact_summary:
             pact_txt = "ACTIVE PACTS  : " + " | ".join(pact_summary)
-            draw_text_scaled(80, 460, pact_txt[:42], 10, scale=1)
+            draw_text_scaled(80, 470, pact_txt[:38], 10, scale=2)
         else:
-            draw_text_scaled(80, 460, "ACTIVE PACTS  : NONE", 5, scale=1)
+            draw_text_scaled(80, 470, "ACTIVE PACTS  : NONE", 5, scale=2)
 
         blink = (pyxel.frame_count // 10) % 2 == 0
         if blink:
-            draw_text_scaled(160, 580, "PRESS ANY KEY TO DESCEND AGAIN", 7, scale=2)
+            draw_text_scaled(100, 580, "PRESS ANY KEY OR TAP TO RESTART", 7, scale=2)
 
         if self.dev_mode:
-            draw_text_scaled(self.SCREEN_WIDTH - 80, self.SCREEN_HEIGHT - 14, f"[DEV] {self.VERSION}", 11, scale=1)
+            draw_text_scaled(self.SCREEN_WIDTH - 120, self.SCREEN_HEIGHT - 20, f"[DEV] {self.VERSION}", 11, scale=2)
 
     def draw_touch_buttons(self):
         """Draw 2 high-contrast arcade buttons for mobile browser touch play."""
@@ -875,33 +906,47 @@ class GrainOfDoubtApp:
             draw_text_scaled(rx + 65, btn_y + 24, "RIGHT >", 7, scale=3)
 
     def draw_dev_overlay(self):
-        """Render developer debug overlay when toggled with '`'."""
-        box_x = 12
-        box_y = 65
-        box_w = 330
-        box_h = 165
+        """Render developer debug overlay at bottom of screen with alpha transparency."""
+        box_x = 10
+        box_w = 580
+        box_h = 160
+        box_y = self.SCREEN_HEIGHT - box_h - 10  # 630..790
 
-        # Translucent dark panel with neon mint border
+        # Alpha semi-transparent dark panel with mint neon border
+        if hasattr(pyxel, "dither"):
+            pyxel.dither(0.70)
         pyxel.rect(box_x, box_y, box_w, box_h, 0)
+        if hasattr(pyxel, "dither"):
+            pyxel.dither(1.0)
         pyxel.rectb(box_x, box_y, box_w, box_h, 11)
         pyxel.rectb(box_x + 1, box_y + 1, box_w - 2, box_h - 2, 3)
 
-        draw_text_scaled(box_x + 8, box_y + 6, f"[DEV MODE] (press ` to close)", 11, scale=1)
-        draw_text_scaled(box_x + 8, box_y + 20, f"VERSION     : {self.VERSION}", 7, scale=1)
+        bot_str = "ON (80% SPD)" if self.bot_mode else "OFF ([B])"
+        rec_str = f"ON ({self.video_recorder.frames_recorded // 30}s)" if self.video_recorder.is_recording else "OFF ([V])"
 
-        bot_str = "ON (80% SPD, 20% BLIND)" if self.bot_mode else "OFF ([B])"
-        draw_text_scaled(box_x + 8, box_y + 34, f"BOT MODE    : {bot_str}", 10, scale=1)
+        # Line 1: Header + Version + Quick Toggles
+        draw_text_scaled(box_x + 12, box_y + 8, f"[DEV MODE] (` close) {self.VERSION} | BOT:{bot_str} | REC:{rec_str}", 11, scale=2)
 
-        rec_str = f"ACTIVE ({self.video_recorder.frames_recorded // 30}s)" if self.video_recorder.is_recording else "OFF ([V])"
-        draw_text_scaled(box_x + 8, box_y + 48, f"VIDEO REC   : {rec_str}", 8, scale=1)
+        # Line 2: Number keys 1-7 for fixed pacts
+        draw_text_scaled(box_x + 12, box_y + 36, "PACTS: 1:GLUT 2:PRIDE 3:GREED 4:WRATH 5:SLOTH 6:ENVY 7:LUST", 10, scale=2)
 
-        draw_text_scaled(box_x + 8, box_y + 62, f"STATE       : {self.state.current_state.name} | CYCLE: {self.state.cycle_count}", 6, scale=1)
-        draw_text_scaled(box_x + 8, box_y + 76, f"PLAYER POS  : X={self.entities.player.x:.1f} | VX={self.entities.player.vx:.2f}", 7, scale=1)
-        draw_text_scaled(box_x + 8, box_y + 90, f"SCROLL SPEED: {self.state.scroll_speed:.1f} (x{self.state.speed_multiplier:.2f})", 9, scale=1)
-        draw_text_scaled(box_x + 8, box_y + 104, f"SPAWN RATE  : x{self.state.spawn_rate_multiplier:.2f} (acc={self.entities.spawn_accumulator:.2f})", 9, scale=1)
-        draw_text_scaled(box_x + 8, box_y + 118, f"VIGNETTE R  : {self.state.vignette_radius:.1f} px", 6, scale=1)
-        draw_text_scaled(box_x + 8, box_y + 132, f"ACTIVE ENTS : Sands={len(self.entities.sands)} | Shards={len(self.entities.shards)}", 7, scale=1)
-        draw_text_scaled(box_x + 8, box_y + 146, f"TOTAL FRAMES: {self.state.total_frames} ({self.state.total_frames / 30.0:.1f}s)", 5, scale=1)
+        # Line 3: Player and Camera telemetry
+        px = self.entities.player.x
+        vx = self.entities.player.vx
+        spd = self.state.scroll_speed
+        sp_m = self.state.speed_multiplier
+        draw_text_scaled(box_x + 12, box_y + 64, f"PLAYER: X={px:.0f} VX={vx:.2f} | SPD:{spd:.1f} (x{sp_m:.2f})", 7, scale=2)
+
+        # Line 4: Entities and Spawning telemetry
+        spawn_m = self.state.spawn_rate_multiplier
+        n_sands = len(self.entities.sands)
+        n_shards = len(self.entities.shards)
+        draw_text_scaled(box_x + 12, box_y + 92, f"SPAWN: x{spawn_m:.2f} | SANDS:{n_sands} SHARDS:{n_shards} | VIG:{self.state.vignette_radius:.0f}px", 9, scale=2)
+
+        # Line 5: State and Timer telemetry
+        elapsed = self.state.total_frames / 30.0
+        st_name = self.state.current_state.name
+        draw_text_scaled(box_x + 12, box_y + 120, f"STATE:{st_name} | CYCLE:{self.state.cycle_count} | TIME:{elapsed:4.1f}s | PRIDE:{self.state.pride_level}", 6, scale=2)
 
 
 def main():

@@ -88,14 +88,15 @@ class SandGrain:
     HITBOX_W: float = 30.0
     HITBOX_H: float = 30.0
 
-    def __init__(self, x: float, y: float, speed_variance: float = None):
+    def __init__(self, x: float, y: float, speed_variance: float = None,
+                 lateral_drift: float = None, shimmer_phase: float = None):
         self.x = x
         self.y = y
         self.speed_variance = speed_variance if speed_variance is not None else random.uniform(0.85, 1.15)
         self.alive = True
         self.bypassed = False
-        self.shimmer_phase = random.uniform(0, 6.28)
-        self.lateral_drift = random.uniform(-0.4, 0.4)
+        self.shimmer_phase = shimmer_phase if shimmer_phase is not None else random.uniform(0, 6.28)
+        self.lateral_drift = lateral_drift if lateral_drift is not None else random.uniform(-0.4, 0.4)
 
     def update(self, scroll_speed: float, player_x: float, player_y: float,
                repel_radius: float = 0.0, attract_radius: float = 0.0):
@@ -210,7 +211,7 @@ class EntityManager:
         self.bypassed_sand_pool = 0
         return count
 
-    def spawn_wave(self, spawn_rate_mult: float, wrath_active: bool, camera_x: float = None):
+    def spawn_wave(self, spawn_rate_mult: float, wrath_active: bool, camera_x: float = None, pride_level: int = 0):
         if wrath_active:
             return
 
@@ -228,7 +229,29 @@ class EntityManager:
 
             # 55% chance sand grain, 45% chance glass shard
             if random.random() < 0.55:
-                self.sands.append(SandGrain(spawn_x, spawn_y))
+                # In Pride, sands come in groups: 1st pride=pair (2), 2nd pride=triplet (3), etc.
+                group_size = 1 + pride_level
+                shared_spd = random.uniform(0.85, 1.15)
+                shared_drift = random.uniform(-0.4, 0.4)
+                shared_shimmer = random.uniform(0, 6.28)
+                cluster_radius = 22.0 if group_size > 1 else 0.0
+
+                for gi in range(group_size):
+                    if group_size > 1:
+                        angle = (2.0 * math.pi * gi) / group_size
+                        ox = math.cos(angle) * cluster_radius
+                        oy = math.sin(angle) * (cluster_radius * 0.7)
+                    else:
+                        ox, oy = 0.0, 0.0
+                    self.sands.append(
+                        SandGrain(
+                            spawn_x + ox,
+                            spawn_y + oy,
+                            speed_variance=shared_spd,
+                            lateral_drift=shared_drift,
+                            shimmer_phase=shared_shimmer,
+                        )
+                    )
             else:
                 self.shards.append(GlassShard(spawn_x, spawn_y))
                 # 20% chance to spawn an offset hazard cluster pair for weaving challenge
@@ -252,7 +275,7 @@ class EntityManager:
         # Spawning across camera horizon
         wrath_active = (state.wrath_wipe_timer > 0)
         cam_x = self.player.x - self.screen_w / 2.0
-        self.spawn_wave(state.spawn_rate_multiplier, wrath_active, cam_x)
+        self.spawn_wave(state.spawn_rate_multiplier, wrath_active, cam_x, pride_level=getattr(state, "pride_level", 0))
 
         # Update Sand grains
         px, py = self.player.x, self.player.y
@@ -272,10 +295,10 @@ class EntityManager:
                     self.bypassed_sand_pool += 1
                 continue
 
-            # Check collection collision with player
+            # Check collection collision with player (1 sand is 1 point!)
             sb = sand.get_hitbox()
             if aabb_overlap(px_box[0], px_box[1], px_box[2], px_box[3], sb[0], sb[1], sb[2], sb[3]):
-                state.add_score(base_points=100)
+                state.add_score(base_points=1)
                 self.spawn_particles(sand.x, sand.y, 8, [9, 10], speed_range=(3.0, 7.0), size=3)
                 continue
 
