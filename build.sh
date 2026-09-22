@@ -33,13 +33,23 @@ for fname in ['grain_of_doubt.html']:
 <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover\">
 <title>Grain of Doubt - PyWeek 42</title>
 <style>
+  :root {
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --max-h: calc(100vh - var(--safe-top) - var(--safe-bottom) - 48px);
+    --max-h: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 48px);
+    --max-h: calc(100svh - var(--safe-top) - var(--safe-bottom) - 48px);
+    --max-w: calc(100vw - 16px);
+  }
   html, body {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-    background: #000;
-    overflow: hidden;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    height: 100svh !important;
+    max-height: 100svh !important;
+    background: #000 !important;
+    overflow: hidden !important;
     display: flex !important;
     justify-content: center !important;
     align-items: center !important;
@@ -47,13 +57,16 @@ for fname in ['grain_of_doubt.html']:
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
+    box-sizing: border-box !important;
   }
   div#pyxel-screen {
     position: relative !important;
     left: auto !important;
     top: auto !important;
-    width: min(100vw, calc(100vh * 3 / 4)) !important;
-    height: min(100vh, calc(100vw * 4 / 3)) !important;
+    width: min(var(--max-w), calc(var(--max-h) * 3 / 4)) !important;
+    height: min(var(--max-h), calc(var(--max-w) * 4 / 3)) !important;
+    max-width: var(--max-w) !important;
+    max-height: var(--max-h) !important;
     aspect-ratio: 3 / 4 !important;
     display: flex !important;
     justify-content: center !important;
@@ -77,6 +90,33 @@ for fname in ['grain_of_doubt.html']:
 <body>
 <script>
 window.__PYXEL_IS_MOBILE__ = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+
+function fitScreen() {
+  const el = document.getElementById('pyxel-screen');
+  if (!el) return;
+  const vw = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+  const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  const availW = Math.max(150, vw - 16);
+  const availH = Math.max(150, vh - 48);
+  let targetW = Math.min(availW, availH * 3 / 4);
+  let targetH = targetW * 4 / 3;
+  if (targetH > availH) {
+    targetH = availH;
+    targetW = targetH * 3 / 4;
+  }
+  el.style.setProperty('width', Math.floor(targetW) + 'px', 'important');
+  el.style.setProperty('height', Math.floor(targetH) + 'px', 'important');
+  el.style.setProperty('max-width', Math.floor(targetW) + 'px', 'important');
+  el.style.setProperty('max-height', Math.floor(targetH) + 'px', 'important');
+}
+window.addEventListener('resize', fitScreen);
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', fitScreen);
+  window.visualViewport.addEventListener('scroll', fitScreen);
+}
+window.addEventListener('orientationchange', fitScreen);
+const fitPoller = setInterval(fitScreen, 100);
+setTimeout(() => clearInterval(fitPoller), 6000);
 </script>
 '''
     if '<!doctype html>' in content:

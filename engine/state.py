@@ -16,6 +16,7 @@ class StateManager:
     INVULNERABLE_FRAMES: int = 20  # 0.66 second for tighter evasion
     SHAKE_FRAMES: int = 8
     SHAKE_INTENSITY: float = 12.0
+    SLOTH_FREEZE_FRAMES: int = 240  # 8.0 seconds at 30 FPS
 
     def __init__(self, initial_hearts: int = 5):
         self.initial_hearts = initial_hearts
@@ -45,8 +46,10 @@ class StateManager:
         self.total_shards_dodged: int = 0
         self.greed_active: bool = False
         self.greed_level: int = 0
-        self.greed_timer: int = 0       # Remaining frames of Borrowed Time
-        self.greed_duration: int = 0    # Initial frames of Borrowed Time
+        self.greed_timer: int = 0
+        self.greed_duration: int = 0
+
+        # Sin level tracker
         self.pride_level: int = 0
         self.envy_level: int = 0
 
@@ -54,8 +57,8 @@ class StateManager:
         self.wrath_wipe_timer: int = 0
         self.wrath_zero_yield_timer: int = 0
 
-        # Sloth hazard & player speed modifiers
-        self.sloth_hazard_speed_mod: float = 1.0
+        # Sloth hazard freeze timer (8s recovery) & player speed modifier
+        self.sloth_freeze_timer: int = 0
         self.sloth_player_speed_mod: float = 1.0
 
         # Envy & Lust modifiers
@@ -79,6 +82,23 @@ class StateManager:
 
         # Post-mortem death reason
         self.death_reason: str = ""
+
+    @property
+    def sloth_hazard_speed_mod(self) -> float:
+        """Linearly recovers from 0.0 (frozen) back to 1.0 over 8.0s (240 frames)."""
+        if self.sloth_freeze_timer > 0:
+            recovery_ratio = 1.0 - (self.sloth_freeze_timer / float(self.SLOTH_FREEZE_FRAMES))
+            return max(0.0, min(1.0, recovery_ratio))
+        return 1.0
+
+    @sloth_hazard_speed_mod.setter
+    def sloth_hazard_speed_mod(self, val: float):
+        if val <= 0.0:
+            self.sloth_freeze_timer = self.SLOTH_FREEZE_FRAMES
+        elif val >= 1.0:
+            self.sloth_freeze_timer = 0
+        else:
+            self.sloth_freeze_timer = int((1.0 - val) * self.SLOTH_FREEZE_FRAMES)
 
     def start_game(self):
         self.reset()
@@ -159,6 +179,10 @@ class StateManager:
             self.lust_attract_timer -= 1
             if self.lust_attract_timer == 0:
                 self.lust_attract_radius = 0.0
+
+        # Sloth hazard freeze timer
+        if self.sloth_freeze_timer > 0:
+            self.sloth_freeze_timer -= 1
 
         # Total lifetime frames
         self.total_frames += 1

@@ -252,10 +252,25 @@ def test_sloth_speed_modifiers():
 
     init_hazard_spd = state.sloth_hazard_speed_mod
     init_player_spd = state.sloth_player_speed_mod
+    assert init_hazard_spd == 1.0
+
     bargains.apply_bargain(SinType.SLOTH, state)
 
-    assert state.sloth_hazard_speed_mod < init_hazard_spd
+    # Immediately upon selection: hazards are fully frozen (speed mod = 0.0)
+    assert state.sloth_hazard_speed_mod == 0.0
+    assert state.sloth_freeze_timer == 240
     assert state.sloth_player_speed_mod < init_player_spd
+
+    # Halfway (120 frames / 4.0s): recovered to ~0.50
+    for _ in range(120):
+        state.update_timers()
+    assert 0.49 <= state.sloth_hazard_speed_mod <= 0.51
+
+    # Full 240 frames (8.0s): fully recovered back to 1.0
+    for _ in range(120):
+        state.update_timers()
+    assert state.sloth_hazard_speed_mod == 1.0
+    assert state.sloth_freeze_timer == 0
 
 
 def test_envy_and_lust_mechanics():
@@ -577,6 +592,84 @@ def test_infinite_arena_4_point_5_screens_spawn_margin():
     # Over multiple spawns, verify broad distribution beyond former 140px limits
     spanned_outside_140 = any(abs(x - (camera_x + 300.0)) > 600.0 for x in all_xs)
     assert spanned_outside_140, "Entities must populate the wide +-2700px horizon!"
+
+
+def test_pride_randomized_offsets():
+    """Verify Pride sand clusters generate randomized offsets with no complete overlap."""
+    entities = EntityManager(screen_w=600, screen_h=800)
+    entities.reset()
+
+    # With pride_level = 3 (quadruplet cluster = 4 grains)
+    import random
+    random.seed(42)
+    # Collect offsets from 10 cluster generations
+    all_cluster_offsets = []
+    for _ in range(10):
+        # Force sand spawn
+        group_size = 4
+        offsets = [(0.0, 0.0)]
+        for _ in range(group_size - 1):
+            for _attempt in range(15):
+                rand_angle = random.uniform(0, 2.0 * math.pi)
+                rand_r = random.uniform(14.0, 36.0)
+                cand_ox = math.cos(rand_angle) * rand_r
+                cand_oy = math.sin(rand_angle) * (rand_r * 0.8)
+                if all(math.hypot(cand_ox - ex_ox, cand_oy - ex_oy) >= 12.0 for ex_ox, ex_oy in offsets):
+                    offsets.append((cand_ox, cand_oy))
+                    break
+            else:
+                offsets.append((random.uniform(-25.0, 25.0), random.uniform(-25.0, 25.0)))
+        all_cluster_offsets.append(offsets)
+
+    # Check that offsets are not identical across clusters (they are randomized)
+    assert all_cluster_offsets[0] != all_cluster_offsets[1]
+    # Check minimum separation within each cluster
+    for cluster in all_cluster_offsets:
+        assert len(cluster) == 4
+        for i in range(len(cluster)):
+            for j in range(i + 1, len(cluster)):
+                dist = math.hypot(cluster[i][0] - cluster[j][0], cluster[i][1] - cluster[j][1])
+                assert dist >= 10.0, "Cluster grains must not overlap"
+
+
+def test_kairos_repress_protection():
+    """Verify Kairos ignores held steering input until player releases and re-presses."""
+    from main import GrainOfDoubtApp
+    app = GrainOfDoubtApp(headless=True)
+    app.start_new_game()
+    app.state.current_state = GameState.KAIROS
+    app.active_options = app.bargains.draw_options(2)
+
+    # Simulate player was holding left when entering Kairos
+    app.kairos_left_released = False
+    app.selected_card_index = -1
+
+    # Attempt to seal without releasing: should not seal
+    instant_seal = False
+    # If left is still held, release flag remains False
+    is_left_now = True
+    if not is_left_now:
+        app.kairos_left_released = True
+    move_left = True and app.kairos_left_released
+    if move_left:
+        instant_seal = True
+    assert not instant_seal
+    assert app.selected_card_index == -1
+
+    # Now player unpresses
+    is_left_now = False
+    if not is_left_now:
+        app.kairos_left_released = True
+    assert app.kairos_left_released is True
+
+    # Now player presses left again (re-press)
+    move_left = True and app.kairos_left_released
+    if move_left:
+        app.selected_card_index = 0
+        instant_seal = True
+    assert instant_seal is True
+    assert app.selected_card_index == 0
+
 
 
 

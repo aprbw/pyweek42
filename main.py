@@ -139,7 +139,7 @@ def is_mobile_environment() -> bool:
 
 
 class GrainOfDoubtApp:
-    VERSION: str = "v0.7.0"
+    VERSION: str = "v0.8.0"
     SCREEN_WIDTH: int = 600
     SCREEN_HEIGHT: int = 800
 
@@ -170,6 +170,8 @@ class GrainOfDoubtApp:
         self.dev_mode: bool = False
         self.touch_left: bool = False
         self.touch_right: bool = False
+        self.kairos_left_released: bool = True
+        self.kairos_right_released: bool = True
 
         # Cosmic void background stars (parallax)
         self.stars: List[List[float]] = []
@@ -325,9 +327,22 @@ class GrainOfDoubtApp:
             if self.state.current_state == GameState.KAIROS:
                 self.audio.play_kairos(pyxel)
                 self.active_options = self.bargains.draw_options(2)
-                self.selected_card_index = 0  # 0=Left, 1=Right
+                self.selected_card_index = -1  # Must release and re-press to choose
+                
+                # Check if lateral controls were held down when Kairos struck
+                held_left = (
+                    pyxel.btn(pyxel.KEY_LEFT) or pyxel.btn(pyxel.KEY_A) or
+                    (pyxel.btn(pyxel.MOUSE_BUTTON_LEFT) and pyxel.mouse_x < self.SCREEN_WIDTH / 2.0)
+                )
+                held_right = (
+                    pyxel.btn(pyxel.KEY_RIGHT) or pyxel.btn(pyxel.KEY_D) or
+                    (pyxel.btn(pyxel.MOUSE_BUTTON_LEFT) and pyxel.mouse_x >= self.SCREEN_WIDTH / 2.0)
+                )
+                self.kairos_left_released = not held_left
+                self.kairos_right_released = not held_right
                 if self.bot_mode:
                     self.bot.target_card_index = None
+                    self.selected_card_index = 0
 
             # Check if Game Over triggered
             if self.state.current_state == GameState.GAMEOVER:
@@ -338,6 +353,8 @@ class GrainOfDoubtApp:
             # Kairos time circuit breaker: 2 options (Left vs Right)
             instant_seal = False
             if self.bot_mode:
+                if self.selected_card_index < 0:
+                    self.selected_card_index = 0
                 if pyxel.frame_count % 2 == 0:
                     b_left, b_right, b_seal = self.bot.decide_kairos_choice(
                         self.active_options, self.selected_card_index
@@ -349,30 +366,44 @@ class GrainOfDoubtApp:
                     elif b_seal:
                         instant_seal = True
             else:
-                move_left = pyxel.btnp(pyxel.KEY_LEFT) or pyxel.btnp(pyxel.KEY_A)
-                move_right = pyxel.btnp(pyxel.KEY_RIGHT) or pyxel.btnp(pyxel.KEY_D)
+                # Track release state of lateral controls
+                is_left_now = (
+                    pyxel.btn(pyxel.KEY_LEFT) or pyxel.btn(pyxel.KEY_A) or
+                    (pyxel.btn(pyxel.MOUSE_BUTTON_LEFT) and pyxel.mouse_x < self.SCREEN_WIDTH / 2.0)
+                )
+                is_right_now = (
+                    pyxel.btn(pyxel.KEY_RIGHT) or pyxel.btn(pyxel.KEY_D) or
+                    (pyxel.btn(pyxel.MOUSE_BUTTON_LEFT) and pyxel.mouse_x >= self.SCREEN_WIDTH / 2.0)
+                )
 
-                # Touch/mouse tap to select/confirm Kairos cards
-                if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
-                    if pyxel.mouse_x < self.SCREEN_WIDTH / 2.0:
-                        move_left = True
-                    else:
-                        move_right = True
+                if not is_left_now:
+                    self.kairos_left_released = True
+                if not is_right_now:
+                    self.kairos_right_released = True
+
+                # Selection triggers only on fresh press AFTER releasing Chronos steering
+                move_left = (
+                    (pyxel.btnp(pyxel.KEY_LEFT) or pyxel.btnp(pyxel.KEY_A) or
+                     (pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT) and pyxel.mouse_x < self.SCREEN_WIDTH / 2.0))
+                    and self.kairos_left_released
+                )
+                move_right = (
+                    (pyxel.btnp(pyxel.KEY_RIGHT) or pyxel.btnp(pyxel.KEY_D) or
+                     (pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT) and pyxel.mouse_x >= self.SCREEN_WIDTH / 2.0))
+                    and self.kairos_right_released
+                )
 
                 if move_left:
-                    if self.selected_card_index == 1:
-                        self.selected_card_index = 0
-                    else:
-                        instant_seal = True  # Double-tap left confirms left card
-
+                    self.selected_card_index = 0
+                    instant_seal = True
                 elif move_right:
-                    if self.selected_card_index == 0:
-                        self.selected_card_index = 1
-                    else:
-                        instant_seal = True  # Double-tap right confirms right card
+                    self.selected_card_index = 1
+                    instant_seal = True
 
                 # Space/Enter also confirms immediately
                 if pyxel.btnp(pyxel.KEY_SPACE) or pyxel.btnp(pyxel.KEY_RETURN):
+                    if self.selected_card_index < 0:
+                        self.selected_card_index = 0
                     instant_seal = True
 
             # Advance Kairos timer
@@ -840,6 +871,9 @@ class GrainOfDoubtApp:
             elif sin == SinType.GREED:
                 draw_text_scaled(cx + 16, col_y + 144, "Bounty Harvest", 7, scale=2)
                 draw_text_scaled(cx + 16, col_y + 168, f"+{boon_val:.1f} pts/dodge", 11, scale=2)
+            elif sin == SinType.SLOTH:
+                draw_text_scaled(cx + 16, col_y + 144, "Freeze Hazards", 7, scale=2)
+                draw_text_scaled(cx + 16, col_y + 168, "8.0s Speed Recovery", 11, scale=2)
             else:
                 draw_text_scaled(cx + 16, col_y + 144, f"+{defn.boon_name}", 7, scale=2)
                 draw_text_scaled(cx + 16, col_y + 168, f"{boon_val:.1f} {defn.boon_unit}", 11, scale=2)
@@ -856,6 +890,9 @@ class GrainOfDoubtApp:
             elif sin == SinType.ENVY:
                 draw_text_scaled(cx + 16, col_y + 244, "Vignette Vision", 7, scale=2)
                 draw_text_scaled(cx + 16, col_y + 268, f"{int(curse_val)}px Radius", 8, scale=2)
+            elif sin == SinType.SLOTH:
+                draw_text_scaled(cx + 16, col_y + 244, "-Lateral Drag", 7, scale=2)
+                draw_text_scaled(cx + 16, col_y + 268, f"{curse_val:.2f} drag", 8, scale=2)
             else:
                 draw_text_scaled(cx + 16, col_y + 244, f"-{defn.curse_name}", 7, scale=2)
                 draw_text_scaled(cx + 16, col_y + 268, f"{curse_val:.1f} {defn.curse_unit}", 8, scale=2)
@@ -935,7 +972,8 @@ class GrainOfDoubtApp:
         pyxel.rectb(44, 64, 512, 672, 2)
 
         draw_text_scaled(186, 75, "HOURGLASS SHATTERED", 8, scale=3)
-        draw_text_scaled(260, 108, self.VERSION, 6, scale=2)
+        if self.dev_mode:
+            draw_text_scaled(260, 108, self.VERSION, 6, scale=2)
         draw_text_scaled(210, 128, "BY ARIAN PRABOWO", 6, scale=2)
 
         reason = self.state.death_reason or "Consumed by the Void"
@@ -956,13 +994,13 @@ class GrainOfDoubtApp:
         draw_text_scaled(80, 274, f"SHARDS EVADED : {self.state.total_shards_dodged:6d}", 6, scale=2)
         draw_text_scaled(80, 302, f"PACTS SEALED  : {len(self.bargains.history):6d}", 8, scale=2)
 
-        # Draw all 7 canonical sins vertically
-        draw_text_scaled(80, 332, "PACT SUMMARY (CANONICAL ORDER):", 9, scale=2)
+        # Draw all 7 canonical sins vertically without 'k=' or 'canonical order'
+        draw_text_scaled(80, 332, "PACTS SEALED SUMMARY:", 9, scale=2)
         for idx, sin in enumerate(CANONICAL_SINS):
             k = self.bargains.selection_counts.get(sin, 0)
             col = 10 if k > 0 else 5
             row_y = 356 + idx * 20
-            draw_text_scaled(100, row_y, f"{idx+1}. {sin.name.upper():<9} : LEVEL k={k}", col, scale=2)
+            draw_text_scaled(100, row_y, f"{idx+1}. {sin.name.upper():<9} : {k}", col, scale=2)
 
         # 2-Second Debounce prompt
         if self.game_over_timer < 60:

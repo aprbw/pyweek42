@@ -254,20 +254,26 @@ class EntityManager:
 
             # 55% chance sand grain, 45% chance glass shard
             if random.random() < 0.55:
-                # In Pride, sands come in groups: 1st pride=pair (2), 2nd pride=triplet (3), etc.
+                # In Pride, sands come in organic randomized clusters: 1st pride=pair (2), etc.
                 group_size = 1 + pride_level
                 shared_spd = random.uniform(0.85, 1.15)
                 shared_drift = random.uniform(-0.4, 0.4)
                 shared_shimmer = random.uniform(0, 6.28)
-                cluster_radius = 22.0 if group_size > 1 else 0.0
 
-                for gi in range(group_size):
-                    if group_size > 1:
-                        angle = (2.0 * math.pi * gi) / group_size
-                        ox = math.cos(angle) * cluster_radius
-                        oy = math.sin(angle) * (cluster_radius * 0.7)
+                offsets = [(0.0, 0.0)]
+                for _ in range(group_size - 1):
+                    for _attempt in range(15):
+                        rand_angle = random.uniform(0, 2.0 * math.pi)
+                        rand_r = random.uniform(14.0, 36.0)
+                        cand_ox = math.cos(rand_angle) * rand_r
+                        cand_oy = math.sin(rand_angle) * (rand_r * 0.8)
+                        if all(math.hypot(cand_ox - ex_ox, cand_oy - ex_oy) >= 12.0 for ex_ox, ex_oy in offsets):
+                            offsets.append((cand_ox, cand_oy))
+                            break
                     else:
-                        ox, oy = 0.0, 0.0
+                        offsets.append((random.uniform(-25.0, 25.0), random.uniform(-25.0, 25.0)))
+
+                for ox, oy in offsets:
                     self.sands.append(
                         SandGrain(
                             spawn_x + ox,

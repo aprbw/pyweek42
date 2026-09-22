@@ -1,7 +1,7 @@
 # Grain of Doubt
 
 > **By Arian Prabowo**  
-> **Version:** v0.7.0  
+> **Version:** v0.8.0  
 > **PyWeek 42 Entry ("Borrowed Time")** — September 2026  
 > An endless retro downhill falling-hourglass arcade runner built with the **Pyxel** retro game engine.  
 > **Target Resolution:** $600 \times 800$ pixels ($3:4$ Portrait Aspect Ratio, Infinite Horizontal Arena).
@@ -22,6 +22,7 @@ Steer left or right to avoid razor-sharp falling glass shards while collecting g
 ### Chronos vs. Kairos (The Dual-Clock Engine)
 * **Chronos (8.0s descent):** Relentless kinetic tension. Steer left or right across an infinitely wide horizontal arena ($\pm 4.5$ screen procedural generation horizon) to dodge oncoming glass shards while reaping cascading sand motes.
 * **Kairos (2.0s circuit breaker):** Every 8 seconds, normal time freezes. You are presented with **2 Faustian Bargain cards** drawn from the Seven Deadly Sins. You must choose within 2.0 seconds—if you hesitate, doubt shatters your vessel (*Paralyzed by Doubt: Kairos Expired*). A vertical side timer drains from top to bottom.
+  * **Input Re-press Protection:** Entering Kairos requires unpressing/releasing lateral steering first before choosing, preventing accidental card selection if holding arrows during Chronos.
 * **Faustian Bargains:** Every bargain grants an immediate survival boon at the cost of a permanent curse. Repeatedly choosing sins compounds their effects.
 
 ---
@@ -32,10 +33,10 @@ Steer left or right to avoid razor-sharp falling glass shards while collecting g
 | :--- | :--- | :--- |
 | `A` / `D` or `Left` / `Right` | Lateral Steering | Steer hourglass horizontally ($\mu_x = 0.82$ viscous damping) |
 | Touch `< LEFT` / `RIGHT >` | Mobile Touch Steering | Semi-transparent on-screen buttons (visible on mobile only) or bottom screen tap |
-| `Left` / `Right` or Tap Card | Select Faustian Bargain | Steer left or right during Kairos to choose between the 2 bargain cards within 2.0s |
+| `Left` / `Right` or Tap Card | Select Faustian Bargain | Steer left or right during Kairos to choose between the 2 bargain cards within 2.0s (requires fresh press after release) |
 | `Space` / `Enter` or Tap Screen | Start / Restart | Start game or restart after a 2.0s post-mortem lockout (debounced) |
 | `~` / `` ` `` (Backtick) | Dev Mode Overlay | Toggle developer telemetry overlay (hidden on title screen unless active) |
-| `1` - `7` (in Dev Mode) | Fixed Faustian Pact | Instant-apply sin pact in canonical order (1:Pride .. 7:Sloth) |
+| `1` - `7` (in Dev Mode) | Fixed Faustian Pact | Instant-apply sin pact in order (1:Pride .. 7:Sloth) |
 | `B` (in Dev Mode) | Playtest Bot | Toggle autonomous GOFAI kinematic playtesting bot (dev mode only) |
 | `V` (in Dev Mode) | Video Recording | Toggle MP4 video capture to disk (dev mode only) |
 | `Q` | Quit | Exit game |
@@ -44,10 +45,10 @@ Steer left or right to avoid razor-sharp falling glass shards while collecting g
 
 ## 📜 The Seven Deadly Sins (Faustian Bargains & Exact Parameters)
 
-*Presented in Gregorian / Catholic Canonical Order with exact mathematical values ($k \ge 0$ is the repeat pact count):*
+*Exact mathematical values ($k \ge 0$ is the repeat pact count):*
 
 1. **Pride:**
-   * *Boon:* Spawns golden sand in clusters: $+1$ grain per pact level (1st pact: pairs $= 2$ grains; 2nd: triplets $= 3$; 3rd: quadruplets $= 4$; grains share trajectory with non-overlapping offsets; 1 sand = 1 point).
+   * *Boon:* Spawns golden sand in organic randomized clusters: $+1$ grain per pact level (1st pact: pairs $= 2$ grains; 2nd: triplets $= 3$; 3rd: quadruplets $= 4$; grains share trajectory with randomized non-overlapping offsets; 1 sand = 1 point).
    * *Curse:* Increases descent velocity multiplier by $+25\% \times 1.5^k$ ($+0.50$ on 1st pact, $+0.75$ on 2nd, $+1.125$ on 3rd).
 2. **Greed:**
    * *Boon:* Instant bounty harvest granting $(N_{sands\_collected} + N_{shards\_dodged}) \times 5.0 \times 0.75^k$ points ($5.0$ pts/entity on 1st pact, $3.75$ on 2nd, $2.81$ on 3rd).
@@ -65,7 +66,7 @@ Steer left or right to avoid razor-sharp falling glass shards while collecting g
    * *Boon:* Purges 100% of active glass shards from the screen and grants hazard immunity for $10.0 \times 0.75^k$ seconds ($300$ frames on 1st pact, $225$ frames on 2nd, $169$ frames on 3rd).
    * *Curse:* Zero-Yield state: collected sands award 0 points for $10.0 \times 1.5^k$ seconds ($300$ frames on 1st pact, $450$ frames on 2nd, $675$ frames on 3rd).
 7. **Sloth:**
-   * *Boon:* Decelerates vertical hazard fall velocity by $12\% \times 0.75^k$ ($0.12$ reduction on 1st pact, $0.09$ on 2nd, down to minimum $0.30$ modifier).
+   * *Boon:* Freeze Hazards immediately ($0.0$ velocity), slowly recovering speed linearly over $8.0$ seconds ($240$ frames) back to full speed ($1.0$).
    * *Curse:* Imposes lateral drag on hourglass steering, reducing horizontal translation speed by $5\% \times 1.5^k$ ($0.05$ reduction on 1st pact, $0.075$ on 2nd, down to minimum $0.35$ modifier).
 
 ---
@@ -133,9 +134,32 @@ python playtest_bot.py
 ./build.sh
 ```
 
-### 5. WebAssembly Browser Play
+### 6. WebAssembly Browser Play
 Open `index.html` via any local HTTP server:
 ```bash
 python3 -m http.server 8000
 # Open http://127.0.0.1:8000 in your browser
 ```
+
+---
+
+## 📝 Changelog
+
+### v0.8.0 (September 2026)
+* **Mobile Viewport Optimization:**
+  * Fixed display cutoff on mobile browsers using `100svh`, `env(safe-area-inset-top)` / `bottom`, and an active JS `fitScreen()` visual viewport handler with 48px safety cushion.
+  * Preserves 3:4 portrait aspect ratio cleanly centered in all viewports with zero clipping.
+* **Kairos Input Re-press Protection:**
+  * Prevented accidental pact selection upon entering Kairos if holding lateral keys or touch during Chronos.
+  * Players must unpress/release the button first before choosing a pact on fresh press.
+* **Sloth Rework (Hazard Freeze & 8s Recovery):**
+  * Replaced flat hazard drag with immediate Hazard Freeze ($0.0$ speed) that linearly recovers back to normal speed over $8.0$ seconds ($240$ frames). Permanent lateral drag curse remains.
+* **Pride Organic Cluster Randomization:**
+  * Sand clusters now spawn with randomized relative non-overlapping offsets ($r \in [14, 36]$ px) while preserving shared velocity and trajectory.
+* **Clean End Game Screen:**
+  * Removed "k=" syntax from pact counts (shows simple clean counts).
+  * Removed "CANONICAL ORDER" wording; now titled "PACTS SEALED SUMMARY:".
+  * Version display hidden on game over screen unless Dev Mode is active.
+* **Validation & Playtest Balancing:**
+  * Updated unit test suite to 25 automated tests.
+  * Conducted full 10-episode headless GOFAI kinematic playtesting suite to confirm game loop stability and balance.

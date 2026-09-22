@@ -86,11 +86,11 @@ BARGAIN_REGISTRY: Dict[SinType, BargainDefinition] = {
         sin=SinType.SLOTH,
         name="Sloth",
         latin_name="Acedia",
-        boon_name="Hazard Drag",
+        boon_name="Freeze Hazards",
         curse_name="Lateral Drag",
-        boon_base=0.40,
+        boon_base=8.0,
         curse_base=0.25,
-        boon_unit="drag",
+        boon_unit="s freeze",
         curse_unit="drag",
     ),
     SinType.ENVY: BargainDefinition(
@@ -194,8 +194,9 @@ class BargainManager:
                 entities_manager.wipe_all_hazards()
 
         elif sin == SinType.SLOTH:
-            # Hazard speed decrease vs Player lateral movement drag
-            state.sloth_hazard_speed_mod = max(0.3, state.sloth_hazard_speed_mod - (boon_val * 0.3))
+            # Boon: Freeze hazards immediately, recovers linearly over 8.0s (240 frames)
+            state.sloth_freeze_timer = state.SLOTH_FREEZE_FRAMES
+            # Curse: Permanent lateral drag penalty
             state.sloth_player_speed_mod = max(0.35, state.sloth_player_speed_mod - (curse_val * 0.2))
 
         elif sin == SinType.ENVY:
