@@ -1,7 +1,7 @@
 # Grain of Doubt
 
 > **By Arian Prabowo**  
-> **Version:** v0.8.0  
+> **Version:** v0.9.0  
 > **PyWeek 42 Entry ("Borrowed Time")** — September 2026  
 > An endless retro downhill falling-hourglass arcade runner built with the **Pyxel** retro game engine.  
 > **Target Resolution:** $600 \times 800$ pixels ($3:4$ Portrait Aspect Ratio, Infinite Horizontal Arena).
@@ -36,11 +36,12 @@ Steer left or right to avoid razor-sharp falling glass shards while collecting g
 | `Left` / `Right` or Tap Card | Select Faustian Bargain | Steer left or right during Kairos to choose between the 2 bargain cards within 2.0s (requires fresh press after release) |
 | `Space` / `Enter` or Tap Screen | Start / Restart | Start game or restart after a 2.0s post-mortem lockout (debounced) |
 | `~` / `` ` `` (Backtick) | Dev Mode Overlay | Toggle developer telemetry overlay (hidden on title screen unless active) |
-| `1` - `7` (in Dev Mode) | Fixed Faustian Pact | Instant-apply sin pact in order (1:Pride .. 7:Sloth) |
+| `1` - `7` (in Dev Mode) | Add Faustian Pact | Instant-apply sin pact level (1:Pride, 2:Greed, 3:Lust, 4:Envy, 5:Gluttony, 6:Wrath, 7:Sloth) |
+| `Q`, `W`, `E`, `R`, `T`, `Y`, `U` (in Dev Mode) | Reduce Faustian Pact | Decrement corresponding sin pact level (Q:Pride, W:Greed, E:Lust, R:Envy, T:Gluttony, Y:Wrath, U:Sloth) |
 | `I` (in Dev Mode) | Toggle God Mode | Toggle complete invulnerability against all hazard damage |
 | `B` (in Dev Mode) | Playtest Bot | Toggle autonomous GOFAI kinematic playtesting bot (dev mode only) |
 | `V` (in Dev Mode) | Video Recording | Toggle MP4 video capture to disk (dev mode only) |
-| `Q` | Quit | Exit game |
+| `X` | Quit | Exit game |
 
 ---
 
@@ -50,22 +51,23 @@ Steer left or right to avoid razor-sharp falling glass shards while collecting g
 
 1. **Pride:**
    * *Boon:* Spawns golden sand in organic randomized clusters: $+1$ grain per pact level (1st pact: pairs $= 2$ grains; 2nd: triplets $= 3$; 3rd: quadruplets $= 4$; grains share trajectory with randomized non-overlapping offsets; 1 sand = 1 point).
-   * *Curse:* Increases descent velocity multiplier by $+25\% \times 1.5^k$ ($+0.50$ on 1st pact, $+0.75$ on 2nd, $+1.125$ on 3rd).
+   * *Curse:* Increases descent velocity multiplier by flat $+25\%$ per pact level ($+0.25$).
 2. **Greed:**
-   * *Boon:* Instant bounty harvest granting $(N_{sands\_collected} + N_{shards\_dodged}) \times 5.0 \times 0.75^k$ points ($5.0$ pts/entity on 1st pact, $3.75$ on 2nd, $2.81$ on 3rd).
-   * *Curse:* Triggers **Borrowed Time** for a randomized window of **10.0 to 18.0 seconds** ($300$ to $540$ frames). Void erupts into blood crimson with ember stars, descent velocity increases by $+20\% \times 1.5^k$, spawn density increases by $+25\% \times 1.5^k$, and collecting sand **multiplies current score by 110%** ($Score \leftarrow \max(Score + 1, \lfloor Score \times 1.10 \rfloor)$) instead of adding 1 point! Remaining duration is displayed in the Dev Mode telemetry overlay.
+   * Triggers **Borrowed Time**
+   * *Boon:* During Borrowed Time, each sand multiplies the current score by 110% ($Score \leftarrow \max(Score + 1, \lfloor Score \times 1.10 \rfloor)$) instead of adding 1 point.
+   * *Curse:* Triggers **Borrowed Time** for a randomized window of **10.0 to 18.0 seconds** ($300$ to $540$ frames). At the end, you definitely die (*Borrowed Time Expired: Debt Collected*). Warning HUD shows `BORROWED TIME`, and Dev Mode displays the countdown timer.
 3. **Lust:**
-   * *Boon:* Generates a golden sand magnetic attraction vortex with a radius of $220.0 \times 0.75^k$ px ($220$px on 1st pact, $165$px on 2nd, $124$px on 3rd) active for 10.0 seconds ($300$ frames).
-   * *Curse:* Generates a permanent lethal glass shard magnetic attraction vortex with a radius of $180.0 \times 1.5^k$ px ($180$px on 1st pact, $270$px on 2nd, $405$px on 3rd).
+   * *Boon:* Sand magnetic attraction permanently pulls golden sands within radius toward hourglass ($180.0$px on 1st pact, $+60.0$px on subsequent pacts).
+   * *Curse:* Hazard magnetic attraction permanently pulls razor glass shards within radius toward hourglass ($180.0$px on 1st pact, $+60.0$px on subsequent pacts).
 4. **Envy:**
    * *Boon:* Instantly reaps all golden sand grains currently visible on the screen, immediately awarding their score and triggering radiant particle bursts.
    * *Curse:* Inflicts **Vignette Vision**, restricting your visual field with a multi-circle concentric mask with 5 graduated dither transparency tiers down to an inner clear core (radius $260.0 \times 0.80^k$ px, minimum $90$px).
 5. **Gluttony:**
-   * *Boon:* Accelerates global sand grain and entity generation rate multiplier by $+80\% \times 0.75^k$ ($+0.80$ on 1st pact, $+0.60$ on 2nd, $+0.45$ on 3rd).
-   * *Curse:* Multiplies hazard glass shard density and spawn rate by $+80\% \times 1.5^k$ ($+0.80$ on 1st pact, $+1.20$ on 2nd, $+1.80$ on 3rd).
+   * *Boon:* Increases golden sand spawn rate by $+50\%$ per pact level ($+0.50$).
+   * *Curse:* Increases razor hazard spawn rate by $+50\%$ per pact level ($+0.50$).
 6. **Wrath:**
-   * *Boon:* Purges 100% of active glass shards from the screen and grants hazard immunity for $10.0 \times 0.75^k$ seconds ($300$ frames on 1st pact, $225$ frames on 2nd, $169$ frames on 3rd).
-   * *Curse:* Zero-Yield state: collected sands award 0 points for $10.0 \times 1.5^k$ seconds ($300$ frames on 1st pact, $450$ frames on 2nd, $675$ frames on 3rd).
+   * *Boon:* Instantly purges all razor hazards on screen, granting a 10.0-second ($300$ frames) hazard-free grace window. (The only sin that does not compound after multiple use).
+   * *Curse:* Zero yield: all sand grains collected yield 0 points for 10.0 seconds ($300$ frames).
 7. **Sloth:**
    * *Boon:* Freeze Hazards immediately ($0.0$ velocity), slowly recovering speed linearly over $8.0$ seconds ($240$ frames) back to full speed ($1.0$).
    * *Curse:* Imposes lateral drag on hourglass steering, reducing horizontal translation speed by $5\% \times 1.5^k$ ($0.05$ reduction on 1st pact, $0.075$ on 2nd, down to minimum $0.35$ modifier).
@@ -150,6 +152,30 @@ python3 -m http.server 8000
 ---
 
 ## 📝 Changelog
+
+### v0.9.0 (September 2026)
+* **Mobile Viewport Top-Cutoff Containment:**
+  * Fixed top cutoff issue on mobile browsers by expanding viewport padding to `calc(env(safe-area-inset-top, 0px) + 24px)` and capping canvas height to `Math.min(vh * 0.80, vh - 120)` in WebAssembly runner.
+  * Guarantees ample safe space on mobile devices without any part of the canvas being clipped while strictly preserving the 3:4 aspect ratio.
+* **Lethal Borrowed Time (Greed Overhaul):**
+  * Removed "k=??" label from HUD warning, showing clean `BORROWED TIME`.
+  * Greed countdown timer is now displayed in Dev Mode overlay telemetry.
+  * When Borrowed Time expires, the debt is collected and the player instantly dies with dedicated cause of death (`"BORROWED TIME EXPIRED (DEBT COLLECTED)"`).
+* **Game Controls & Quit Key:**
+  * Remapped quit shortcut from `Q` to `X` (`pyxel.KEY_X`), preventing accidental quits.
+  * Updated title screen, game over screen, and packaging runners.
+* **Dev Mode Faustian Pact Reduction:**
+  * Keys `Q`, `W`, `E`, `R`, `T`, `Y`, `U` in Dev Mode decrement corresponding pact levels in canonical order (Pride, Greed, Lust, Envy, Gluttony, Wrath, Sloth) and dynamically relax active modifiers.
+* **Faustian Bargains Recalibration:**
+  * **Pride:** Organic randomized clusters (+1 grain per level, starting with pairs then triplets); flat $+25\%$ descent speed per pact.
+  * **Greed:** Borrowed Time (10.0–18.0s); sand multiplies score by $110\%$; lethal timer expiration.
+  * **Lust:** Permanent magnetic attraction for both sand and razor hazards; subsequent pacts widen attraction radius by $+60$px.
+  * **Gluttony:** Symmetric $+50\%$ boost to sand and hazard spawn rates per pact level.
+  * **Wrath:** Flat 10.0s hazard wipe and 10.0s zero-yield window; does not compound on repeat pacts.
+  * **Sloth:** Immediate hazard freeze ($0.0$ speed) with linear recovery over $8.0$ seconds ($240$ frames); lateral drag curse scales by $-5\% \times 1.5^k$.
+* **Automated Testing & Balance:**
+  * Expanded test suite to 32 unit tests passing with 100% pass rate.
+  * Validated GOFAI kinematic bot stability across multi-episode headless benchmarks.
 
 ### v0.8.0 (September 2026)
 * **Mobile Viewport Optimization:**

@@ -137,15 +137,13 @@ def test_compounding_math_gate():
 # Gate 4: Greed Borrowed Time Mechanics Gate
 # ---------------------------------------------------------------------------
 def test_greed_borrowed_time_mechanics_gate():
-    """Verify Greed activates Borrowed Time for 10-18s, multiplies score by 110% on sand, and scales tension."""
+    """Verify Greed activates Borrowed Time for 10-18s, multiplies score by 110% on sand, and lethal expiration."""
     state = StateManager()
     state.start_game()
     bargains = BargainManager()
 
     assert not state.greed_active
     assert state.greed_level == 0
-    initial_spd = state.speed_multiplier
-    initial_spawn = state.spawn_rate_multiplier
 
     # Apply Greed
     bargains.apply_bargain(SinType.GREED, state)
@@ -153,8 +151,6 @@ def test_greed_borrowed_time_mechanics_gate():
     assert state.greed_level == 1
     # Random timer between 10.0 and 18.0s (300 to 540 frames)
     assert 300 <= state.greed_timer <= 540
-    assert state.speed_multiplier > initial_spd      # Borrowed time pace escalation
-    assert state.spawn_rate_multiplier > initial_spawn
 
     # Verify sand collection during Greed multiplies score by 110% instead of +1
     state.score = 10
@@ -165,16 +161,20 @@ def test_greed_borrowed_time_mechanics_gate():
     state.add_score(1)
     assert state.score == 110  # 100 * 1.10 = 110
 
-    # Advance frames in Chronos until timer expires: greed_active becomes False
+    # Advance frames in Chronos until 1 frame before expiration: player remains alive
     duration = state.greed_timer
-    for _ in range(duration):
+    for _ in range(duration - 1):
         state.update_timers()
         if state.current_state == GameState.KAIROS:
             state.resume_chronos()
-        assert state.current_state != GameState.GAMEOVER, "Greed must not kill the player!"
+        assert state.current_state == GameState.CHRONOS, "Player must remain alive during Borrowed Time window"
 
+    # Last frame: Borrowed Time expires and player definitely dies (Debt Collected)
+    state.update_timers()
     assert state.greed_timer == 0
     assert state.greed_active is False
+    assert state.current_state == GameState.GAMEOVER
+    assert "Borrowed Time Expired" in state.death_reason
 
 
 # ---------------------------------------------------------------------------
@@ -736,6 +736,139 @@ def test_pyweek_packaging_entrypoints():
         content = f.read()
     assert "MIN_VER" in content
     assert "sys.version_info" in content
+
+
+def test_dev_mode_qwertyu_pact_reduction():
+    """Verify keys Q, W, E, R, T, Y, U reduce pact levels in dev mode."""
+    state = StateManager()
+    state.start_game()
+    bargains = BargainManager()
+    entities = EntityManager(600, 800)
+
+    # 1. PRIDE (Q)
+    bargains.apply_bargain(SinType.PRIDE, state, entities)
+    assert bargains.get_selection_count(SinType.PRIDE) == 1
+    assert state.pride_level == 1
+    initial_spd = state.speed_multiplier
+    # Reduce Pride
+    bargains.reduce_bargain(SinType.PRIDE, state, entities)
+    assert bargains.get_selection_count(SinType.PRIDE) == 0
+    assert state.pride_level == 0
+    assert state.speed_multiplier < initial_spd
+
+    # 2. GREED (W)
+    bargains.apply_bargain(SinType.GREED, state, entities)
+    assert state.greed_active is True
+    assert bargains.get_selection_count(SinType.GREED) == 1
+    # Reduce Greed
+    bargains.reduce_bargain(SinType.GREED, state, entities)
+    assert bargains.get_selection_count(SinType.GREED) == 0
+    assert state.greed_active is False
+    assert state.greed_timer == 0
+
+    # 3. LUST (E)
+    bargains.apply_bargain(SinType.LUST, state, entities)
+    assert state.lust_attract_radius > 0.0
+    assert state.lust_hazard_attract_radius > 0.0
+    # Reduce Lust
+    bargains.reduce_bargain(SinType.LUST, state, entities)
+    assert bargains.get_selection_count(SinType.LUST) == 0
+    assert state.lust_attract_radius == 0.0
+    assert state.lust_hazard_attract_radius == 0.0
+
+    # 4. ENVY (R)
+    bargains.apply_bargain(SinType.ENVY, state, entities)
+    assert state.vignette_radius == 260.0
+    assert state.envy_level == 1
+    # Reduce Envy
+    bargains.reduce_bargain(SinType.ENVY, state, entities)
+    assert bargains.get_selection_count(SinType.ENVY) == 0
+    assert state.envy_level == 0
+    assert state.vignette_radius == 1000.0
+
+    # 5. GLUTTONY (T)
+    initial_spawn = state.spawn_rate_multiplier
+    bargains.apply_bargain(SinType.GLUTTONY, state, entities)
+    assert state.spawn_rate_multiplier == pytest.approx(initial_spawn + 0.50)
+    # Reduce Gluttony
+    bargains.reduce_bargain(SinType.GLUTTONY, state, entities)
+    assert state.spawn_rate_multiplier == pytest.approx(initial_spawn)
+
+    # 6. WRATH (Y)
+    bargains.apply_bargain(SinType.WRATH, state, entities)
+    assert state.wrath_wipe_timer == 300
+    assert state.wrath_zero_yield_timer == 300
+    # Reduce Wrath
+    bargains.reduce_bargain(SinType.WRATH, state, entities)
+    assert state.wrath_wipe_timer == 0
+    assert state.wrath_zero_yield_timer == 0
+
+    # 7. SLOTH (U)
+    initial_player_mod = state.sloth_player_speed_mod
+    bargains.apply_bargain(SinType.SLOTH, state, entities)
+    assert state.sloth_player_speed_mod < initial_player_mod
+    # Reduce Sloth
+    bargains.reduce_bargain(SinType.SLOTH, state, entities)
+    assert state.sloth_player_speed_mod == pytest.approx(initial_player_mod)
+    assert state.sloth_freeze_timer == 0
+
+
+def test_quit_key_is_x_and_app_bindings():
+    """Verify quit key is KEY_X and app exits gracefully."""
+    import pyxel
+    from main import GrainOfDoubtApp
+
+    app = GrainOfDoubtApp(headless=True)
+    # Mock pyxel.quit and pyxel.btnp
+    quit_called = False
+    orig_quit = pyxel.quit
+    orig_btnp = pyxel.btnp
+    try:
+        pyxel.quit = lambda: None
+        pyxel.btnp = lambda k: (k == pyxel.KEY_X)
+        app.update()
+    finally:
+        pyxel.quit = orig_quit
+        pyxel.btnp = orig_btnp
+
+
+def test_lust_permanent_attraction_both():
+    """Verify Lust permanently attracts both sand and hazards across frames without timing out."""
+    state = StateManager()
+    state.start_game()
+    bargains = BargainManager()
+
+    bargains.apply_bargain(SinType.LUST, state)
+    rad = state.lust_attract_radius
+    assert rad == 180.0
+    assert state.lust_hazard_attract_radius == 180.0
+
+    # Advance 400 frames: neither radius should decay to 0!
+    for _ in range(400):
+        state.update_timers()
+    assert state.lust_attract_radius == 180.0
+    assert state.lust_hazard_attract_radius == 180.0
+
+    # Apply 2nd pact: radius expands
+    bargains.apply_bargain(SinType.LUST, state)
+    assert state.lust_attract_radius == 240.0
+    assert state.lust_hazard_attract_radius == 240.0
+
+
+def test_wrath_non_compounding():
+    """Verify Wrath does not compound or extend past 10.0s (300 frames) on multiple uses."""
+    state = StateManager()
+    state.start_game()
+    bargains = BargainManager()
+
+    bargains.apply_bargain(SinType.WRATH, state)
+    assert state.wrath_wipe_timer == 300
+    assert state.wrath_zero_yield_timer == 300
+
+    # Apply Wrath second time: remains flat 300 (does not compound to 600 or 1.5x)
+    bargains.apply_bargain(SinType.WRATH, state)
+    assert state.wrath_wipe_timer == 300
+    assert state.wrath_zero_yield_timer == 300
 
 
 

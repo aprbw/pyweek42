@@ -164,7 +164,7 @@ def is_mobile_environment() -> bool:
 
 
 class GrainOfDoubtApp:
-    VERSION: str = "v0.8.0"
+    VERSION: str = "v0.9.0"
     SCREEN_WIDTH: int = 600
     SCREEN_HEIGHT: int = 800
 
@@ -208,7 +208,7 @@ class GrainOfDoubtApp:
                 self.SCREEN_HEIGHT,
                 title="Grain of Doubt - By Arian Prabowo",
                 fps=30,
-                quit_key=pyxel.KEY_Q,
+                quit_key=pyxel.KEY_X,
             )
             self.audio.init_sounds(pyxel)
             if self.record_video_on_start:
@@ -273,6 +273,10 @@ class GrainOfDoubtApp:
         if pyxel is None:
             return
 
+        # Exit game shortcut 'X'
+        if not self.headless and pyxel.btnp(pyxel.KEY_X):
+            pyxel.quit()
+
         # Toggle Dev mode dynamically with '`' (backtick / grave)
         if pyxel.btnp(pyxel.KEY_BACKQUOTE):
             self.dev_mode = not self.dev_mode
@@ -308,6 +312,22 @@ class GrainOfDoubtApp:
                     self.feedback_timer = 90
                     if self.state.current_state == GameState.KAIROS:
                         self.state.resume_chronos()
+
+            # Keys Q, W, E, R, T, Y, U reduce corresponding Faustian bargain level
+            reduce_keys = [
+                (pyxel.KEY_Q, SinType.PRIDE),
+                (pyxel.KEY_W, SinType.GREED),
+                (pyxel.KEY_E, SinType.LUST),
+                (pyxel.KEY_R, SinType.ENVY),
+                (pyxel.KEY_T, SinType.GLUTTONY),
+                (pyxel.KEY_Y, SinType.WRATH),
+                (pyxel.KEY_U, SinType.SLOTH),
+            ]
+            for key, sin in reduce_keys:
+                if pyxel.btnp(key):
+                    fb = self.bargains.reduce_bargain(sin, self.state, self.entities)
+                    self.selected_feedback = fb
+                    self.feedback_timer = 90
 
         # Enforce speed handicap in physics when bot is active
         self.state._bot_speed_handicap = self.bot.config.speed_handicap if self.bot_mode else 1.0
@@ -819,8 +839,11 @@ class GrainOfDoubtApp:
         if self.state.greed_active:
             flash = (pyxel.frame_count // 5) % 2 == 0
             col = 8 if flash else 9
-            msg = f"BORROWED TIME (k={self.state.greed_level})"
-            draw_text_scaled(self.SCREEN_WIDTH // 2 - 100, 48, msg, col, scale=2)
+            if self.dev_mode:
+                msg = f"BORROWED TIME ({self.state.greed_timer / 30.0:.1f}s)"
+            else:
+                msg = "BORROWED TIME"
+            draw_text_scaled(self.SCREEN_WIDTH // 2 - 80, 48, msg, col, scale=2)
 
         # Wrath Zero Yield Warning
         if self.state.wrath_zero_yield_timer > 0:
@@ -894,43 +917,63 @@ class GrainOfDoubtApp:
             pyxel.line(cx + 14, col_y + 106, cx + col_w - 14, col_y + 106, 6)
 
             # Boon section
-            boon_val = defn.get_boon_value(k)
             draw_text_scaled(cx + 16, col_y + 120, "PRO (NOW):", 11, scale=2)
             if sin == SinType.PRIDE:
-                group_name = ["Pair", "Triplet", "Quadruplet", "Quintet"][min(3, k)]
+                group_name = ["Pairs", "Triplets", "Quadruplets", "Quintuplets"][min(3, k)]
                 draw_text_scaled(cx + 16, col_y + 144, "Sand Clusters", 7, scale=2)
-                draw_text_scaled(cx + 16, col_y + 168, f"{group_name} ({k+2}x)", 11, scale=2)
+                draw_text_scaled(cx + 16, col_y + 168, f"{group_name} (+{k+1} grains)", 11, scale=2)
             elif sin == SinType.ENVY:
                 draw_text_scaled(cx + 16, col_y + 144, "Reap Screen Sand", 7, scale=2)
                 draw_text_scaled(cx + 16, col_y + 168, "All Visible Sands", 11, scale=2)
             elif sin == SinType.GREED:
-                draw_text_scaled(cx + 16, col_y + 144, "Bounty Harvest", 7, scale=2)
-                draw_text_scaled(cx + 16, col_y + 168, f"+{boon_val:.1f} pts/dodge", 11, scale=2)
+                draw_text_scaled(cx + 16, col_y + 144, "Score Multiplier", 7, scale=2)
+                draw_text_scaled(cx + 16, col_y + 168, "x110% per sand", 11, scale=2)
             elif sin == SinType.SLOTH:
                 draw_text_scaled(cx + 16, col_y + 144, "Freeze Hazards", 7, scale=2)
                 draw_text_scaled(cx + 16, col_y + 168, "8.0s Speed Recovery", 11, scale=2)
+            elif sin == SinType.LUST:
+                draw_text_scaled(cx + 16, col_y + 144, "Sand Magnet", 7, scale=2)
+                draw_text_scaled(cx + 16, col_y + 168, f"{180 + k * 60}px (Permanent)", 11, scale=2)
+            elif sin == SinType.GLUTTONY:
+                draw_text_scaled(cx + 16, col_y + 144, "+Sand Spawn Rate", 7, scale=2)
+                draw_text_scaled(cx + 16, col_y + 168, "+50% Sand Rate", 11, scale=2)
+            elif sin == SinType.WRATH:
+                draw_text_scaled(cx + 16, col_y + 144, "Hazard Purge", 7, scale=2)
+                draw_text_scaled(cx + 16, col_y + 168, "10.0s Screen Clear", 11, scale=2)
             else:
                 draw_text_scaled(cx + 16, col_y + 144, f"+{defn.boon_name}", 7, scale=2)
-                draw_text_scaled(cx + 16, col_y + 168, f"{boon_val:.1f} {defn.boon_unit}", 11, scale=2)
+                draw_text_scaled(cx + 16, col_y + 168, f"{defn.boon_base} {defn.boon_unit}", 11, scale=2)
 
             # Visual divider
             pyxel.line(cx + 14, col_y + 206, cx + col_w - 14, col_y + 206, 2)
 
             # Curse section
-            curse_val = defn.get_curse_value(k)
             draw_text_scaled(cx + 16, col_y + 220, "CON (FOREVER):", 8, scale=2)
-            if sin == SinType.GREED:
+            if sin == SinType.PRIDE:
+                draw_text_scaled(cx + 16, col_y + 244, "Descent Speed", 7, scale=2)
+                draw_text_scaled(cx + 16, col_y + 268, "+25% Fall Velocity", 8, scale=2)
+            elif sin == SinType.GREED:
                 draw_text_scaled(cx + 16, col_y + 244, "Borrowed Time", 7, scale=2)
-                draw_text_scaled(cx + 16, col_y + 268, "10-18s +10% Sand", 8, scale=2)
+                draw_text_scaled(cx + 16, col_y + 268, "10-18s (LETHAL END)", 8, scale=2)
             elif sin == SinType.ENVY:
                 draw_text_scaled(cx + 16, col_y + 244, "Vignette Vision", 7, scale=2)
-                draw_text_scaled(cx + 16, col_y + 268, f"{int(curse_val)}px Radius", 8, scale=2)
+                draw_text_scaled(cx + 16, col_y + 268, f"{int(260.0 * (0.8**k))}px Tunnel", 8, scale=2)
             elif sin == SinType.SLOTH:
-                draw_text_scaled(cx + 16, col_y + 244, "-Lateral Drag", 7, scale=2)
-                draw_text_scaled(cx + 16, col_y + 268, f"{curse_val:.2f} drag", 8, scale=2)
+                drag = 0.05 * (1.5 ** k) * 100
+                draw_text_scaled(cx + 16, col_y + 244, "Lateral Drag", 7, scale=2)
+                draw_text_scaled(cx + 16, col_y + 268, f"-{drag:.1f}% Steering", 8, scale=2)
+            elif sin == SinType.LUST:
+                draw_text_scaled(cx + 16, col_y + 244, "Hazard Magnet", 7, scale=2)
+                draw_text_scaled(cx + 16, col_y + 268, f"{180 + k * 60}px (Permanent)", 8, scale=2)
+            elif sin == SinType.GLUTTONY:
+                draw_text_scaled(cx + 16, col_y + 244, "+Hazard Spawn Rate", 7, scale=2)
+                draw_text_scaled(cx + 16, col_y + 268, "+50% Hazard Rate", 8, scale=2)
+            elif sin == SinType.WRATH:
+                draw_text_scaled(cx + 16, col_y + 244, "Zero Yield", 7, scale=2)
+                draw_text_scaled(cx + 16, col_y + 268, "10.0s Zero Yield", 8, scale=2)
             else:
                 draw_text_scaled(cx + 16, col_y + 244, f"-{defn.curse_name}", 7, scale=2)
-                draw_text_scaled(cx + 16, col_y + 268, f"{curse_val:.1f} {defn.curse_unit}", 8, scale=2)
+                draw_text_scaled(cx + 16, col_y + 268, f"{defn.curse_base} {defn.curse_unit}", 8, scale=2)
 
             # Compounding note
             draw_text_scaled(cx + 16, col_y + 350, "COMPOUNDS PER PACT", 6, scale=2)
@@ -980,9 +1023,9 @@ class GrainOfDoubtApp:
         draw_text_scaled(60, 520, "SHORTCUTS", 9, scale=2)
         if self.dev_mode:
             draw_text_scaled(60, 550, "[`] DEV MODE  |  [B] BOT  |  [V] REC", 11, scale=2)
-            draw_text_scaled(60, 580, "[Q] QUIT GAME |  [R] RESTART", 5, scale=2)
+            draw_text_scaled(60, 580, "[X] QUIT GAME  |  [SPACE] RESTART", 5, scale=2)
         else:
-            draw_text_scaled(60, 550, "[Q] QUIT GAME  |  [R] RESTART", 5, scale=2)
+            draw_text_scaled(60, 550, "[X] QUIT GAME  |  [SPACE] RESTART", 5, scale=2)
 
         # Start prompt
         blink = (pyxel.frame_count // 12) % 2 == 0
@@ -1100,8 +1143,8 @@ class GrainOfDoubtApp:
         # Line 1: Header + Version + Quick Toggles
         draw_text_scaled(box_x + 12, box_y + 8, f"[DEV MODE] (` close) {self.VERSION} | BOT:{bot_str} | REC:{rec_str} | GOD:{inv_str}", 11, scale=2)
 
-        # Line 2: Number keys 1-7 for fixed pacts
-        draw_text_scaled(box_x + 12, box_y + 36, "PACTS: 1:PRIDE 2:GREED 3:LUST 4:ENVY 5:GLUT 6:WRATH 7:SLOTH", 10, scale=2)
+        # Line 2: Number keys 1-7 for fixed pacts, Q-U to reduce
+        draw_text_scaled(box_x + 12, box_y + 36, "PACTS: 1-7:ADD  Q-U:REDUCE (P,G,L,E,GL,W,S)  |  [X] QUIT", 10, scale=2)
 
         # Line 3: Player and Camera telemetry
         px = self.entities.player.x
@@ -1119,7 +1162,7 @@ class GrainOfDoubtApp:
         # Line 5: State and Timer telemetry
         elapsed = self.state.total_frames / 30.0
         st_name = self.state.current_state.name
-        greed_str = f"{self.state.greed_timer / 30.0:4.1f}s" if self.state.greed_active else "OFF"
+        greed_str = f"{self.state.greed_timer / 30.0:4.1f}s (LETHAL)" if self.state.greed_active else "OFF"
         draw_text_scaled(box_x + 12, box_y + 120, f"STATE:{st_name} | GREED:{greed_str} | TIME:{elapsed:4.1f}s | PRIDE:{self.state.pride_level}", 6, scale=2)
 
 

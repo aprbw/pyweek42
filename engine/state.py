@@ -53,6 +53,7 @@ class StateManager:
         # Sin level tracker
         self.pride_level: int = 0
         self.envy_level: int = 0
+        self.gluttony_level: int = 0
 
         # Wrath zero-yield timer
         self.wrath_wipe_timer: int = 0
@@ -175,11 +176,7 @@ class StateManager:
         if self.wrath_zero_yield_timer > 0:
             self.wrath_zero_yield_timer -= 1
 
-        # Lust attraction timer
-        if self.lust_attract_timer > 0:
-            self.lust_attract_timer -= 1
-            if self.lust_attract_timer == 0:
-                self.lust_attract_radius = 0.0
+        # Lust attraction is permanent for both sand and hazards (no timer decay)
 
         # Sloth hazard freeze timer
         if self.sloth_freeze_timer > 0:
@@ -194,11 +191,12 @@ class StateManager:
             self.distance += self.scroll_speed
             self.update_effective_scroll_speed()
 
-            # Greed Borrowed Time timer countdown
+            # Greed Borrowed Time timer countdown (Lethal Expiration: Debt Collected)
             if self.greed_active and self.greed_timer > 0:
                 self.greed_timer -= 1
                 if self.greed_timer <= 0:
                     self.greed_active = False
+                    self.trigger_game_over("Borrowed Time Expired: Debt Collected")
 
             if self.chronos_timer >= self.CHRONOS_FRAMES:
                 self.trigger_kairos()
