@@ -1,7 +1,7 @@
 # Grain of Doubt
 
 > **By Arian Prabowo**  
-> **Version:** v0.10.0  
+> **Version:** v0.11.0  
 > **PyWeek 42 Entry ("Borrowed Time")** — September 2026  
 > An endless retro downhill falling-hourglass arcade runner built with the **Pyxel** retro game engine.  
 > **Target Resolution:** $600 \times 800$ pixels ($3:4$ Portrait Aspect Ratio, Infinite Horizontal Arena).
@@ -61,9 +61,9 @@ Steer left or right to avoid razor-sharp falling glass shards while collecting g
    * *Curse:* Hazard magnetic attraction permanently pulls razor glass shards within radius toward hourglass ($180.0$px on 1st pact, $+60.0$px on subsequent pacts).
 4. **Envy:**
    * *Boon:* Instantly reaps all golden sand grains currently visible on the screen, immediately awarding their score and triggering radiant particle bursts.
-   * *Curse:* Inflicts **Vignette Vision**, a multi-circle concentric mask with 5 graduated dither transparency tiers. Radius $= \max(90,\, 260 \times 0.80^{k-1})$ px.
-     * **Outermost circle** (zero vision beyond): Pact 1 → $260$px, Pact 2 → $208$px, Pact 3 → $166$px, Pact 4 → $133$px, Pact 5 → $107$px, Pact 6+ → $90$px (minimum).
-     * **Innermost circle** (full clear vision): $0.42 \times$ radius — Pact 1 → $109$px, Pact 2 → $87$px, Pact 3 → $70$px, Pact 4 → $56$px, Pact 5 → $45$px, Pact 6+ → $38$px.
+   * *Curse:* Inflicts **Vignette Vision**, a multi-circle concentric mask with 5 graduated dither transparency tiers between an inner clear core and outer void boundary.
+     * **Outermost circle** (zero vision beyond): $1200 \times 0.8^k$ px — Pact 1 → $960$px, Pact 2 → $768$px, Pact 3 → $614$px, Pact 4 → $491$px, Pact 5 → $393$px.
+     * **Innermost circle** (full clear vision): $1000 \times 0.8^{k+1}$ px — Pact 1 → $640$px, Pact 2 → $512$px, Pact 3 → $410$px, Pact 4 → $328$px, Pact 5 → $262$px.
 5. **Gluttony:**
    * *Boon:* Increases golden sand spawn rate by $+50\%$ per pact level ($+0.50$).
    * *Curse:* Increases razor hazard spawn rate by $+50\%$ per pact level ($+0.50$).
@@ -155,14 +155,20 @@ python3 -m http.server 8000
 
 ## 📝 Changelog
 
-### v0.10.0 (September 2026)
+### v0.11.0 (September 2026)
+* **Difficulty Rebalance: Halved Base Spawn Rate:**
+  * Reduced base entity spawn accumulator from $0.45$ to $0.225$ per frame, halving the initial amount of sand grains and glass shards at the start for a gentler learning curve.
+* **Envy Vignette Rework (Dual-Radius):**
+  * Outermost circle (zero vision beyond): radius $= 1200 \times 0.8^k$ px (Pact 1: 960px, Pact 2: 768px, Pact 3: 614px, Pact 4: 491px, Pact 5: 393px).
+  * Innermost circle (full clear vision): radius $= 1000 \times 0.8^{k+1}$ px (Pact 1: 640px, Pact 2: 512px, Pact 3: 410px, Pact 4: 328px, Pact 5: 262px).
+  * 5 graduated dither tiers are smoothly interpolated between inner and outer radii.
+* **Top-Right Numbered Pact Menu:**
+  * In-game HUD pact list moved to top right, removed `(7)` header, and formatted as canonical numbered list (`1. pride 0`, `2. greed 0`, etc.).
 * **X Key Dual-Behaviour:**
-  * On **Title Screen**: `X` quits the game (no-op in browser).
-  * **During Gameplay** (Chronos / Kairos / Game Over): `X` returns to the Title menu without quitting.
-* **Pact Menu Numbered List:**
-  * In-game HUD pact list now shows canonical numbering (`1. PRIDE 0`, `2. GREED 0`, etc.) instead of `(7)` header.
-* **README Envy Radius Progression:**
-  * Documented exact outermost (zero vision) and innermost (full clear vision) circle radii per pact level.
+  * During gameplay (Chronos / Kairos / Game Over): `X` returns to the Title screen menu without quitting.
+  * On Title Screen: `X` exits the application (graceful no-op in browser).
+* **Bot Mode Game Over Restart Delay:**
+  * Bot no longer immediately restarts upon game over; waits 6.0 seconds (180 frames) with live countdown displayed, allowing players to view final statistics. Pressing Space restarts immediately.
 
 ### v0.9.0 (September 2026)
 * **Universal PC & Mobile Viewport 3:4 Containment:**

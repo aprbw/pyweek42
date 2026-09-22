@@ -77,10 +77,11 @@ class StateManager:
         self.shake_timer: int = 0
         self.shake_intensity: float = 0.0
 
-        # Visual Vignette (Initial 1000.0 = completely clear full screen vision)
+        # Visual Vignette (Envy): outer = zero vision beyond, inner = full clear vision
         self.base_vignette_radius: float = 1000.0
-        self.vignette_radius: float = 1000.0
-        self.min_vignette_radius: float = 90.0
+        self.vignette_radius: float = 1000.0       # outer circle (zero vision beyond)
+        self.vignette_inner_radius: float = 900.0   # inner circle (full clear vision)
+        self.min_vignette_radius: float = 60.0
 
         # Post-mortem death reason
         self.death_reason: str = ""

@@ -246,7 +246,7 @@ class EntityManager:
         margin = 2700.0
         span_w = self.screen_w + 2.0 * margin
         density_scale = span_w / 880.0
-        self.spawn_accumulator += (spawn_rate_mult * 0.45 * density_scale)
+        self.spawn_accumulator += (spawn_rate_mult * 0.225 * density_scale)
         while self.spawn_accumulator >= 1.0:
             self.spawn_accumulator -= 1.0
             spawn_y = self.screen_h + random.uniform(20, 80)

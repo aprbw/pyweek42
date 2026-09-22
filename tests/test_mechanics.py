@@ -296,7 +296,8 @@ def test_envy_and_lust_mechanics():
     assert len(entities.sands) == 1
     assert entities.sands[0].x == 10000.0
     assert state.score >= initial_score + 2
-    assert state.vignette_radius == 260.0  # Vignette Vision curse activated!
+    assert state.vignette_radius == 960.0  # Vignette Vision outer radius (1200 * 0.8^1)
+    assert state.vignette_inner_radius == 640.0  # Vignette Vision inner radius (1000 * 0.8^2)
 
     # Lust activates sand and hazard magnetic fields
     bargains.apply_bargain(SinType.LUST, state, entities)
@@ -450,8 +451,8 @@ def test_pride_sand_clusters_and_one_point_per_sand():
     entities = EntityManager(screen_w=600, screen_h=800)
     bargains = BargainManager()
 
-    # Calibrated single-wave spawn rate matching the expanded 4.5 screens (6000px) span
-    single_wave_rate = 880.0 / (entities.screen_w + 2.0 * 2700.0) / 0.45
+    # Calibrated single-wave spawn rate matching the expanded 4.5 screens (6000px) span with halved spawn rate
+    single_wave_rate = 880.0 / (entities.screen_w + 2.0 * 2700.0) / 0.225
 
     # Initially pride_level is 0 -> spawn 1 sand grain per wave
     random.seed(42)
@@ -558,8 +559,8 @@ def test_game_over_2s_debounce_lockout():
 
     orig_btnp = pyxel.btnp
     try:
-        # Even if user presses restart key immediately (frame 1..59), ignore input!
-        pyxel.btnp = lambda k: True
+        # Even if user presses restart key immediately (frame 1..59), ignore restart input!
+        pyxel.btnp = lambda k: (k in (pyxel.KEY_SPACE, pyxel.KEY_RETURN, pyxel.KEY_R))
         for frame in range(1, 60):
             app.update()
             assert app.game_over_timer == frame
@@ -778,7 +779,8 @@ def test_dev_mode_qwertyu_pact_reduction():
 
     # 4. ENVY (R)
     bargains.apply_bargain(SinType.ENVY, state, entities)
-    assert state.vignette_radius == 260.0
+    assert state.vignette_radius == 960.0
+    assert state.vignette_inner_radius == 640.0
     assert state.envy_level == 1
     # Reduce Envy
     bargains.reduce_bargain(SinType.ENVY, state, entities)
@@ -814,19 +816,43 @@ def test_dev_mode_qwertyu_pact_reduction():
 
 
 def test_quit_key_is_x_and_app_bindings():
-    """Verify quit key is KEY_X and app exits gracefully."""
+    """Verify X key returns to menu during gameplay, quits on desktop title screen, and no-ops in browser."""
+    import sys
     import pyxel
     from main import GrainOfDoubtApp
 
     app = GrainOfDoubtApp(headless=True)
-    # Mock pyxel.quit and pyxel.btnp
-    quit_called = False
     orig_quit = pyxel.quit
     orig_btnp = pyxel.btnp
+    quit_called = False
+
+    def mock_quit():
+        nonlocal quit_called
+        quit_called = True
+
     try:
-        pyxel.quit = lambda: None
+        pyxel.quit = mock_quit
         pyxel.btnp = lambda k: (k == pyxel.KEY_X)
+
+        # 1. During CHRONOS gameplay, pressing X returns to TITLE and does NOT quit
+        app.start_new_game()
+        assert app.state.current_state == GameState.CHRONOS
         app.update()
+        assert app.state.current_state == GameState.TITLE
+        assert quit_called is False
+
+        # 2. On TITLE screen on desktop, pressing X calls pyxel.quit()
+        with pytest.MonkeyPatch().context() as mp:
+            mp.setattr(sys, "platform", "darwin")
+            app.update()
+            assert quit_called is True
+
+        # 3. On TITLE screen in browser (emscripten), pressing X does NOT call pyxel.quit()
+        quit_called = False
+        with pytest.MonkeyPatch().context() as mp:
+            mp.setattr(sys, "platform", "emscripten")
+            app.update()
+            assert quit_called is False
     finally:
         pyxel.quit = orig_quit
         pyxel.btnp = orig_btnp
@@ -965,5 +991,67 @@ def test_dev_mode_bottom_menu_shows_invulnerability_shortcut():
         assert any("SHORTCUT: [I] INVULNERABILITY" in t for t in drawn_texts)
     finally:
         main.draw_text_scaled = orig_draw
+
+
+def test_bot_game_over_delayed_restart():
+    """Verify bot mode does not immediately restart on Game Over, waiting 6.0s (180 frames)."""
+    import pyxel
+    from main import GrainOfDoubtApp
+
+    app = GrainOfDoubtApp(headless=True, bot_mode=True)
+    app.start_new_game()
+    app.state.trigger_game_over("Test Bot Death")
+    assert app.state.current_state == GameState.GAMEOVER
+
+    orig_btnp = pyxel.btnp
+    try:
+        pyxel.btnp = lambda k: False
+        # Up to frame 179: must remain in GAMEOVER
+        for frame in range(1, 180):
+            app.update()
+            assert app.state.current_state == GameState.GAMEOVER
+            assert app.auto_restart_timer == frame
+
+        # Frame 180 reached: bot auto-restarts into CHRONOS
+        app.update()
+        assert app.state.current_state == GameState.CHRONOS
+        assert app.auto_restart_timer == 0
+    finally:
+        pyxel.btnp = orig_btnp
+
+
+def test_pact_menu_top_right_numbered_format():
+    """Verify pact menu is at top right, has no '(7)', and numbers each pact '1. pride 0'."""
+    import main
+    from main import GrainOfDoubtApp
+
+    app = GrainOfDoubtApp(headless=True)
+    app.start_new_game()
+
+    calls = []
+    orig_draw = main.draw_text_scaled
+    try:
+        main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2: calls.append((x, y, s))
+        app.draw_hud()
+
+        # Check title is "PACTS" (not "PACTS (7)")
+        pact_titles = [c for c in calls if c[2] == "PACTS"]
+        assert len(pact_titles) == 1, "Must render 'PACTS' header"
+        # Must be on the right side of the 600px screen (x > 400)
+        assert pact_titles[0][0] >= 440, f"Pact menu header must be at top right (x >= 440), got {pact_titles[0][0]}"
+
+        # Check numbered rows: '1. pride', '2. greed', etc.
+        pride_entry = [c for c in calls if "1. pride" in c[2]]
+        assert len(pride_entry) == 1, f"Must find '1. pride' in HUD text, found {calls}"
+        assert pride_entry[0][0] >= 440, "Pact row must be at top right"
+
+        greed_entry = [c for c in calls if "2. greed" in c[2]]
+        assert len(greed_entry) == 1, f"Must find '2. greed' in HUD text, found {calls}"
+
+        # Ensure no '(7)' anywhere in HUD
+        assert not any("(7)" in c[2] for c in calls)
+    finally:
+        main.draw_text_scaled = orig_draw
+
 
 

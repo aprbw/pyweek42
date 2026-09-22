@@ -23,34 +23,49 @@ from engine.bot import PlayTestingBot, BotConfig
 from engine.video import VideoRecorder
 
 
-def render_vignette(px: float, py: float, radius: float, screen_w: int = 600, screen_h: int = 800, pyxel_module=None):
+def render_vignette(px: float, py: float, radius: float, screen_w: int = 600, screen_h: int = 800, pyxel_module=None, inner_radius: float = None):
     """Draw multi-circle concentric vignette mask centered at (px, py) with graduated dither transparency.
 
-    - Outside R4 (1.00 * radius): 100% solid black void.
-    - Tier 4 (0.88..1.00 * radius): 85% dither darkness.
-    - Tier 3 (0.74..0.88 * radius): 65% dither darkness.
-    - Tier 2 (0.58..0.74 * radius): 42% dither darkness.
-    - Tier 1 (0.42..0.58 * radius): 20% dither darkness.
-    - Core (< 0.42 * radius): 100% clear unobstructed vision.
+    Args:
+        radius: Outer radius — zero vision beyond this circle.
+        inner_radius: Inner radius — full clear unobstructed vision inside this circle.
+                      If None, defaults to 0.42 * radius for backwards compatibility.
+
+    The 5 graduated tiers are linearly interpolated between inner_radius and radius:
+    - Core (< inner_radius): 100% clear unobstructed vision.
+    - Tier 1 (inner..t2): 20% dither darkness.
+    - Tier 2 (t2..t3): 42% dither darkness.
+    - Tier 3 (t3..t4): 65% dither darkness.
+    - Tier 4 (t4..radius): 85% dither darkness.
+    - Outside radius: 100% solid black void.
     """
     if pyxel_module is None or radius >= 900.0:
         return
 
-    r = max(25.0, float(radius))
-    tiers = [
-        (0.42 * r, 0.20),
-        (0.58 * r, 0.42),
-        (0.74 * r, 0.65),
-        (0.88 * r, 0.85),
-        (1.00 * r, 1.00),
+    r_outer = max(25.0, float(radius))
+    if inner_radius is None:
+        r_inner = 0.42 * r_outer
+    else:
+        r_inner = max(10.0, min(float(inner_radius), r_outer - 5.0))
+
+    # 5 tier boundaries linearly interpolated from r_inner to r_outer
+    span = r_outer - r_inner
+    tier_radii = [
+        r_inner,                          # boundary 0: inner edge (clear core)
+        r_inner + span * 0.25,            # boundary 1
+        r_inner + span * 0.50,            # boundary 2
+        r_inner + span * 0.75,            # boundary 3
+        r_outer,                          # boundary 4: outer edge (total void)
     ]
-    radii_sq = [rk * rk for rk, _ in tiers]
+    tier_alphas = [0.20, 0.42, 0.65, 0.85, 1.00]
+
+    radii_sq = [rk * rk for rk in tier_radii]
     r_max_sq = radii_sq[-1]
     has_dither = hasattr(pyxel_module, "dither")
 
     # Fast block fill above and below outer circle
-    min_y = max(0, int(py - tiers[-1][0]))
-    max_y = min(screen_h, int(py + tiers[-1][0]) + 1)
+    min_y = max(0, int(py - tier_radii[-1]))
+    max_y = min(screen_h, int(py + tier_radii[-1]) + 1)
 
     if has_dither:
         pyxel_module.dither(1.0)
@@ -73,7 +88,7 @@ def render_vignette(px: float, py: float, radius: float, screen_w: int = 600, sc
 
         dxs = [math.sqrt(r_sq - dy_sq) if r_sq > dy_sq else 0.0 for r_sq in radii_sq]
 
-        # 1. Solid black void outside outer radius R4
+        # 1. Solid black void outside outer radius
         lx_out = int(px - dxs[4])
         rx_out = int(px + dxs[4])
         if has_dither:
@@ -83,22 +98,22 @@ def render_vignette(px: float, py: float, radius: float, screen_w: int = 600, sc
         if rx_out < screen_w:
             pyxel_module.rect(rx_out, y, screen_w - rx_out, 1, 0)
 
-        # 2. Concentric graduated dither rings from Tier 4 down to Tier 1
+        # 2. Concentric graduated dither rings from outermost tier down to innermost
         for i in range(4, 0, -1):
-            alpha = tiers[i - 1][1]
+            alpha = tier_alphas[i - 1]
             dx_outer = dxs[i]
             dx_inner = dxs[i - 1]
 
             if has_dither:
                 pyxel_module.dither(alpha)
 
-            # Left ring segment: [px - dx_outer, px - dx_inner]
+            # Left ring segment
             l_start = max(0, int(px - dx_outer))
             l_end = max(0, min(screen_w, int(px - dx_inner)))
             if l_end > l_start:
                 pyxel_module.rect(l_start, y, l_end - l_start, 1, 0)
 
-            # Right ring segment: [px + dx_inner, px + dx_outer]
+            # Right ring segment
             r_start = max(0, min(screen_w, int(px + dx_inner)))
             r_end = min(screen_w, int(px + dx_outer))
             if r_end > r_start:
@@ -110,7 +125,7 @@ def render_vignette(px: float, py: float, radius: float, screen_w: int = 600, sc
             c_end = min(screen_w, int(px + dxs[1]))
             if c_end > c_start:
                 if has_dither:
-                    pyxel_module.dither(tiers[0][1])
+                    pyxel_module.dither(tier_alphas[0])
                 pyxel_module.rect(c_start, y, c_end - c_start, 1, 0)
 
     if has_dither:
@@ -181,7 +196,7 @@ def is_dev_environment() -> bool:
 
 
 class GrainOfDoubtApp:
-    VERSION: str = "v0.10.0"
+    VERSION: str = "v0.11.0"
     SCREEN_WIDTH: int = 600
     SCREEN_HEIGHT: int = 800
 
@@ -291,10 +306,11 @@ class GrainOfDoubtApp:
         if pyxel is None:
             return
 
-        # X key: On TITLE screen = quit game; During gameplay = return to title menu
-        if not self.headless and pyxel.btnp(pyxel.KEY_X):
+        # X key: On TITLE screen = quit game (no-op in browser); During gameplay = return to title menu
+        if pyxel.btnp(pyxel.KEY_X):
             if self.state.current_state == GameState.TITLE:
-                pyxel.quit()
+                if sys.platform != "emscripten":
+                    pyxel.quit()
             else:
                 # Return to title screen from any gameplay state
                 self.state.current_state = GameState.TITLE
@@ -514,9 +530,17 @@ class GrainOfDoubtApp:
             self.game_over_timer += 1
             if self.bot_mode:
                 self.auto_restart_timer += 1
-                if self.auto_restart_timer >= 60 and self.game_over_timer >= 60:
+                # Bot waits 6.0s (180 frames) before restarting instead of immediately restarting
+                if self.auto_restart_timer >= 180 and self.game_over_timer >= 180:
                     self.auto_restart_timer = 0
                     self.start_new_game()
+                elif self.game_over_timer >= 60:
+                    if (pyxel.btnp(pyxel.KEY_LEFT) or pyxel.btnp(pyxel.KEY_RIGHT) or
+                        pyxel.btnp(pyxel.KEY_A) or pyxel.btnp(pyxel.KEY_D) or
+                        pyxel.btnp(pyxel.KEY_R) or pyxel.btnp(pyxel.KEY_SPACE) or pyxel.btnp(pyxel.KEY_RETURN) or
+                        pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT)):
+                        self.auto_restart_timer = 0
+                        self.start_new_game()
             else:
                 # Require minimum 2.0s (60 frames) debounce before allowing restart
                 if self.game_over_timer >= 60:
@@ -616,6 +640,7 @@ class GrainOfDoubtApp:
             self.SCREEN_WIDTH,
             self.SCREEN_HEIGHT,
             pyxel,
+            inner_radius=self.state.vignette_inner_radius,
         )
 
         # Draw HUD (Score, Hearts, Active Pacts, Elapsed Time)
@@ -825,48 +850,54 @@ class GrainOfDoubtApp:
         score_str = f"SCORE: {self.state.score:06d}"
         draw_text_scaled(self.SCREEN_WIDTH - 240, 14, score_str, 10, scale=2)
 
-        # Multiplier
+        # Multiplier (inside score container at right)
         if self.state.score_multiplier > 1.05:
             mult_str = f"x{self.state.score_multiplier:.1f}"
-            draw_text_scaled(self.SCREEN_WIDTH - 90, 42, mult_str, 9, scale=2)
+            draw_text_scaled(self.SCREEN_WIDTH - 65, 14, mult_str, 9, scale=2)
 
-        # 4. Vertical Pacts List in Catholic Canonical Order (All 7 always listed)
+        # 4. Vertical Pacts List in Catholic Canonical Order at Top Right (All 7 always listed)
         pacts_box_w = 146
         pacts_box_h = 140
+        pacts_box_x = self.SCREEN_WIDTH - pacts_box_w - 10
+        pacts_box_y = 44
         if hasattr(pyxel, "dither"):
             pyxel.dither(0.60)
-        pyxel.rect(10, 44, pacts_box_w, pacts_box_h, 0)
+        pyxel.rect(pacts_box_x, pacts_box_y, pacts_box_w, pacts_box_h, 0)
         if hasattr(pyxel, "dither"):
             pyxel.dither(1.0)
-        pyxel.rectb(10, 44, pacts_box_w, pacts_box_h, 1)
+        pyxel.rectb(pacts_box_x, pacts_box_y, pacts_box_w, pacts_box_h, 1)
 
-        draw_text_scaled(16, 48, "PACTS", 6, scale=2)
+        draw_text_scaled(pacts_box_x + 8, pacts_box_y + 4, "PACTS", 6, scale=2)
         for idx, sin in enumerate(CANONICAL_SINS):
             k = self.bargains.selection_counts.get(sin, 0)
-            row_y = 66 + idx * 16
-            sin_lbl = sin.name[:7].upper()
-            line_txt = f"{idx+1}. {sin_lbl:<7} {k}"
+            row_y = pacts_box_y + 22 + idx * 16
+            sin_lbl = sin.name.lower()
+            line_txt = f"{idx+1}. {sin_lbl:<8} {k}"
             col = 10 if k > 0 else 5
-            draw_text_scaled(16, row_y, line_txt, col, scale=2)
+            draw_text_scaled(pacts_box_x + 8, row_y, line_txt, col, scale=2)
 
-        # Minimal Status Badges when active (Full details in Dev Mode '`')
+        # Minimal Status Badges when active (drawn below hearts at top left)
+        badge_y = 44
         if self.bot_mode and not self.dev_mode:
-            pyxel.rect(self.SCREEN_WIDTH - 110, 42, 100, 20, 0)
-            pyxel.rectb(self.SCREEN_WIDTH - 110, 42, 100, 20, 11)
-            draw_text_scaled(self.SCREEN_WIDTH - 105, 46, "[BOT ON]", 11, scale=2)
+            pyxel.rect(10, badge_y, 100, 20, 0)
+            pyxel.rectb(10, badge_y, 100, 20, 11)
+            draw_text_scaled(15, badge_y + 4, "[BOT ON]", 11, scale=2)
+            badge_y += 24
 
         if self.video_recorder.is_recording and not self.dev_mode:
             rec_secs = self.video_recorder.frames_recorded // 30
             flash = (pyxel.frame_count // 6) % 2 == 0
-            pyxel.rect(self.SCREEN_WIDTH - 110, 66, 100, 20, 0)
-            pyxel.rectb(self.SCREEN_WIDTH - 110, 66, 100, 20, 8)
-            draw_text_scaled(self.SCREEN_WIDTH - 105, 70, f"REC {rec_secs:02d}s", 8 if flash else 7, scale=2)
+            pyxel.rect(10, badge_y, 100, 20, 0)
+            pyxel.rectb(10, badge_y, 100, 20, 8)
+            draw_text_scaled(15, badge_y + 4, f"REC {rec_secs:02d}s", 8 if flash else 7, scale=2)
+            badge_y += 24
 
         # Invulnerability Badge
         if self.state.godmode:
-            pyxel.rect(self.SCREEN_WIDTH - 110, 90, 100, 20, 0)
-            pyxel.rectb(self.SCREEN_WIDTH - 110, 90, 100, 20, 10)
-            draw_text_scaled(self.SCREEN_WIDTH - 105, 94, "[GODMODE]", 10, scale=2)
+            pyxel.rect(10, badge_y, 100, 20, 0)
+            pyxel.rectb(10, badge_y, 100, 20, 10)
+            draw_text_scaled(15, badge_y + 4, "[GODMODE]", 10, scale=2)
+            badge_y += 24
 
         # Greed Borrowed Time Warning Indicator
         if self.state.greed_active:
@@ -989,8 +1020,11 @@ class GrainOfDoubtApp:
                 draw_text_scaled(cx + 16, col_y + 244, "Borrowed Time", 7, scale=2)
                 draw_text_scaled(cx + 16, col_y + 268, "10-18s (LETHAL END)", 8, scale=2)
             elif sin == SinType.ENVY:
+                next_k = k + 1
+                outer_preview = int(1200.0 * (0.8 ** next_k))
+                inner_preview = int(1000.0 * (0.8 ** (next_k + 1)))
                 draw_text_scaled(cx + 16, col_y + 244, "Vignette Vision", 7, scale=2)
-                draw_text_scaled(cx + 16, col_y + 268, f"{int(260.0 * (0.8**k))}px Tunnel", 8, scale=2)
+                draw_text_scaled(cx + 16, col_y + 268, f"{outer_preview}/{inner_preview}px", 8, scale=2)
             elif sin == SinType.SLOTH:
                 drag = 0.20 * (1.5 ** k) * 100
                 draw_text_scaled(cx + 16, col_y + 244, "Lateral Drag", 7, scale=2)
@@ -1116,14 +1150,17 @@ class GrainOfDoubtApp:
             row_y = 356 + idx * 20
             draw_text_scaled(100, row_y, f"{idx+1}. {sin.name.upper():<9} : {k}", col, scale=2)
 
-        # 2-Second Debounce prompt
+        # Debounce prompt, Bot restart indicator & Return to Menu shortcut
         if self.game_over_timer < 60:
             rem = (60 - self.game_over_timer + 29) // 30
-            draw_text_scaled(150, 620, f"MOURN THY LOSS ({rem}s)...", 8, scale=2)
+            draw_text_scaled(120, 620, f"MOURN THY LOSS ({rem}s)... | [X] MENU", 8, scale=2)
+        elif self.bot_mode:
+            rem_bot = (180 - self.auto_restart_timer + 29) // 30
+            draw_text_scaled(80, 620, f"BOT RESTART IN {rem_bot}s | [SPACE] NOW | [X] MENU", 10, scale=2)
         else:
             blink = (pyxel.frame_count // 10) % 2 == 0
             if blink:
-                draw_text_scaled(100, 620, "PRESS ANY KEY OR TAP TO RESTART", 7, scale=2)
+                draw_text_scaled(70, 620, "PRESS ANY KEY TO RESTART | [X] MENU", 7, scale=2)
 
         if self.dev_mode:
             draw_text_scaled(self.SCREEN_WIDTH - 120, self.SCREEN_HEIGHT - 20, f"[DEV] {self.VERSION}", 11, scale=2)
@@ -1193,7 +1230,7 @@ class GrainOfDoubtApp:
         spawn_m = self.state.spawn_rate_multiplier
         n_sands = len(self.entities.sands)
         n_shards = len(self.entities.shards)
-        draw_text_scaled(box_x + 12, box_y + 92, f"SPAWN: x{spawn_m:.2f} | SANDS:{n_sands} SHARDS:{n_shards} | VIG:{self.state.vignette_radius:.0f}px", 9, scale=2)
+        draw_text_scaled(box_x + 12, box_y + 92, f"SPAWN: x{spawn_m:.2f} | SANDS:{n_sands} SHARDS:{n_shards} | VIG:{self.state.vignette_radius:.0f}/{self.state.vignette_inner_radius:.0f}px", 9, scale=2)
 
         # Line 5: State and Timer telemetry
         elapsed = self.state.total_frames / 30.0

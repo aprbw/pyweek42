@@ -194,16 +194,17 @@ class BargainManager:
                 collected = entities_manager.collect_all_screen_sands(cam_x)
                 for _ in range(collected):
                     state.add_score(1)
-            # Curse: Vignette Vision
+            # Curse: Vignette Vision (dual-radius)
             state.envy_level += 1
-            state.vignette_radius = max(
-                state.min_vignette_radius,
-                260.0 * (0.80 ** (state.envy_level - 1))
-            )
+            k = state.envy_level
+            outer_r = round(1200.0 * (0.80 ** k), 4)
+            inner_r = round(1000.0 * (0.80 ** (k + 1)), 4)
+            state.vignette_radius = max(state.min_vignette_radius, outer_r)
+            state.vignette_inner_radius = max(state.min_vignette_radius * 0.6, inner_r)
             summary = {
                 "sin": defn.name,
                 "boon": f"Reap Screen Sands: +{collected} collected",
-                "curse": f"Vignette Vision: {state.vignette_radius:.0f}px",
+                "curse": f"Vignette: outer={state.vignette_radius:.0f}px inner={state.vignette_inner_radius:.0f}px",
             }
 
         elif sin == SinType.GLUTTONY:
@@ -298,15 +299,17 @@ class BargainManager:
             state.envy_level = max(0, state.envy_level - 1)
             if state.envy_level == 0:
                 state.vignette_radius = state.base_vignette_radius
+                state.vignette_inner_radius = 900.0
             else:
-                state.vignette_radius = max(
-                    state.min_vignette_radius,
-                    260.0 * (0.80 ** (state.envy_level - 1))
-                )
+                k = state.envy_level
+                outer_r = round(1200.0 * (0.80 ** k), 4)
+                inner_r = round(1000.0 * (0.80 ** (k + 1)), 4)
+                state.vignette_radius = max(state.min_vignette_radius, outer_r)
+                state.vignette_inner_radius = max(state.min_vignette_radius * 0.6, inner_r)
             summary = {
                 "sin": defn.name,
                 "boon": f"Envy Level: {state.envy_level}",
-                "curse": f"Vignette: {state.vignette_radius:.0f}px",
+                "curse": f"Vignette: outer={state.vignette_radius:.0f}px inner={state.vignette_inner_radius:.0f}px",
             }
 
         elif sin == SinType.GLUTTONY:
