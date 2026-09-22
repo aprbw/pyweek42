@@ -12,6 +12,7 @@ from typing import Optional
 
 class VideoRecorder:
     def __init__(self, output_path: str = "borrowed_time_bot.mp4", width: int = 600, height: int = 800, fps: int = 30):
+        self.base_output_path = output_path
         self.output_path = output_path
         self.width = width
         self.height = height
@@ -37,6 +38,19 @@ class VideoRecorder:
             pal[i * 4 + 3] = 0xFF
         return bytes(pal)
 
+    @staticmethod
+    def _resolve_unique_filename(base_path: str) -> str:
+        """Ensure file does not overwrite existing recordings by incrementing _NNN suffix."""
+        if not os.path.exists(base_path):
+            return base_path
+        name, ext = os.path.splitext(base_path)
+        idx = 1
+        while True:
+            candidate = f"{name}_{idx:03d}{ext}"
+            if not os.path.exists(candidate):
+                return candidate
+            idx += 1
+
     def start(self, pyxel_module=None, filename: Optional[str] = None) -> bool:
         if self.is_recording:
             return True
@@ -44,8 +58,8 @@ class VideoRecorder:
             print("[VideoRecorder] Warning: ffmpeg not found on system PATH. Cannot record MP4.")
             return False
 
-        if filename:
-            self.output_path = filename
+        target_base = filename or self.base_output_path
+        self.output_path = self._resolve_unique_filename(target_base)
 
         cmd = [
             "ffmpeg", "-y",

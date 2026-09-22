@@ -81,27 +81,14 @@ class PlayTestingBot:
         friction = 0.82
         effective_accel = base_accel * player_speed_mod * self.config.speed_handicap
 
-        min_safe_x = 65.0
-        max_safe_x = screen_w - 65.0
-
         player_w = 60.0
         player_h = 40.0
 
         for t, act in enumerate(actions, start=1):
-            # Kinematic step
+            # Kinematic step (infinite horizontal arena)
             ax = act * effective_accel
             cur_vx = (cur_vx + ax) * friction
-            cur_x = max(45.0, min(screen_w - 45.0, cur_x + cur_vx))
-
-            # Wall boundary penalty
-            if cur_x < min_safe_x:
-                score -= (min_safe_x - cur_x) * 150.0
-            elif cur_x > max_safe_x:
-                score -= (cur_x - max_safe_x) * 150.0
-
-            # Center-bias small reward (encourages staying in open middle when clear)
-            center_dist = abs(cur_x - (screen_w / 2.0))
-            score -= center_dist * 0.1
+            cur_x = cur_x + cur_vx
 
             # Check collision with visible shards at time t (incorporating individual speed variance)
             for shard in visible_shards:

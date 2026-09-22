@@ -110,6 +110,7 @@ def draw_text_scaled(x: int, y: int, s: str, col: int, scale: int = 1, img_bank:
 
 
 class GrainOfDoubtApp:
+    VERSION: str = "v0.4.0"
     SCREEN_WIDTH: int = 600
     SCREEN_HEIGHT: int = 800
 
@@ -206,12 +207,13 @@ class GrainOfDoubtApp:
 
         speed_factor = 1.0 + chronos_prog * 1.5
         scroll_drift = max(2.0, self.state.scroll_speed) * speed_factor
+        cam_x = self.entities.player.x - self.SCREEN_WIDTH / 2.0
 
         for star in self.stars:
             star[1] -= scroll_drift * star[4]
             if star[1] < 0:
                 star[1] = self.SCREEN_HEIGHT
-                star[0] = random.uniform(0, self.SCREEN_WIDTH)
+                star[0] = random.uniform(cam_x - 120, cam_x + self.SCREEN_WIDTH + 120)
 
         # State dispatch
         if self.state.current_state == GameState.TITLE:
@@ -312,13 +314,19 @@ class GrainOfDoubtApp:
         if pyxel is None:
             return
 
+        # Camera tracking (SkiFree style horizontal centering on player)
+        if self.state.current_state in (GameState.CHRONOS, GameState.KAIROS):
+            cam_x = int(self.entities.player.x - self.SCREEN_WIDTH / 2.0)
+        else:
+            cam_x = 0
+
         # Screen shake offset
         ox = 0
         oy = 0
         if self.state.shake_intensity > 0:
             ox = random.randint(-int(self.state.shake_intensity), int(self.state.shake_intensity))
             oy = random.randint(-int(self.state.shake_intensity), int(self.state.shake_intensity))
-        pyxel.camera(ox, oy)
+        pyxel.camera(cam_x + ox, oy)
 
         # Clear background void (Color 0: Black)
         pyxel.cls(0)
@@ -328,53 +336,56 @@ class GrainOfDoubtApp:
         if self.state.current_state == GameState.CHRONOS:
             prog = self.state.chronos_timer / float(self.state.CHRONOS_FRAMES)
 
-        # Draw cosmic void stars (color and shimmer dynamically shift with Chronos progress)
+        # Draw cosmic void stars (color and shimmer dynamically shift, parallax wrapped relative to cam_x)
+        wrap_w = self.SCREEN_WIDTH + 240
         for star in self.stars:
             sx, sy, base_c, sz, spd = star
+            rel_x = (sx - cam_x * spd * 0.4) % wrap_w - 120
+            draw_sx = cam_x + rel_x
+
             if prog < 0.35:
-                # Early: calm deep space (Dark Navy 1, Blue 5, Cyan 6)
                 sc = base_c
             elif prog < 0.65:
-                # Mid: rising temporal energy (Blue 5, Cyan 6, Orange 9)
                 sc = 9 if base_c == 6 else (6 if base_c == 5 else 5)
             elif prog < 0.85:
-                # High tension: gold / amber / white (Orange 9, Gold 10, White 7)
                 sc = 10 if base_c in (5, 6) else (7 if (pyxel.frame_count // 4) % 2 == 0 else 9)
             else:
-                # Imminent Kairos: rapid pulsing temporal distortion!
                 pulse = (pyxel.frame_count // 2 + int(sx)) % 4
                 sc = [8, 9, 10, 7][pulse]
 
-            pyxel.rect(int(sx), int(sy), sz, sz, sc)
+            pyxel.rect(int(draw_sx), int(sy), sz, sz, sc)
 
-        # Draw outer cosmic hourglass borders (Hourglass-ception with temporal color shifting)
-        self.draw_cosmic_hourglass_walls(prog)
+        # Draw drifting astral aurora ribbons across infinite horizontal void
+        self.draw_cosmic_nebula_streams(cam_x, prog)
 
         if self.state.current_state == GameState.TITLE:
-            self.draw_title_screen()
             pyxel.camera(0, 0)
+            self.draw_title_screen()
             return
 
-        # Draw Sand grains (10x10 px)
+        # Draw Sand grains in world coordinates
         for sand in self.entities.sands:
             c = 10 if (pyxel.frame_count // 3 + int(sand.shimmer_phase * 4)) % 2 == 0 else 9
             pyxel.rect(int(sand.x - 5), int(sand.y - 5), 10, 10, c)
             pyxel.rect(int(sand.x - 2), int(sand.y - 2), 4, 4, 7)  # Center glint
 
-        # Draw Glass shards (20x40 px rotating triangles)
+        # Draw Glass shards in world coordinates
         for shard in self.entities.shards:
             self.draw_glass_shard(shard)
 
-        # Draw Particles
+        # Draw Particles in world coordinates
         for p in self.entities.particles:
             pyxel.rect(int(p.x), int(p.y), p.size, p.size, p.color)
 
-        # Draw Player Hourglass (60x40 px horizontal)
+        # Draw Player Hourglass in world coordinates
         self.draw_player_hourglass()
 
-        # Render Vignette Mask (Darkness bounds)
+        # Reset camera for screen-space UI overlays (Vignette, HUD, Modals)
+        pyxel.camera(0, 0)
+
+        # Render Vignette Mask (Darkness bounds centered on player on screen)
         render_vignette(
-            self.entities.player.x,
+            self.SCREEN_WIDTH / 2.0,
             self.entities.player.y,
             self.state.vignette_radius,
             self.SCREEN_WIDTH,
@@ -382,10 +393,7 @@ class GrainOfDoubtApp:
             pyxel,
         )
 
-        # Reset camera for HUD overlay
-        pyxel.camera(0, 0)
-
-        # Draw HUD (Score, Hearts, Active Pacts, Kill timer)
+        # Draw HUD (Score, Hearts, Active Pacts, Elapsed Time, Version, Kill timer)
         self.draw_hud()
 
         # Draw active modal overlays
@@ -401,34 +409,27 @@ class GrainOfDoubtApp:
         # Capture video frame for MP4 export
         self.video_recorder.record_frame(pyxel)
 
-    def draw_cosmic_hourglass_walls(self, prog: float = 0.0):
-        """Draw collapsing outer cosmic hourglass walls on left and right."""
-        t = pyxel.frame_count * (0.05 + prog * 0.08)
-        wall_col_outer = 1
+    def draw_cosmic_nebula_streams(self, cam_x: int, prog: float = 0.0):
+        """Draw ethereal celestial aurora ribbons across infinite horizontal void."""
+        t = pyxel.frame_count * (0.04 + prog * 0.06)
         if prog < 0.65:
-            wall_col_mid = 5
-            wall_col_inner = 6
+            col_inner = 5
+            col_outer = 1
         elif prog < 0.85:
-            wall_col_mid = 9
-            wall_col_inner = 10
+            col_inner = 9
+            col_outer = 2
         else:
             flash = (pyxel.frame_count // 3) % 2 == 0
-            wall_col_mid = 8 if flash else 9
-            wall_col_inner = 10 if flash else 7
+            col_inner = 8 if flash else 10
+            col_outer = 2
 
-        for y in range(0, self.SCREEN_HEIGHT, 4):
-            # Left neck wall
-            curve = math.sin(y * 0.01 + t) * (12.0 + prog * 6.0)
-            lw = int(40 + curve)
-            pyxel.rect(0, y, lw, 4, wall_col_outer)
-            pyxel.rect(lw, y, 4, 4, wall_col_mid)
-            pyxel.rect(lw + 4, y, 4, 4, wall_col_inner)
-
-            # Right neck wall
-            rw = int(self.SCREEN_WIDTH - 48 - curve)
-            pyxel.rect(rw, y, self.SCREEN_WIDTH - rw, 4, wall_col_outer)
-            pyxel.rect(rw - 4, y, 4, 4, wall_col_mid)
-            pyxel.rect(rw - 8, y, 4, 4, wall_col_inner)
+        start_grid = (cam_x // 350 - 1) * 350
+        for stream_base_x in range(start_grid, start_grid + self.SCREEN_WIDTH + 700, 350):
+            for y in range(0, self.SCREEN_HEIGHT, 8):
+                drift = math.sin(y * 0.015 + t + stream_base_x * 0.005) * 16.0
+                rx = int(stream_base_x + drift)
+                pyxel.rect(rx - 2, y, 4, 8, col_outer)
+                pyxel.rect(rx - 1, y, 2, 8, col_inner)
 
     def draw_player_hourglass(self):
         """Draw horizontal hourglass sprite (60x40) that tilts dynamically with control velocity."""
@@ -570,6 +571,15 @@ class GrainOfDoubtApp:
             pyxel.rectb(14, 44, 160, 18, 1)
             draw_text_scaled(18, 49, "PACTS: NONE (0 ACTIVE)", 5, scale=1)
 
+        # Elapsed Time (Top Center)
+        elapsed_sec = self.state.total_frames / 30.0
+        time_str = f"TIME: {elapsed_sec:04.1f}s"
+        flash_time = (pyxel.frame_count // 15) % 2 == 0
+        draw_text_scaled(self.SCREEN_WIDTH // 2 - 56, 16, time_str, 10 if flash_time else 7, scale=2)
+
+        # Version stamp
+        draw_text_scaled(self.SCREEN_WIDTH - 52, self.SCREEN_HEIGHT - 14, self.VERSION, 5, scale=1)
+
         # Score (Top Right)
         score_str = f"SCORE: {self.state.score:06d}"
         draw_text_scaled(self.SCREEN_WIDTH - 240, 16, score_str, 10, scale=2)
@@ -603,7 +613,7 @@ class GrainOfDoubtApp:
             flash = (pyxel.frame_count // 4) % 2 == 0
             col = 8 if flash else 7
             msg = f"DEBT DUE: {secs_left:.1f}s"
-            draw_text_scaled(self.SCREEN_WIDTH // 2 - 80, 20, msg, col, scale=2)
+            draw_text_scaled(self.SCREEN_WIDTH // 2 - 80, 48, msg, col, scale=2)
 
         # Wrath Zero Yield Warning
         if self.state.wrath_zero_yield_timer > 0:
@@ -712,7 +722,8 @@ class GrainOfDoubtApp:
         # Pulsing logo centered
         draw_text_scaled(188, 90, "GRAIN OF DOUBT", 10, scale=4)
         draw_text_scaled(200, 140, "PYWEEK 42 : BORROWED TIME", 9, scale=2)
-        draw_text_scaled(236, 175, "BY ARIAN PRABOWO", 7, scale=2)
+        draw_text_scaled(272, 164, self.VERSION, 9, scale=1)
+        draw_text_scaled(236, 178, "BY ARIAN PRABOWO", 7, scale=2)
 
         # Subtitles centered
         draw_text_scaled(180, 225, "FALL DOWN THE COSMIC HOURGLASS", 7, scale=2)
@@ -723,19 +734,21 @@ class GrainOfDoubtApp:
         pyxel.rect(60, 360, 480, 270, 1)
         pyxel.rectb(60, 360, 480, 270, 5)
 
-        draw_text_scaled(90, 380, "CONTROLS & HOW TO PLAY", 10, scale=2)
-        draw_text_scaled(90, 420, "A / D or LEFT / RIGHT ARROWS", 7, scale=2)
-        draw_text_scaled(110, 450, "Steer Lateral Descent to Catch Sand & Dodge Glass", 6, scale=1)
-        draw_text_scaled(90, 485, "KAIROS TIME-FREEZE (2 PACTS)", 8, scale=2)
-        draw_text_scaled(110, 515, "Steer Left or Right to Seal Faustian Sin", 6, scale=1)
-        draw_text_scaled(90, 550, "SHORTCUTS", 9, scale=1)
-        draw_text_scaled(110, 570, "[B] Toggle Bot Mode  |  [V] Toggle Video Rec", 7, scale=1)
-        draw_text_scaled(110, 590, "[Q] Quit Game        |  [R] Quick Restart", 5, scale=1)
+        draw_text_scaled(90, 380, "CONTROLS & HOW TO PLAY (INFINITE SKI-FREE ARENA)", 10, scale=1)
+        draw_text_scaled(90, 405, "A / D or LEFT / RIGHT ARROWS", 7, scale=2)
+        draw_text_scaled(110, 435, "Steer Lateral Descent to Catch Sand & Dodge Glass", 6, scale=1)
+        draw_text_scaled(90, 470, "KAIROS TIME-FREEZE (2 PACTS)", 8, scale=2)
+        draw_text_scaled(110, 500, "Steer Left or Right to Seal Faustian Sin", 6, scale=1)
+        draw_text_scaled(90, 535, "SHORTCUTS", 9, scale=1)
+        draw_text_scaled(110, 555, "[B] Toggle Bot Mode  |  [V] Toggle Video Rec", 7, scale=1)
+        draw_text_scaled(110, 575, "[Q] Quit Game        |  [R] Quick Restart", 5, scale=1)
 
         # Start prompt
         blink = (pyxel.frame_count // 12) % 2 == 0
         if blink:
             draw_text_scaled(168, 675, "STEER [A]/[D] OR ARROW TO DESCEND", 7, scale=2)
+
+        draw_text_scaled(self.SCREEN_WIDTH - 52, self.SCREEN_HEIGHT - 14, self.VERSION, 5, scale=1)
 
     def draw_game_over_screen(self):
         # Dark overlay box
@@ -743,8 +756,9 @@ class GrainOfDoubtApp:
         pyxel.rectb(40, 80, 520, 640, 8)
         pyxel.rectb(44, 84, 512, 632, 2)
 
-        draw_text_scaled(186, 110, "HOURGLASS SHATTERED", 8, scale=3)
-        draw_text_scaled(236, 150, "BY ARIAN PRABOWO", 6, scale=1)
+        draw_text_scaled(186, 105, "HOURGLASS SHATTERED", 8, scale=3)
+        draw_text_scaled(275, 142, self.VERSION, 6, scale=1)
+        draw_text_scaled(236, 156, "BY ARIAN PRABOWO", 6, scale=1)
 
         reason = self.state.death_reason or "Consumed by the Void"
         draw_text_scaled(70, 185, reason[:36], 7, scale=2)
@@ -772,6 +786,8 @@ class GrainOfDoubtApp:
         blink = (pyxel.frame_count // 10) % 2 == 0
         if blink:
             draw_text_scaled(160, 580, "PRESS ANY KEY TO DESCEND AGAIN", 7, scale=2)
+
+        draw_text_scaled(self.SCREEN_WIDTH - 52, self.SCREEN_HEIGHT - 14, self.VERSION, 5, scale=1)
 
 
 def main():

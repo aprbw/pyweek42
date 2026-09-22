@@ -25,19 +25,17 @@ def test_chronos_descent_and_hazard_gate():
     assert state.scroll_speed > 0.0
     base_spd = state.scroll_speed
 
-    # 2. Assert lateral steering bounds (A / D only)
+    # 2. Assert infinite lateral steering (A / D only - SkiFree style)
     player = HourglassPlayer(screen_w=600, screen_h=800)
-    # Steer left hard for 100 frames
+    # Steer left hard for 100 frames: player moves infinitely left past 0
     for _ in range(100):
         player.apply_input(left=True, right=False)
-    assert player.x >= player.min_x
-    assert player.x == pytest.approx(player.min_x, abs=0.01)
+    assert player.x < 0.0, "Player failed to steer into infinite left coordinates!"
 
-    # Steer right hard for 200 frames
+    # Steer right hard for 200 frames: player moves infinitely right past 600
     for _ in range(200):
         player.apply_input(left=False, right=True)
-    assert player.x <= player.max_x
-    assert player.x == pytest.approx(player.max_x, abs=0.01)
+    assert player.x > 600.0, "Player failed to steer into infinite right coordinates!"
 
     # 3. Assert collision with glass shards depletes hearts from 5
     # Damage 1
@@ -270,3 +268,30 @@ def test_audio_manager_safe_without_pyxel():
     audio.play_impact()
     audio.play_kairos()
     audio.play_death()
+
+
+def test_video_recorder_unique_filename():
+    import os
+    import tempfile
+    from engine.video import VideoRecorder
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        base = os.path.join(tmpdir, "test.mp4")
+        # File doesn't exist yet: returns base
+        res1 = VideoRecorder._resolve_unique_filename(base)
+        assert res1 == base
+
+        # Create the file
+        with open(base, "w") as f:
+            f.write("dummy")
+
+        # Now it increments to test_001.mp4 without overwriting
+        res2 = VideoRecorder._resolve_unique_filename(base)
+        assert res2 == os.path.join(tmpdir, "test_001.mp4")
+
+        with open(res2, "w") as f:
+            f.write("dummy2")
+
+        # Next increment: test_002.mp4
+        res3 = VideoRecorder._resolve_unique_filename(base)
+        assert res3 == os.path.join(tmpdir, "test_002.mp4")

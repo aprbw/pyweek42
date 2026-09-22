@@ -60,7 +60,7 @@ class HourglassPlayer:
         self.sand_drain_phase = 0.0
 
     def apply_input(self, left: bool, right: bool, speed_mod: float = 1.0):
-        """Only lateral A/D and Left/Right arrow controls."""
+        """Only lateral A/D and Left/Right arrow controls (Infinite Arena - no wall clamping)."""
         ax = 0.0
         effective_accel = self.base_accel * speed_mod
         if left and not right:
@@ -70,7 +70,6 @@ class HourglassPlayer:
 
         self.vx = (self.vx + ax) * self.friction
         self.x += self.vx
-        self.x = max(self.min_x, min(self.max_x, self.x))
 
         # Steady vertical reference frame
         self.y = self.base_y
@@ -103,9 +102,8 @@ class SandGrain:
         self.y -= scroll_speed * self.speed_variance
         self.shimmer_phase += 0.2
 
-        # Small x-axis motion (gentle drift + oscillation)
+        # Small x-axis motion (gentle drift + oscillation - infinite arena)
         self.x += self.lateral_drift + math.sin(self.shimmer_phase * 0.4) * 0.4
-        self.x = max(55.0, min(545.0, self.x))
 
         # Physics fields (Envy Repel / Lust Attract)
         dx = self.x - player_x
@@ -124,7 +122,7 @@ class SandGrain:
             push = 10.0 * (1.0 - dist / repel_radius)
             self.x += (dx / dist) * push
 
-        if self.y < -40:
+        if self.y < -40 or abs(self.x - player_x) > 1500.0:
             self.alive = False
             self.bypassed = True
 
@@ -152,9 +150,8 @@ class GlassShard:
         effective_speed = scroll_speed * hazard_speed_mod * self.speed_variance
         self.y -= effective_speed
 
-        # Small x-axis motion (drift + flutter)
+        # Small x-axis motion (drift + flutter - infinite arena)
         self.x += self.lateral_drift + math.sin(self.rotation_angle) * 0.6
-        self.x = max(50.0, min(550.0, self.x))
         self.rotation_angle += self.spin_speed
 
         # Lust Curse: Glass shards pulled toward player
@@ -167,7 +164,7 @@ class GlassShard:
                 self.x -= (dx / dist) * pull
                 self.y -= (dy / dist) * pull
 
-        if self.y < -60:
+        if self.y < -60 or abs(self.x - player_x) > 1500.0:
             self.alive = False
 
     def get_hitbox(self) -> Tuple[float, float, float, float]:
@@ -213,16 +210,21 @@ class EntityManager:
         self.bypassed_sand_pool = 0
         return count
 
-    def spawn_wave(self, spawn_rate_mult: float, wrath_active: bool):
+    def spawn_wave(self, spawn_rate_mult: float, wrath_active: bool, camera_x: float = None):
         if wrath_active:
             return
+
+        if camera_x is None:
+            camera_x = self.player.x - self.screen_w / 2.0
 
         # Calibrated generation rate for ~1 minute median survival curve
         self.spawn_accumulator += (spawn_rate_mult * 0.32)
         while self.spawn_accumulator >= 1.0:
             self.spawn_accumulator -= 1.0
             spawn_y = self.screen_h + random.uniform(20, 80)
-            spawn_x = random.uniform(60, self.screen_w - 60)
+            # Procedural SkiFree wide spawn horizon around camera viewport
+            margin = 350.0
+            spawn_x = random.uniform(camera_x - margin, camera_x + self.screen_w + margin)
 
             # 72% chance sand grain, 28% chance glass shard
             if random.random() < 0.72:
@@ -242,9 +244,10 @@ class EntityManager:
             speed_mod=state.sloth_player_speed_mod * bot_handicap,
         )
 
-        # Spawning
+        # Spawning across camera horizon
         wrath_active = (state.wrath_wipe_timer > 0)
-        self.spawn_wave(state.spawn_rate_multiplier, wrath_active)
+        cam_x = self.player.x - self.screen_w / 2.0
+        self.spawn_wave(state.spawn_rate_multiplier, wrath_active, cam_x)
 
         # Update Sand grains
         px, py = self.player.x, self.player.y
