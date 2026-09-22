@@ -33,8 +33,8 @@ class StateManager:
         self.cycle_count: int = 0
 
         # Descent & multipliers (No dive / air brake - pure constant lateral runner)
-        self.base_scroll_speed: float = 10.0
-        self.scroll_speed: float = 10.0
+        self.base_scroll_speed: float = 7.5
+        self.scroll_speed: float = 7.5
         self.score_multiplier: float = 1.0
         self.speed_multiplier: float = 1.0
 
@@ -68,9 +68,9 @@ class StateManager:
         self.shake_timer: int = 0
         self.shake_intensity: float = 0.0
 
-        # Visual Vignette (Scaled for 600x800)
-        self.base_vignette_radius: float = 340.0
-        self.vignette_radius: float = 340.0
+        # Visual Vignette (Initial 800.0 = no fog of war)
+        self.base_vignette_radius: float = 800.0
+        self.vignette_radius: float = 800.0
         self.min_vignette_radius: float = 90.0
 
         # Post-mortem death reason

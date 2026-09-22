@@ -19,6 +19,8 @@ from engine.state import GameState, StateManager
 from engine.entities import EntityManager, HourglassPlayer, SandGrain, GlassShard
 from engine.bargains import BargainManager, SinType
 from engine.audio import AudioManager
+from engine.bot import PlayTestingBot, BotConfig
+from engine.video import VideoRecorder
 
 
 def render_vignette(px: float, py: float, radius: float, screen_w: int = 600, screen_h: int = 800, pyxel_module=None):
@@ -61,8 +63,19 @@ class GrainOfDoubtApp:
     SCREEN_WIDTH: int = 600
     SCREEN_HEIGHT: int = 800
 
-    def __init__(self, headless: bool = False):
+    def __init__(
+        self,
+        headless: bool = False,
+        bot_mode: bool = False,
+        record_video: bool = False,
+        video_filename: str = "borrowed_time_bot.mp4",
+    ):
         self.headless = headless
+        self.bot_mode = bot_mode
+        self.bot = PlayTestingBot()
+        self.auto_restart_timer: int = 0
+        self.video_recorder = VideoRecorder(output_path=video_filename, width=self.SCREEN_WIDTH, height=self.SCREEN_HEIGHT, fps=30)
+        self.record_video_on_start = record_video
         self.state = StateManager()
         self.entities = EntityManager(self.SCREEN_WIDTH, self.SCREEN_HEIGHT)
         self.bargains = BargainManager()
@@ -87,6 +100,8 @@ class GrainOfDoubtApp:
                 quit_key=pyxel.KEY_Q,
             )
             self.audio.init_sounds(pyxel)
+            if self.record_video_on_start:
+                self.video_recorder.start(pyxel)
             pyxel.run(self.update, self.draw)
 
     def start_new_game(self):
@@ -112,6 +127,18 @@ class GrainOfDoubtApp:
         if pyxel is None:
             return
 
+        # Toggle Bot mode dynamically with 'B' key
+        if pyxel.btnp(pyxel.KEY_B):
+            self.bot_mode = not self.bot_mode
+            self.bot.reset()
+
+        # Toggle Video Recording with 'V' key
+        if pyxel.btnp(pyxel.KEY_V):
+            self.video_recorder.toggle(pyxel)
+
+        # Enforce speed handicap in physics when bot is active
+        self.state._bot_speed_handicap = self.bot.config.speed_handicap if self.bot_mode else 1.0
+
         # Feedback banner timer
         if self.feedback_timer > 0:
             self.feedback_timer -= 1
@@ -126,14 +153,21 @@ class GrainOfDoubtApp:
 
         # State dispatch
         if self.state.current_state == GameState.TITLE:
-            # Start game with any lateral key or space/enter
-            if (pyxel.btnp(pyxel.KEY_LEFT) or pyxel.btnp(pyxel.KEY_RIGHT) or
+            # Start game with any lateral key or space/enter, or auto-start if bot mode
+            if (self.bot_mode or
+                pyxel.btnp(pyxel.KEY_LEFT) or pyxel.btnp(pyxel.KEY_RIGHT) or
                 pyxel.btnp(pyxel.KEY_A) or pyxel.btnp(pyxel.KEY_D) or
                 pyxel.btnp(pyxel.KEY_SPACE) or pyxel.btnp(pyxel.KEY_RETURN)):
                 self.start_new_game()
 
         elif self.state.current_state == GameState.CHRONOS:
-            self.update_input()
+            if self.bot_mode:
+                b_left, b_right = self.bot.decide_chronos_input(self.state, self.entities)
+                self.state._input_left = b_left
+                self.state._input_right = b_right
+            else:
+                self.update_input()
+
             self.state.update_timers()
             self.entities.update(self.state)
 
@@ -142,32 +176,48 @@ class GrainOfDoubtApp:
                 self.audio.play_kairos(pyxel)
                 self.active_options = self.bargains.draw_options(3)
                 self.selected_card_index = 1  # Start at Center
+                if self.bot_mode:
+                    self.bot.target_card_index = None
 
             # Check if Game Over triggered
             if self.state.current_state == GameState.GAMEOVER:
                 self.audio.play_death(pyxel)
+                self.auto_restart_timer = 0
 
         elif self.state.current_state == GameState.KAIROS:
-            # Kairos time circuit breaker: navigate cards with A/D or Left/Right arrows
-            move_left = pyxel.btnp(pyxel.KEY_LEFT) or pyxel.btnp(pyxel.KEY_A)
-            move_right = pyxel.btnp(pyxel.KEY_RIGHT) or pyxel.btnp(pyxel.KEY_D)
-
+            # Kairos time circuit breaker: navigate cards with A/D or Left/Right arrows, or Bot choice
             instant_seal = False
-            if move_left:
-                if self.selected_card_index > 0:
-                    self.selected_card_index -= 1
-                else:
-                    instant_seal = True  # Double-tap left confirms left card
+            if self.bot_mode:
+                # Responsive cursor navigation towards target card (every 2 frames)
+                if pyxel.frame_count % 2 == 0:
+                    b_left, b_right, b_seal = self.bot.decide_kairos_choice(
+                        self.active_options, self.selected_card_index
+                    )
+                    if b_left and self.selected_card_index > 0:
+                        self.selected_card_index -= 1
+                    elif b_right and self.selected_card_index < len(self.active_options) - 1:
+                        self.selected_card_index += 1
+                    elif b_seal:
+                        instant_seal = True
+            else:
+                move_left = pyxel.btnp(pyxel.KEY_LEFT) or pyxel.btnp(pyxel.KEY_A)
+                move_right = pyxel.btnp(pyxel.KEY_RIGHT) or pyxel.btnp(pyxel.KEY_D)
 
-            elif move_right:
-                if self.selected_card_index < len(self.active_options) - 1:
-                    self.selected_card_index += 1
-                else:
-                    instant_seal = True  # Double-tap right confirms right card
+                if move_left:
+                    if self.selected_card_index > 0:
+                        self.selected_card_index -= 1
+                    else:
+                        instant_seal = True  # Double-tap left confirms left card
 
-            # Space/Enter also confirms immediately
-            if pyxel.btnp(pyxel.KEY_SPACE) or pyxel.btnp(pyxel.KEY_RETURN):
-                instant_seal = True
+                elif move_right:
+                    if self.selected_card_index < len(self.active_options) - 1:
+                        self.selected_card_index += 1
+                    else:
+                        instant_seal = True  # Double-tap right confirms right card
+
+                # Space/Enter also confirms immediately
+                if pyxel.btnp(pyxel.KEY_SPACE) or pyxel.btnp(pyxel.KEY_RETURN):
+                    instant_seal = True
 
             # Advance Kairos timer
             self.state.update_timers()
@@ -181,13 +231,21 @@ class GrainOfDoubtApp:
                     self.feedback_timer = 50
                     self.audio.play_collect(pyxel)
                 self.state.resume_chronos()
+                if self.bot_mode:
+                    self.bot.reset_kairos()
 
         elif self.state.current_state == GameState.GAMEOVER:
-            # Restart with any control key
-            if (pyxel.btnp(pyxel.KEY_LEFT) or pyxel.btnp(pyxel.KEY_RIGHT) or
-                pyxel.btnp(pyxel.KEY_A) or pyxel.btnp(pyxel.KEY_D) or
-                pyxel.btnp(pyxel.KEY_R) or pyxel.btnp(pyxel.KEY_SPACE) or pyxel.btnp(pyxel.KEY_RETURN)):
-                self.start_new_game()
+            if self.bot_mode:
+                self.auto_restart_timer += 1
+                if self.auto_restart_timer >= 60:
+                    self.auto_restart_timer = 0
+                    self.start_new_game()
+            else:
+                # Restart with any control key
+                if (pyxel.btnp(pyxel.KEY_LEFT) or pyxel.btnp(pyxel.KEY_RIGHT) or
+                    pyxel.btnp(pyxel.KEY_A) or pyxel.btnp(pyxel.KEY_D) or
+                    pyxel.btnp(pyxel.KEY_R) or pyxel.btnp(pyxel.KEY_SPACE) or pyxel.btnp(pyxel.KEY_RETURN)):
+                    self.start_new_game()
 
     def draw(self):
         if pyxel is None:
@@ -259,6 +317,9 @@ class GrainOfDoubtApp:
         if self.feedback_timer > 0 and self.selected_feedback:
             self.draw_feedback_banner()
 
+        # Capture video frame for MP4 export
+        self.video_recorder.record_frame(pyxel)
+
     def draw_cosmic_hourglass_walls(self):
         """Draw collapsing outer cosmic hourglass walls on left and right."""
         t = pyxel.frame_count * 0.05
@@ -277,45 +338,87 @@ class GrainOfDoubtApp:
             pyxel.rect(rw - 8, y, 4, 4, 6)
 
     def draw_player_hourglass(self):
+        """Draw horizontal hourglass sprite (60x40) that tilts dynamically with control velocity."""
         player = self.entities.player
-        px = int(player.x)
-        py = int(player.y)
+        px = player.x
+        py = player.y
 
         # Invulnerability flash
         if self.state.invulnerable_timer > 0 and (self.state.invulnerable_timer // 3) % 2 == 1:
             return
 
-        # Top brass cap (y-30 to y-24)
-        pyxel.rect(px - 20, py - 30, 40, 6, 4)
-        pyxel.rect(px - 6, py - 30, 12, 6, 9)
+        # Tilt angle based on lateral velocity (clamped to +/- 22 degrees)
+        tilt = max(-0.38, min(0.38, player.vx * 0.038))
+        cos_t = math.cos(tilt)
+        sin_t = math.sin(tilt)
 
-        # Top glass bulb (y-24 to y-4)
-        pyxel.line(px - 18, py - 24, px - 6, py - 4, 6)
-        pyxel.line(px + 18, py - 24, px + 6, py - 4, 6)
-        # Top bulb sand
-        pyxel.rect(px - 14, py - 22, 28, 8, 10)
-        pyxel.rect(px - 10, py - 14, 20, 6, 9)
+        def rot(lx: float, ly: float) -> Tuple[int, int]:
+            rx = px + lx * cos_t - ly * sin_t
+            ry = py + lx * sin_t + ly * cos_t
+            return int(round(rx)), int(round(ry))
 
-        # Center waist (y-4 to y+4)
-        pyxel.rect(px - 4, py - 2, 8, 4, 7)
-        # Dripping sand stream
-        drip_y = int((player.sand_drain_phase % 1.0) * 12)
-        pyxel.rect(px - 2, py + 2 + drip_y, 4, 4, 10)
+        # 1. Left Brass Cap (horizontal orientation: vertical end bar at lx = -30 to -24)
+        for yo in range(-15, 16):
+            p1 = rot(-29, yo)
+            p2 = rot(-24, yo)
+            pyxel.line(p1[0], p1[1], p2[0], p2[1], 4)
+        # Left Brass Highlight & Rivet
+        hl1 = rot(-26, -6)
+        hl2 = rot(-26, 6)
+        pyxel.line(hl1[0], hl1[1], hl2[0], hl2[1], 9)
+        riv_l = rot(-26, 0)
+        pyxel.pset(riv_l[0], riv_l[1], 10)
 
-        # Bottom glass bulb (y+4 to y+24)
-        pyxel.line(px - 6, py + 4, px - 18, py + 24, 6)
-        pyxel.line(px + 6, py + 4, px + 18, py + 24, 6)
-        # Bottom bulb sand mound
-        pyxel.rect(px - 12, py + 12, 24, 10, 10)
-        pyxel.rect(px - 8, py + 8, 16, 4, 9)
+        # 2. Right Brass Cap (vertical end bar at lx = 24 to 30)
+        for yo in range(-15, 16):
+            p1 = rot(24, yo)
+            p2 = rot(29, yo)
+            pyxel.line(p1[0], p1[1], p2[0], p2[1], 4)
+        # Right Brass Highlight & Rivet
+        hr1 = rot(26, -6)
+        hr2 = rot(26, 6)
+        pyxel.line(hr1[0], hr1[1], hr2[0], hr2[1], 9)
+        riv_r = rot(26, 0)
+        pyxel.pset(riv_r[0], riv_r[1], 10)
 
-        # Bottom brass cap (y+24 to y+30)
-        pyxel.rect(px - 20, py + 24, 40, 6, 4)
-        pyxel.rect(px - 6, py + 24, 12, 6, 9)
+        # 3. Left Bulb Glass Walls (tapering from lx=-24 to waist lx=-4)
+        pyxel.line(*rot(-24, -15), *rot(-4, -5), 6)
+        pyxel.line(*rot(-24, 15), *rot(-4, 5), 6)
 
-        # Glass shine reflections
-        pyxel.rect(px - 16, py - 20, 4, 8, 7)
-        pyxel.rect(px - 14, py + 14, 4, 6, 7)
+        # 4. Right Bulb Glass Walls (tapering from waist lx=4 to lx=24)
+        pyxel.line(*rot(4, -5), *rot(24, -15), 6)
+        pyxel.line(*rot(4, 5), *rot(24, 15), 6)
+
+        # 5. Center Waist Neck
+        pyxel.line(*rot(-4, -5), *rot(4, -5), 7)
+        pyxel.line(*rot(-4, 5), *rot(4, 5), 7)
+
+        # 6. Left Bulb Sand
+        for dx in range(-21, -4, 2):
+            half_h = int(13 * (abs(dx) / 24.0))
+            if half_h > 1:
+                col = 10 if (dx % 4 == 0) else 9
+                p_top = rot(dx, -half_h + 1)
+                p_bot = rot(dx, half_h - 1)
+                pyxel.line(p_top[0], p_top[1], p_bot[0], p_bot[1], col)
+
+        # 7. Right Bulb Sand
+        for dx in range(5, 22, 2):
+            half_h = int(13 * (abs(dx) / 24.0))
+            if half_h > 1:
+                col = 10 if (dx % 4 == 0) else 9
+                p_top = rot(dx, -half_h + 1)
+                p_bot = rot(dx, half_h - 1)
+                pyxel.line(p_top[0], p_top[1], p_bot[0], p_bot[1], col)
+
+        # 8. Animated Sand Flow across waist
+        stream_x = ((player.sand_drain_phase % 1.0) - 0.5) * 6.0
+        sp = rot(stream_x, 0)
+        pyxel.rect(sp[0] - 1, sp[1] - 1, 3, 3, 10)
+
+        # 9. Specular Reflections
+        pyxel.line(*rot(-18, -10), *rot(-8, -5), 7)
+        pyxel.line(*rot(8, -5), *rot(18, -10), 7)
 
     def draw_glass_shard(self, shard: GlassShard):
         sx = int(shard.x)
@@ -370,6 +473,24 @@ class GrainOfDoubtApp:
         if self.state.score_multiplier > 1.05:
             mult_str = f"x{self.state.score_multiplier:.1f}"
             draw_text_scaled(self.SCREEN_WIDTH - 120, 36, mult_str, 9, scale=2)
+
+        # Bot Auto-Play Indicator
+        if self.bot_mode:
+            pyxel.rect(self.SCREEN_WIDTH - 245, 54, 235, 18, 0)
+            pyxel.rectb(self.SCREEN_WIDTH - 245, 54, 235, 18, 11)
+            draw_text_scaled(self.SCREEN_WIDTH - 238, 59, "[BOT ON: 80% SPD, 20% BLIND]", 11, scale=1)
+        else:
+            draw_text_scaled(self.SCREEN_WIDTH - 110, 59, "[B] BOT: OFF", 5, scale=1)
+
+        # Video Recording Indicator
+        if self.video_recorder.is_recording:
+            flash = (pyxel.frame_count // 6) % 2 == 0
+            if flash:
+                pyxel.circ(self.SCREEN_WIDTH - 235, 84, 4, 8)
+            rec_secs = self.video_recorder.frames_recorded // 30
+            draw_text_scaled(self.SCREEN_WIDTH - 225, 80, f"REC: {rec_secs:02d}s", 8 if flash else 7, scale=1)
+        else:
+            draw_text_scaled(self.SCREEN_WIDTH - 110, 80, "[V] REC: OFF", 5, scale=1)
 
         # Chronos Progress Bar (Top Center)
         if self.state.current_state == GameState.CHRONOS:
@@ -552,7 +673,24 @@ class GrainOfDoubtApp:
 
 
 def main():
-    GrainOfDoubtApp(headless=False)
+    bot_flag = "--bot" in sys.argv
+    video_flag = ("--video" in sys.argv or "--record" in sys.argv or "--export-video" in sys.argv)
+    video_file = "borrowed_time_bot.mp4"
+    for i, arg in enumerate(sys.argv):
+        if arg in ["--video", "--record", "--export-video"] and i + 1 < len(sys.argv) and not sys.argv[i + 1].startswith("-"):
+            video_file = sys.argv[i + 1]
+
+    if "--playtest" in sys.argv:
+        from playtest_bot import run_playtest_suite
+        run_playtest_suite()
+        return
+
+    GrainOfDoubtApp(
+        headless=False,
+        bot_mode=bot_flag,
+        record_video=video_flag,
+        video_filename=video_file,
+    )
 
 
 if __name__ == "__main__":

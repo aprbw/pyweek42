@@ -37,8 +37,8 @@ class Particle:
 
 
 class HourglassPlayer:
-    WIDTH: int = 40
-    HEIGHT: int = 60
+    WIDTH: int = 60
+    HEIGHT: int = 40
 
     def __init__(self, screen_w: int = 600, screen_h: int = 800):
         self.screen_w = screen_w
@@ -49,8 +49,8 @@ class HourglassPlayer:
         self.vx: float = 0.0
         self.friction: float = 0.82
         self.base_accel: float = 6.0
-        self.min_x: float = 40.0
-        self.max_x: float = screen_w - 40.0
+        self.min_x: float = 45.0
+        self.max_x: float = screen_w - 45.0
         self.sand_drain_phase: float = 0.0
 
     def reset(self):
@@ -89,16 +89,17 @@ class SandGrain:
     HITBOX_W: float = 30.0
     HITBOX_H: float = 30.0
 
-    def __init__(self, x: float, y: float):
+    def __init__(self, x: float, y: float, speed_variance: float = None):
         self.x = x
         self.y = y
+        self.speed_variance = speed_variance if speed_variance is not None else random.uniform(0.85, 1.15)
         self.alive = True
         self.bypassed = False
         self.shimmer_phase = random.uniform(0, 6.28)
 
     def update(self, scroll_speed: float, player_x: float, player_y: float,
                repel_radius: float = 0.0, attract_radius: float = 0.0):
-        self.y -= scroll_speed
+        self.y -= scroll_speed * self.speed_variance
         self.shimmer_phase += 0.2
 
         # Physics fields (Envy Repel / Lust Attract)
@@ -132,9 +133,10 @@ class GlassShard:
     HITBOX_W: float = 20.0
     HITBOX_H: float = 30.0
 
-    def __init__(self, x: float, y: float):
+    def __init__(self, x: float, y: float, speed_variance: float = None):
         self.x = x
         self.y = y
+        self.speed_variance = speed_variance if speed_variance is not None else random.uniform(0.85, 1.18)
         self.alive = True
         self.rotation_angle = random.uniform(0, 6.28)
         self.spin_speed = random.choice([-0.12, -0.08, 0.08, 0.12])
@@ -142,7 +144,7 @@ class GlassShard:
 
     def update(self, scroll_speed: float, hazard_speed_mod: float,
                player_x: float, player_y: float, attract_radius: float = 0.0):
-        effective_speed = scroll_speed * hazard_speed_mod
+        effective_speed = scroll_speed * hazard_speed_mod * self.speed_variance
         self.y -= effective_speed
         self.x += self.lateral_drift
         self.rotation_angle += self.spin_speed
@@ -207,15 +209,15 @@ class EntityManager:
         if wrath_active:
             return
 
-        # Entity generation rate reduced by half as requested
-        self.spawn_accumulator += (spawn_rate_mult * 0.50)
+        # Calibrated generation rate for ~1 minute median survival curve
+        self.spawn_accumulator += (spawn_rate_mult * 0.32)
         while self.spawn_accumulator >= 1.0:
             self.spawn_accumulator -= 1.0
             spawn_y = self.screen_h + random.uniform(20, 80)
             spawn_x = random.uniform(60, self.screen_w - 60)
 
-            # 60% chance sand grain, 40% chance glass shard
-            if random.random() < 0.60:
+            # 72% chance sand grain, 28% chance glass shard
+            if random.random() < 0.72:
                 self.sands.append(SandGrain(spawn_x, spawn_y))
             else:
                 self.shards.append(GlassShard(spawn_x, spawn_y))
@@ -225,10 +227,11 @@ class EntityManager:
             return
 
         # Player input & motion (Only lateral left/right)
+        bot_handicap = getattr(state, "_bot_speed_handicap", 1.0)
         self.player.apply_input(
             left=getattr(state, "_input_left", False),
             right=getattr(state, "_input_right", False),
-            speed_mod=state.sloth_player_speed_mod,
+            speed_mod=state.sloth_player_speed_mod * bot_handicap,
         )
 
         # Spawning

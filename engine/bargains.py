@@ -179,6 +179,9 @@ class BargainManager:
                 state.greed_kill_timer = kill_frames
                 state.greed_initial_timer = kill_frames
 
+            # Greed curse: Halve visual area (radius reduced to ~70.7%, e.g., 800 -> 566 ~ 600)
+            state.vignette_radius = max(state.min_vignette_radius, state.vignette_radius * 0.7071)
+
         elif sin == SinType.WRATH:
             # Hazard wipe duration (boon) & zero yield duration (curse)
             frames_wipe = int(boon_val)
@@ -208,11 +211,12 @@ class BargainManager:
             state.lust_attract_radius = boon_val
             state.lust_hazard_attract_radius = max(state.lust_hazard_attract_radius, curse_val)
 
-        # Shrink vignette as visual atmospheric consequence of borrowing time
-        state.vignette_radius = max(
-            state.min_vignette_radius,
-            state.vignette_radius - 18.0
-        )
+        # Shrink vignette as visual atmospheric consequence of borrowing time (gentle for non-Greed)
+        if sin != SinType.GREED:
+            state.vignette_radius = max(
+                state.min_vignette_radius,
+                state.vignette_radius - 12.0
+            )
 
         self.selection_counts[sin] += 1
         self.history.append(sin)

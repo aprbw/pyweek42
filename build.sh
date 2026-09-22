@@ -4,7 +4,7 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$DIR"
 
 echo "1. Running unit test suite..."
-.venv/bin/pytest tests/test_mechanics.py -v
+.venv/bin/pytest tests/ -v
 
 echo "2. Cleaning old bundle files..."
 rm -f *.pyxapp *.html
