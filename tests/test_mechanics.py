@@ -671,5 +671,73 @@ def test_kairos_repress_protection():
     assert app.selected_card_index == 0
 
 
+def test_dev_mode_invulnerability_toggle():
+    """Verify God Mode toggle protects player from taking any damage."""
+    state = StateManager()
+    state.start_game()
+    assert state.godmode is False
+    assert state.hearts == 5
+
+    # Taking damage normally reduces hearts
+    dealt = state.damage_player()
+    assert dealt is True
+    assert state.hearts == 4
+
+    # Activate God Mode
+    state.godmode = True
+    state.invulnerable_timer = 0  # clear cooldown
+
+    # Damage in God Mode must be completely negated
+    dealt2 = state.damage_player()
+    assert dealt2 is False
+    assert state.hearts == 4
+
+
+def test_envy_multi_circle_graduated_vignette():
+    """Verify multi-circle graduated vignette renders multiple dither tiers without error."""
+    from main import render_vignette
+
+    class MockPyxel:
+        def __init__(self):
+            self.rect_calls = []
+            self.dither_calls = []
+
+        def dither(self, alpha):
+            self.dither_calls.append(alpha)
+
+        def rect(self, x, y, w, h, col):
+            self.rect_calls.append((x, y, w, h, col))
+
+    mock = MockPyxel()
+    # Test with Envy vignette radius 260.0 px centered at (300, 400)
+    render_vignette(300.0, 400.0, radius=260.0, screen_w=600, screen_h=800, pyxel_module=mock)
+
+    # Must invoke multiple dither tiers (e.g. 0.20, 0.42, 0.65, 0.85, 1.0)
+    assert len(mock.dither_calls) > 0
+    unique_alphas = set(round(a, 2) for a in mock.dither_calls)
+    assert len(unique_alphas) >= 4, f"Must have at least 4 distinct dither transparency levels, got {unique_alphas}"
+    assert len(mock.rect_calls) > 0
+
+
+def test_pyweek_packaging_entrypoints():
+    """Verify standard PyWeek packaging entrypoints and files exist."""
+    import os
+    root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    run_game_path = os.path.join(root_dir, "run_game.py")
+    req_path = os.path.join(root_dir, "requirements.txt")
+    readme_path = os.path.join(root_dir, "README.md")
+
+    assert os.path.exists(run_game_path), "PyWeek packaging mandate: run_game.py must exist at root"
+    assert os.path.exists(req_path), "PyWeek packaging: requirements.txt must exist"
+    assert os.path.exists(readme_path), "PyWeek packaging: README.md must exist"
+
+    # Check run_game.py contains version check
+    with open(run_game_path, "r") as f:
+        content = f.read()
+    assert "MIN_VER" in content
+    assert "sys.version_info" in content
+
+
+
 
 

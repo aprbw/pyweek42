@@ -37,6 +37,7 @@ Steer left or right to avoid razor-sharp falling glass shards while collecting g
 | `Space` / `Enter` or Tap Screen | Start / Restart | Start game or restart after a 2.0s post-mortem lockout (debounced) |
 | `~` / `` ` `` (Backtick) | Dev Mode Overlay | Toggle developer telemetry overlay (hidden on title screen unless active) |
 | `1` - `7` (in Dev Mode) | Fixed Faustian Pact | Instant-apply sin pact in order (1:Pride .. 7:Sloth) |
+| `I` (in Dev Mode) | Toggle God Mode | Toggle complete invulnerability against all hazard damage |
 | `B` (in Dev Mode) | Playtest Bot | Toggle autonomous GOFAI kinematic playtesting bot (dev mode only) |
 | `V` (in Dev Mode) | Video Recording | Toggle MP4 video capture to disk (dev mode only) |
 | `Q` | Quit | Exit game |
@@ -58,7 +59,7 @@ Steer left or right to avoid razor-sharp falling glass shards while collecting g
    * *Curse:* Generates a permanent lethal glass shard magnetic attraction vortex with a radius of $180.0 \times 1.5^k$ px ($180$px on 1st pact, $270$px on 2nd, $405$px on 3rd).
 4. **Envy:**
    * *Boon:* Instantly reaps all golden sand grains currently visible on the screen, immediately awarding their score and triggering radiant particle bursts.
-   * *Curse:* Inflicts **Vignette Vision**, restricting your visual range to a dark circular tunnel vision mask with radius $260.0 \times 0.80^k$ px ($260$px on 1st pact, $208$px on 2nd, $166$px on 3rd, minimum $90$px).
+   * *Curse:* Inflicts **Vignette Vision**, restricting your visual field with a multi-circle concentric mask with 5 graduated dither transparency tiers down to an inner clear core (radius $260.0 \times 0.80^k$ px, minimum $90$px).
 5. **Gluttony:**
    * *Boon:* Accelerates global sand grain and entity generation rate multiplier by $+80\% \times 0.75^k$ ($+0.80$ on 1st pact, $+0.60$ on 2nd, $+0.45$ on 3rd).
    * *Curse:* Multiplies hazard glass shard density and spawn rate by $+80\% \times 1.5^k$ ($+0.80$ on 1st pact, $+1.20$ on 2nd, $+1.80$ on 3rd).
@@ -100,19 +101,24 @@ Steer left or right to avoid razor-sharp falling glass shards while collecting g
 
 ## 🚀 Quick Start & Execution
 
-### 1. Run with Launcher
+### 1. Run with PyWeek Standard Runner
+```bash
+python run_game.py
+```
+
+### 2. Run with Launcher
 ```bash
 ./run.sh
 ```
 
-### 2. Manual Run
+### 3. Manual Run
 ```bash
 # Setup environment
 uv venv --python 3.12 .venv
 source .venv/bin/activate
-uv pip install pyxel pytest
+uv pip install -r requirements.txt
 
-# Run with Pyxel
+# Run with Pyxel directly
 python -m pyxel run main.py
 
 # Run with Autonomous Bot

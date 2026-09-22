@@ -24,69 +24,94 @@ from engine.video import VideoRecorder
 
 
 def render_vignette(px: float, py: float, radius: float, screen_w: int = 600, screen_h: int = 800, pyxel_module=None):
-    """Draw dual-tier concentric vignette mask centered at (px, py).
+    """Draw multi-circle concentric vignette mask centered at (px, py) with graduated dither transparency.
 
-    Outer zone (distance > r_outer): 100% solid black darkness.
-    Middle ring (r_inner < distance <= r_outer): 50% alpha dithered shadow.
-    Inner core (distance <= r_inner): 100% clear unobstructed vision.
+    - Outside R4 (1.00 * radius): 100% solid black void.
+    - Tier 4 (0.88..1.00 * radius): 85% dither darkness.
+    - Tier 3 (0.74..0.88 * radius): 65% dither darkness.
+    - Tier 2 (0.58..0.74 * radius): 42% dither darkness.
+    - Tier 1 (0.42..0.58 * radius): 20% dither darkness.
+    - Core (< 0.42 * radius): 100% clear unobstructed vision.
     """
     if pyxel_module is None or radius >= 900.0:
         return
-    r_outer = max(25.0, float(radius))
-    r_inner = max(15.0, r_outer * 0.70)
-    r_outer_sq = r_outer * r_outer
-    r_inner_sq = r_inner * r_inner
 
+    r = max(25.0, float(radius))
+    tiers = [
+        (0.42 * r, 0.20),
+        (0.58 * r, 0.42),
+        (0.74 * r, 0.65),
+        (0.88 * r, 0.85),
+        (1.00 * r, 1.00),
+    ]
+    radii_sq = [rk * rk for rk, _ in tiers]
+    r_max_sq = radii_sq[-1]
     has_dither = hasattr(pyxel_module, "dither")
 
-    for y in range(screen_h):
+    # Fast block fill above and below outer circle
+    min_y = max(0, int(py - tiers[-1][0]))
+    max_y = min(screen_h, int(py + tiers[-1][0]) + 1)
+
+    if has_dither:
+        pyxel_module.dither(1.0)
+
+    if min_y > 0:
+        pyxel_module.rect(0, 0, screen_w, min_y, 0)
+    if max_y < screen_h:
+        pyxel_module.rect(0, max_y, screen_w, screen_h - max_y, 0)
+
+    # Render each row intersecting the vignette circles
+    for y in range(min_y, max_y):
         dy = y - py
         dy_sq = dy * dy
 
-        if dy_sq >= r_outer_sq:
-            # Entire line is outside outer circle: solid black
+        if dy_sq >= r_max_sq:
             if has_dither:
                 pyxel_module.dither(1.0)
             pyxel_module.rect(0, y, screen_w, 1, 0)
-        else:
-            dx_out = math.sqrt(r_outer_sq - dy_sq)
-            lx_out = int(px - dx_out)
-            rx_out = int(px + dx_out)
+            continue
 
-            # Solid black outer edges
+        dxs = [math.sqrt(r_sq - dy_sq) if r_sq > dy_sq else 0.0 for r_sq in radii_sq]
+
+        # 1. Solid black void outside outer radius R4
+        lx_out = int(px - dxs[4])
+        rx_out = int(px + dxs[4])
+        if has_dither:
+            pyxel_module.dither(1.0)
+        if lx_out > 0:
+            pyxel_module.rect(0, y, lx_out, 1, 0)
+        if rx_out < screen_w:
+            pyxel_module.rect(rx_out, y, screen_w - rx_out, 1, 0)
+
+        # 2. Concentric graduated dither rings from Tier 4 down to Tier 1
+        for i in range(4, 0, -1):
+            alpha = tiers[i - 1][1]
+            dx_outer = dxs[i]
+            dx_inner = dxs[i - 1]
+
             if has_dither:
-                pyxel_module.dither(1.0)
-            if lx_out > 0:
-                pyxel_module.rect(0, y, lx_out, 1, 0)
-            if rx_out < screen_w:
-                pyxel_module.rect(rx_out, y, screen_w - rx_out, 1, 0)
+                pyxel_module.dither(alpha)
 
-            # 50% alpha transition ring
-            if has_dither:
-                pyxel_module.dither(0.5)
+            # Left ring segment: [px - dx_outer, px - dx_inner]
+            l_start = max(0, int(px - dx_outer))
+            l_end = max(0, min(screen_w, int(px - dx_inner)))
+            if l_end > l_start:
+                pyxel_module.rect(l_start, y, l_end - l_start, 1, 0)
 
-            if dy_sq >= r_inner_sq:
-                # Mid section is entirely in 50% alpha zone
-                start_x = max(0, lx_out)
-                end_x = min(screen_w, rx_out)
-                if end_x > start_x:
-                    pyxel_module.rect(start_x, y, end_x - start_x, 1, 0)
-            else:
-                dx_in = math.sqrt(r_inner_sq - dy_sq)
-                lx_in = int(px - dx_in)
-                rx_in = int(px + dx_in)
+            # Right ring segment: [px + dx_inner, px + dx_outer]
+            r_start = max(0, min(screen_w, int(px + dx_inner)))
+            r_end = min(screen_w, int(px + dx_outer))
+            if r_end > r_start:
+                pyxel_module.rect(r_start, y, r_end - r_start, 1, 0)
 
-                # Left alpha ring segment
-                s1 = max(0, lx_out)
-                e1 = max(0, min(screen_w, lx_in))
-                if e1 > s1:
-                    pyxel_module.rect(s1, y, e1 - s1, 1, 0)
-
-                # Right alpha ring segment
-                s2 = max(0, min(screen_w, rx_in))
-                e2 = min(screen_w, rx_out)
-                if e2 > s2:
-                    pyxel_module.rect(s2, y, e2 - s2, 1, 0)
+        # Innermost tier center bridge when row does not touch clear core
+        if dxs[0] == 0.0 and dxs[1] > 0.0:
+            c_start = max(0, int(px - dxs[1]))
+            c_end = min(screen_w, int(px + dxs[1]))
+            if c_end > c_start:
+                if has_dither:
+                    pyxel_module.dither(tiers[0][1])
+                pyxel_module.rect(c_start, y, c_end - c_start, 1, 0)
 
     if has_dither:
         pyxel_module.dither(1.0)
@@ -260,6 +285,10 @@ class GrainOfDoubtApp:
         # Toggle Video Recording with 'V' key (dev mode only)
         if self.dev_mode and pyxel.btnp(pyxel.KEY_V):
             self.video_recorder.toggle(pyxel)
+
+        # Toggle Invulnerability (God Mode) with 'I' key (dev mode only)
+        if self.dev_mode and pyxel.btnp(pyxel.KEY_I):
+            self.state.godmode = not self.state.godmode
 
         # In Dev Mode: Number keys 1 to 7 apply fixed pacts directly (Canonical Order)
         if self.dev_mode:
@@ -780,6 +809,12 @@ class GrainOfDoubtApp:
             pyxel.rectb(self.SCREEN_WIDTH - 110, 66, 100, 20, 8)
             draw_text_scaled(self.SCREEN_WIDTH - 105, 70, f"REC {rec_secs:02d}s", 8 if flash else 7, scale=2)
 
+        # Invulnerability Badge
+        if self.state.godmode:
+            pyxel.rect(self.SCREEN_WIDTH - 110, 90, 100, 20, 0)
+            pyxel.rectb(self.SCREEN_WIDTH - 110, 90, 100, 20, 10)
+            draw_text_scaled(self.SCREEN_WIDTH - 105, 94, "[GODMODE]", 10, scale=2)
+
         # Greed Borrowed Time Warning Indicator
         if self.state.greed_active:
             flash = (pyxel.frame_count // 5) % 2 == 0
@@ -1060,9 +1095,10 @@ class GrainOfDoubtApp:
 
         bot_str = "ON (80% SPD)" if self.bot_mode else "OFF ([B])"
         rec_str = f"ON ({self.video_recorder.frames_recorded // 30}s)" if self.video_recorder.is_recording else "OFF ([V])"
+        inv_str = "ON" if self.state.godmode else "OFF ([I])"
 
         # Line 1: Header + Version + Quick Toggles
-        draw_text_scaled(box_x + 12, box_y + 8, f"[DEV MODE] (` close) {self.VERSION} | BOT:{bot_str} | REC:{rec_str}", 11, scale=2)
+        draw_text_scaled(box_x + 12, box_y + 8, f"[DEV MODE] (` close) {self.VERSION} | BOT:{bot_str} | REC:{rec_str} | GOD:{inv_str}", 11, scale=2)
 
         # Line 2: Number keys 1-7 for fixed pacts
         draw_text_scaled(box_x + 12, box_y + 36, "PACTS: 1:PRIDE 2:GREED 3:LUST 4:ENVY 5:GLUT 6:WRATH 7:SLOTH", 10, scale=2)

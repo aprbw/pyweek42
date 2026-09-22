@@ -128,5 +128,18 @@ setTimeout(() => clearInterval(fitPoller), 6000);
 "
 cp grain_of_doubt.html index.html
 
+echo "6. Creating official PyWeek source distribution zip (grain-of-doubt-0.8.0.zip)..."
+ZIP_NAME="grain-of-doubt-0.8.0.zip"
+DIR_NAME="grain-of-doubt-0.8.0"
+rm -rf "$DIR_NAME" "$ZIP_NAME"
+mkdir -p "$DIR_NAME"
+
+cp -r run_game.py main.py engine tests requirements.txt README.md LICENSE.md build.sh run.sh playtest_bot.py "$DIR_NAME/"
+find "$DIR_NAME" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+find "$DIR_NAME" -name "*.pyc" -delete 2>/dev/null || true
+find "$DIR_NAME" -name "*.mp4" -delete 2>/dev/null || true
+zip -r "$ZIP_NAME" "$DIR_NAME" > /dev/null
+rm -rf "$DIR_NAME"
+
 echo "Build and packaging complete:"
-ls -lh grain_of_doubt.pyxapp grain_of_doubt.html index.html
+ls -lh grain_of_doubt.pyxapp grain_of_doubt.html index.html "$ZIP_NAME"

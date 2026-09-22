@@ -28,6 +28,7 @@ class StateManager:
         self.score: int = 0
         self.distance: float = 0.0
         self.total_frames: int = 0
+        self.godmode: bool = False
 
         # Temporal clock counters
         self.chronos_timer: int = 0  # 0 to CHRONOS_FRAMES
@@ -130,7 +131,7 @@ class StateManager:
 
     def damage_player(self) -> bool:
         """Apply 1 heart damage. Returns True if damage was dealt."""
-        if self.invulnerable_timer > 0 or self.current_state != GameState.CHRONOS:
+        if self.godmode or self.invulnerable_timer > 0 or self.current_state != GameState.CHRONOS:
             return False
 
         self.hearts -= 1
