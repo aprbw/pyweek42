@@ -154,9 +154,12 @@ python3 -m http.server 8000
 ## 📝 Changelog
 
 ### v0.9.0 (September 2026)
-* **Mobile Viewport Top-Cutoff Containment:**
-  * Fixed top cutoff issue on mobile browsers by expanding viewport padding to `calc(env(safe-area-inset-top, 0px) + 24px)` and capping canvas height to `Math.min(vh * 0.80, vh - 120)` in WebAssembly runner.
-  * Guarantees ample safe space on mobile devices without any part of the canvas being clipped while strictly preserving the 3:4 aspect ratio.
+* **Universal PC & Mobile Viewport 3:4 Containment:**
+  * Fixed canvas cropping across all PC desktop browsers and mobile screens by implementing pure CSS responsive containment (`--target-w: min(var(--avail-w), calc(var(--avail-h) * 0.75))`).
+  * Backed by dynamic JavaScript `fitScreen()`, continuous mutation observation on `document.documentElement`, and `visualViewport` listener.
+  * Guarantees zero cropping on any display or aspect ratio (16:9 PC widescreen, 9:19.5 mobile phone, tablet) while preserving the 3:4 portrait aspect ratio.
+* **Homepage Dev Mode Version Display:**
+  * When in Dev Mode (`~` / `` ` `` key or URL query parameter `?dev`), the game version number is prominently displayed on the main title screen header (`VERSION: v0.9.0 [DEV MODE]`).
 * **Lethal Borrowed Time (Greed Overhaul):**
   * Removed "k=??" label from HUD warning, showing clean `BORROWED TIME`.
   * Greed countdown timer is now displayed in Dev Mode overlay telemetry.

@@ -163,6 +163,23 @@ def is_mobile_environment() -> bool:
     return False
 
 
+def is_dev_environment() -> bool:
+    if "--dev" in sys.argv or "-d" in sys.argv:
+        return True
+    if sys.platform == "emscripten":
+        try:
+            import js
+            if hasattr(js, "window"):
+                if getattr(js.window, "__DEV_MODE__", False):
+                    return True
+                search = str(getattr(js.window.location, "search", "")).lower()
+                if "dev" in search:
+                    return True
+        except Exception:
+            pass
+    return False
+
+
 class GrainOfDoubtApp:
     VERSION: str = "v0.9.0"
     SCREEN_WIDTH: int = 600
@@ -175,6 +192,7 @@ class GrainOfDoubtApp:
         record_video: bool = False,
         video_filename: str = "borrowed_time_bot.mp4",
         mobile_mode: bool = False,
+        dev_mode: bool = False,
     ):
         self.headless = headless
         self.bot_mode = bot_mode
@@ -192,7 +210,7 @@ class GrainOfDoubtApp:
         self.selected_card_index: int = 0  # 0=Left, 1=Right
         self.selected_feedback: Optional[dict] = None
         self.feedback_timer: int = 0
-        self.dev_mode: bool = False
+        self.dev_mode: bool = dev_mode or is_dev_environment()
         self.touch_left: bool = False
         self.touch_right: bool = False
         self.kairos_left_released: bool = True
@@ -1003,10 +1021,13 @@ class GrainOfDoubtApp:
         draw_text_scaled(160, 125, "PYWEEK 42 : BORROWED TIME", 9, scale=2)
         draw_text_scaled(236, 155, "BY ARIAN PRABOWO", 7, scale=2)
 
+        if self.dev_mode:
+            draw_text_scaled(216, 178, f"VERSION: {self.VERSION} [DEV MODE]", 11, scale=2)
+
         # Subtitles centered
-        draw_text_scaled(110, 195, "FALL DOWN THE COSMIC HOURGLASS", 7, scale=2)
-        draw_text_scaled(110, 225, "COLLECT GOLDEN SAND TO SURVIVE", 6, scale=2)
-        draw_text_scaled(95, 255, "DODGE LETHAL FALLING GLASS SHARDS", 6, scale=2)
+        draw_text_scaled(110, 205, "FALL DOWN THE COSMIC HOURGLASS", 7, scale=2)
+        draw_text_scaled(110, 232, "COLLECT GOLDEN SAND TO SURVIVE", 6, scale=2)
+        draw_text_scaled(95, 259, "DODGE LETHAL FALLING GLASS SHARDS", 6, scale=2)
 
         # Controls box
         pyxel.rect(40, 300, 520, 335, 1)
@@ -1037,7 +1058,7 @@ class GrainOfDoubtApp:
             self.draw_touch_buttons()
 
         if self.dev_mode:
-            draw_text_scaled(self.SCREEN_WIDTH - 120, self.SCREEN_HEIGHT - 20, f"[DEV] {self.VERSION}", 11, scale=2)
+            draw_text_scaled(self.SCREEN_WIDTH - 140, self.SCREEN_HEIGHT - 20, f"[DEV] {self.VERSION}", 11, scale=2)
 
     def draw_game_over_screen(self):
         # Dark overlay box with dither alpha
@@ -1170,6 +1191,7 @@ def main():
     bot_flag = "--bot" in sys.argv
     video_flag = ("--video" in sys.argv or "--record" in sys.argv or "--export-video" in sys.argv)
     mobile_flag = "--mobile" in sys.argv
+    dev_flag = ("--dev" in sys.argv or "-d" in sys.argv)
     video_file = "borrowed_time_bot.mp4"
     for i, arg in enumerate(sys.argv):
         if arg in ["--video", "--record", "--export-video"] and i + 1 < len(sys.argv) and not sys.argv[i + 1].startswith("-"):
@@ -1186,6 +1208,7 @@ def main():
         record_video=video_flag,
         video_filename=video_file,
         mobile_mode=mobile_flag,
+        dev_mode=dev_flag,
     )
 
 

@@ -871,6 +871,42 @@ def test_wrath_non_compounding():
     assert state.wrath_zero_yield_timer == 300
 
 
+def test_dev_mode_title_screen_version_display():
+    """Verify version number is displayed on the title screen when in Dev Mode."""
+    import main
+    from main import GrainOfDoubtApp
+
+    app = GrainOfDoubtApp(headless=True, dev_mode=False)
+    assert app.dev_mode is False
+
+    drawn_texts = []
+    orig_draw = main.draw_text_scaled
+    try:
+        main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2: drawn_texts.append(s)
+
+        # In non-dev mode, title screen does not show [DEV MODE]
+        app.draw_title_screen()
+        assert not any("VERSION:" in t and "[DEV MODE]" in t for t in drawn_texts)
+
+        # In dev mode, title screen shows VERSION v0.9.0 [DEV MODE]
+        app.dev_mode = True
+        drawn_texts.clear()
+        app.draw_title_screen()
+        assert any(f"VERSION: {app.VERSION} [DEV MODE]" in t for t in drawn_texts)
+    finally:
+        main.draw_text_scaled = orig_draw
 
 
+def test_web_containment_math_and_aspect_ratio():
+    """Verify responsive 3:4 CSS aspect ratio and containment variables in optimize_web."""
+    import os
+    opt_path = os.path.join(os.path.dirname(__file__), "..", "optimize_web.py")
+    with open(opt_path) as f:
+        src = f.read()
+
+    assert "--target-w: min(var(--avail-w), calc(var(--avail-h) * 0.75));" in src
+    assert "--target-h: calc(var(--target-w) * 4 / 3);" in src
+    assert "screenEl.style.setProperty('width', w + 'px', 'important');" in src
+    assert "canvasEl.style.setProperty('width', w + 'px', 'important');" in src
+    assert "window.__DEV_MODE__ = true;" in src
 
