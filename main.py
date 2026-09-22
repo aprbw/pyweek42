@@ -24,25 +24,72 @@ from engine.video import VideoRecorder
 
 
 def render_vignette(px: float, py: float, radius: float, screen_w: int = 600, screen_h: int = 800, pyxel_module=None):
-    """Draw circular darkness vignette mask centered at (px, py)."""
+    """Draw dual-tier concentric vignette mask centered at (px, py).
+
+    Outer zone (distance > r_outer): 100% solid black darkness.
+    Middle ring (r_inner < distance <= r_outer): 50% alpha dithered shadow.
+    Inner core (distance <= r_inner): 100% clear unobstructed vision.
+    """
     if pyxel_module is None:
         return
-    r = max(20.0, radius)
-    r_sq = r * r
+    r_outer = max(25.0, float(radius))
+    r_inner = max(15.0, r_outer * 0.70)
+    r_outer_sq = r_outer * r_outer
+    r_inner_sq = r_inner * r_inner
+
+    has_dither = hasattr(pyxel_module, "dither")
 
     for y in range(screen_h):
         dy = y - py
         dy_sq = dy * dy
-        if dy_sq >= r_sq:
+
+        if dy_sq >= r_outer_sq:
+            # Entire line is outside outer circle: solid black
+            if has_dither:
+                pyxel_module.dither(1.0)
             pyxel_module.rect(0, y, screen_w, 1, 0)
         else:
-            dx = math.sqrt(r_sq - dy_sq)
-            lx = int(px - dx)
-            rx = int(px + dx)
-            if lx > 0:
-                pyxel_module.rect(0, y, lx, 1, 0)
-            if rx < screen_w:
-                pyxel_module.rect(rx, y, screen_w - rx, 1, 0)
+            dx_out = math.sqrt(r_outer_sq - dy_sq)
+            lx_out = int(px - dx_out)
+            rx_out = int(px + dx_out)
+
+            # Solid black outer edges
+            if has_dither:
+                pyxel_module.dither(1.0)
+            if lx_out > 0:
+                pyxel_module.rect(0, y, lx_out, 1, 0)
+            if rx_out < screen_w:
+                pyxel_module.rect(rx_out, y, screen_w - rx_out, 1, 0)
+
+            # 50% alpha transition ring
+            if has_dither:
+                pyxel_module.dither(0.5)
+
+            if dy_sq >= r_inner_sq:
+                # Mid section is entirely in 50% alpha zone
+                start_x = max(0, lx_out)
+                end_x = min(screen_w, rx_out)
+                if end_x > start_x:
+                    pyxel_module.rect(start_x, y, end_x - start_x, 1, 0)
+            else:
+                dx_in = math.sqrt(r_inner_sq - dy_sq)
+                lx_in = int(px - dx_in)
+                rx_in = int(px + dx_in)
+
+                # Left alpha ring segment
+                s1 = max(0, lx_out)
+                e1 = max(0, min(screen_w, lx_in))
+                if e1 > s1:
+                    pyxel_module.rect(s1, y, e1 - s1, 1, 0)
+
+                # Right alpha ring segment
+                s2 = max(0, min(screen_w, rx_in))
+                e2 = min(screen_w, rx_out)
+                if e2 > s2:
+                    pyxel_module.rect(s2, y, e2 - s2, 1, 0)
+
+    if has_dither:
+        pyxel_module.dither(1.0)
 
 
 def draw_text_scaled(x: int, y: int, s: str, col: int, scale: int = 1, img_bank: int = 2):

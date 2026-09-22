@@ -169,9 +169,13 @@ def test_greed_deterministic_kill_timer_gate():
 class MockPyxel:
     def __init__(self):
         self.rect_calls = []
+        self.dither_calls = []
 
     def rect(self, x, y, w, h, col):
         self.rect_calls.append((x, y, w, h, col))
+
+    def dither(self, alpha):
+        self.dither_calls.append(alpha)
 
 
 def test_vignette_boundary_gate():
