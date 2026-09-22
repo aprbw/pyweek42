@@ -181,7 +181,7 @@ def is_dev_environment() -> bool:
 
 
 class GrainOfDoubtApp:
-    VERSION: str = "v0.9.0"
+    VERSION: str = "v1.0.0"
     SCREEN_WIDTH: int = 600
     SCREEN_HEIGHT: int = 800
 
@@ -226,7 +226,7 @@ class GrainOfDoubtApp:
                 self.SCREEN_HEIGHT,
                 title="Grain of Doubt - By Arian Prabowo",
                 fps=30,
-                quit_key=pyxel.KEY_X,
+                quit_key=pyxel.KEY_NONE,
             )
             self.audio.init_sounds(pyxel)
             if self.record_video_on_start:
@@ -291,9 +291,23 @@ class GrainOfDoubtApp:
         if pyxel is None:
             return
 
-        # Exit game shortcut 'X'
+        # X key: On TITLE screen = quit game; During gameplay = return to title menu
         if not self.headless and pyxel.btnp(pyxel.KEY_X):
-            pyxel.quit()
+            if self.state.current_state == GameState.TITLE:
+                pyxel.quit()
+            else:
+                # Return to title screen from any gameplay state
+                self.state.current_state = GameState.TITLE
+                self.state.reset()
+                self.entities.reset()
+                self.bargains.reset()
+                self.active_options.clear()
+                self.selected_card_index = 0
+                self.selected_feedback = None
+                self.feedback_timer = 0
+                self.auto_restart_timer = 0
+                self.game_over_timer = 0
+                self.reset_stars()
 
         # Toggle Dev mode dynamically with '`' (backtick / grave)
         if pyxel.btnp(pyxel.KEY_BACKQUOTE):
@@ -422,9 +436,10 @@ class GrainOfDoubtApp:
             if self.bot_mode:
                 if self.selected_card_index < 0:
                     self.selected_card_index = 0
+                frames_rem = self.state.KAIROS_FRAMES - self.state.kairos_timer
                 if pyxel.frame_count % 2 == 0:
                     b_left, b_right, b_seal = self.bot.decide_kairos_choice(
-                        self.active_options, self.selected_card_index
+                        self.active_options, self.selected_card_index, frames_remaining=frames_rem
                     )
                     if b_left and self.selected_card_index > 0:
                         self.selected_card_index -= 1
@@ -825,12 +840,12 @@ class GrainOfDoubtApp:
             pyxel.dither(1.0)
         pyxel.rectb(10, 44, pacts_box_w, pacts_box_h, 1)
 
-        draw_text_scaled(16, 48, "PACTS (7)", 6, scale=2)
+        draw_text_scaled(16, 48, "PACTS", 6, scale=2)
         for idx, sin in enumerate(CANONICAL_SINS):
             k = self.bargains.selection_counts.get(sin, 0)
             row_y = 66 + idx * 16
             sin_lbl = sin.name[:7].upper()
-            line_txt = f"{sin_lbl:<7} {k}"
+            line_txt = f"{idx+1}. {sin_lbl:<7} {k}"
             col = 10 if k > 0 else 5
             draw_text_scaled(16, row_y, line_txt, col, scale=2)
 
@@ -977,9 +992,9 @@ class GrainOfDoubtApp:
                 draw_text_scaled(cx + 16, col_y + 244, "Vignette Vision", 7, scale=2)
                 draw_text_scaled(cx + 16, col_y + 268, f"{int(260.0 * (0.8**k))}px Tunnel", 8, scale=2)
             elif sin == SinType.SLOTH:
-                drag = 0.05 * (1.5 ** k) * 100
+                drag = 0.20 * (1.5 ** k) * 100
                 draw_text_scaled(cx + 16, col_y + 244, "Lateral Drag", 7, scale=2)
-                draw_text_scaled(cx + 16, col_y + 268, f"-{drag:.1f}% Steering", 8, scale=2)
+                draw_text_scaled(cx + 16, col_y + 268, f"-{drag:.0f}% Steering", 8, scale=2)
             elif sin == SinType.LUST:
                 draw_text_scaled(cx + 16, col_y + 244, "Hazard Magnet", 7, scale=2)
                 draw_text_scaled(cx + 16, col_y + 268, f"{180 + k * 60}px (Permanent)", 8, scale=2)
@@ -1043,10 +1058,10 @@ class GrainOfDoubtApp:
 
         draw_text_scaled(60, 520, "SHORTCUTS", 9, scale=2)
         if self.dev_mode:
-            draw_text_scaled(60, 550, "[`] DEV MODE  |  [B] BOT  |  [V] REC", 11, scale=2)
-            draw_text_scaled(60, 580, "[X] QUIT GAME  |  [SPACE] RESTART", 5, scale=2)
+            draw_text_scaled(60, 550, "[`] DEV  |  [I] INVULN  |  [B] BOT  |  [V] REC", 11, scale=2)
+            draw_text_scaled(60, 580, "[X] QUIT  |  [SPACE] START", 5, scale=2)
         else:
-            draw_text_scaled(60, 550, "[X] QUIT GAME  |  [SPACE] RESTART", 5, scale=2)
+            draw_text_scaled(60, 550, "[X] QUIT  |  [SPACE] START", 5, scale=2)
 
         # Start prompt
         blink = (pyxel.frame_count // 12) % 2 == 0
@@ -1157,15 +1172,15 @@ class GrainOfDoubtApp:
         pyxel.rectb(box_x, box_y, box_w, box_h, 11)
         pyxel.rectb(box_x + 1, box_y + 1, box_w - 2, box_h - 2, 3)
 
-        bot_str = "ON (80% SPD)" if self.bot_mode else "OFF ([B])"
-        rec_str = f"ON ({self.video_recorder.frames_recorded // 30}s)" if self.video_recorder.is_recording else "OFF ([V])"
-        inv_str = "ON" if self.state.godmode else "OFF ([I])"
+        bot_str = "ON" if self.bot_mode else "OFF"
+        rec_str = "ON" if self.video_recorder.is_recording else "OFF"
+        inv_str = "ACTIVE (IMMORTAL)" if self.state.godmode else "OFF"
 
-        # Line 1: Header + Version + Quick Toggles
-        draw_text_scaled(box_x + 12, box_y + 8, f"[DEV MODE] (` close) {self.VERSION} | BOT:{bot_str} | REC:{rec_str} | GOD:{inv_str}", 11, scale=2)
+        # Line 1: Header + Version + Shortcut for Invulnerability
+        draw_text_scaled(box_x + 12, box_y + 8, f"[DEV MODE] (` close) {self.VERSION} | SHORTCUT: [I] INVULNERABILITY: {inv_str}", 11, scale=2)
 
-        # Line 2: Number keys 1-7 for fixed pacts, Q-U to reduce
-        draw_text_scaled(box_x + 12, box_y + 36, "PACTS: 1-7:ADD  Q-U:REDUCE (P,G,L,E,GL,W,S)  |  [X] QUIT", 10, scale=2)
+        # Line 2: Other shortcuts and Faustian Bargains controls
+        draw_text_scaled(box_x + 12, box_y + 36, f"[B] BOT:{bot_str}  [V] REC:{rec_str}  [X] MENU  |  PACTS: 1-7:ADD  Q-U:REDUCE", 10, scale=2)
 
         # Line 3: Player and Camera telemetry
         px = self.entities.player.x

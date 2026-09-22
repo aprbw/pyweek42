@@ -1,7 +1,7 @@
 # Grain of Doubt
 
 > **By Arian Prabowo**  
-> **Version:** v0.9.0  
+> **Version:** v1.0.0  
 > **PyWeek 42 Entry ("Borrowed Time")** — September 2026  
 > An endless retro downhill falling-hourglass arcade runner built with the **Pyxel** retro game engine.  
 > **Target Resolution:** $600 \times 800$ pixels ($3:4$ Portrait Aspect Ratio, Infinite Horizontal Arena).
@@ -41,7 +41,7 @@ Steer left or right to avoid razor-sharp falling glass shards while collecting g
 | `I` (in Dev Mode) | Toggle God Mode | Toggle complete invulnerability against all hazard damage |
 | `B` (in Dev Mode) | Playtest Bot | Toggle autonomous GOFAI kinematic playtesting bot (dev mode only) |
 | `V` (in Dev Mode) | Video Recording | Toggle MP4 video capture to disk (dev mode only) |
-| `X` | Quit | Exit game |
+| `X` | Quit / Menu | On Title screen: Quit game. During gameplay: return to Title menu |
 
 ---
 
@@ -61,7 +61,9 @@ Steer left or right to avoid razor-sharp falling glass shards while collecting g
    * *Curse:* Hazard magnetic attraction permanently pulls razor glass shards within radius toward hourglass ($180.0$px on 1st pact, $+60.0$px on subsequent pacts).
 4. **Envy:**
    * *Boon:* Instantly reaps all golden sand grains currently visible on the screen, immediately awarding their score and triggering radiant particle bursts.
-   * *Curse:* Inflicts **Vignette Vision**, restricting your visual field with a multi-circle concentric mask with 5 graduated dither transparency tiers down to an inner clear core (radius $260.0 \times 0.80^k$ px, minimum $90$px).
+   * *Curse:* Inflicts **Vignette Vision**, a multi-circle concentric mask with 5 graduated dither transparency tiers. Radius $= \max(90,\, 260 \times 0.80^{k-1})$ px.
+     * **Outermost circle** (zero vision beyond): Pact 1 → $260$px, Pact 2 → $208$px, Pact 3 → $166$px, Pact 4 → $133$px, Pact 5 → $107$px, Pact 6+ → $90$px (minimum).
+     * **Innermost circle** (full clear vision): $0.42 \times$ radius — Pact 1 → $109$px, Pact 2 → $87$px, Pact 3 → $70$px, Pact 4 → $56$px, Pact 5 → $45$px, Pact 6+ → $38$px.
 5. **Gluttony:**
    * *Boon:* Increases golden sand spawn rate by $+50\%$ per pact level ($+0.50$).
    * *Curse:* Increases razor hazard spawn rate by $+50\%$ per pact level ($+0.50$).
@@ -70,7 +72,7 @@ Steer left or right to avoid razor-sharp falling glass shards while collecting g
    * *Curse:* Zero yield: all sand grains collected yield 0 points for 10.0 seconds ($300$ frames).
 7. **Sloth:**
    * *Boon:* Freeze Hazards immediately ($0.0$ velocity), slowly recovering speed linearly over $8.0$ seconds ($240$ frames) back to full speed ($1.0$).
-   * *Curse:* Imposes lateral drag on hourglass steering, reducing horizontal translation speed by $5\% \times 1.5^k$ ($0.05$ reduction on 1st pact, $0.075$ on 2nd, down to minimum $0.35$ modifier).
+   * *Curse:* Imposes lateral drag on hourglass steering, reducing horizontal translation speed by $20\% \times 1.5^k$ ($0.20$ reduction on 1st pact, $0.30$ on 2nd, $0.45$ on 3rd; minimum modifier $0.20$).
 
 ---
 
@@ -152,6 +154,15 @@ python3 -m http.server 8000
 ---
 
 ## 📝 Changelog
+
+### v1.0.0 (September 2026)
+* **X Key Dual-Behaviour:**
+  * On **Title Screen**: `X` quits the game (no-op in browser).
+  * **During Gameplay** (Chronos / Kairos / Game Over): `X` returns to the Title menu without quitting.
+* **Pact Menu Numbered List:**
+  * In-game HUD pact list now shows canonical numbering (`1. PRIDE 0`, `2. GREED 0`, etc.) instead of `(7)` header.
+* **README Envy Radius Progression:**
+  * Documented exact outermost (zero vision) and innermost (full clear vision) circle radii per pact level.
 
 ### v0.9.0 (September 2026)
 * **Universal PC & Mobile Viewport 3:4 Containment:**

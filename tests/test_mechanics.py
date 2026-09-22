@@ -910,3 +910,60 @@ def test_web_containment_math_and_aspect_ratio():
     assert "canvasEl.style.setProperty('width', w + 'px', 'important');" in src
     assert "window.__DEV_MODE__ = true;" in src
 
+
+def test_bot_waits_until_last_moment_in_kairos():
+    """Verify GOFAI bot does not confirm pact immediately, but waits until the final moments."""
+    from engine.bot import PlayTestingBot
+    from engine.bargains import SinType, BARGAIN_REGISTRY
+
+    bot = PlayTestingBot(seed=42)
+    options = [
+        (SinType.PRIDE, BARGAIN_REGISTRY[SinType.PRIDE], 1),
+        (SinType.GLUTTONY, BARGAIN_REGISTRY[SinType.GLUTTONY], 1),
+    ]
+
+    # When 50 frames remaining (early in Kairos): bot positions cursor but does NOT confirm
+    m_left, m_right, confirm = bot.decide_kairos_choice(options, current_index=0, frames_remaining=50)
+    assert confirm is False, "Bot confirmed too early in Kairos!"
+
+    # When 4 frames remaining (very last moment): bot confirms selection
+    target = bot.target_card_index
+    m_left, m_right, confirm = bot.decide_kairos_choice(options, current_index=target, frames_remaining=4)
+    assert confirm is True, "Bot failed to confirm at the final moment in Kairos!"
+
+
+def test_sloth_aggressive_drag():
+    """Verify Sloth lateral drag imposes aggressive 20% * 1.5^k reduction."""
+    state = StateManager()
+    state.start_game()
+    bargains = BargainManager()
+
+    assert state.sloth_player_speed_mod == 1.0
+
+    # 1st pact: -20% reduction (mod = 0.80)
+    bargains.apply_bargain(SinType.SLOTH, state)
+    assert state.sloth_player_speed_mod == pytest.approx(0.80, abs=1e-3)
+
+    # 2nd pact: -30% reduction (mod = 0.50)
+    bargains.apply_bargain(SinType.SLOTH, state)
+    assert state.sloth_player_speed_mod == pytest.approx(0.50, abs=1e-3)
+
+
+def test_dev_mode_bottom_menu_shows_invulnerability_shortcut():
+    """Verify bottom dev menu displays the shortcut for invulnerability."""
+    import main
+    from main import GrainOfDoubtApp
+
+    app = GrainOfDoubtApp(headless=True, dev_mode=True)
+    assert app.dev_mode is True
+
+    drawn_texts = []
+    orig_draw = main.draw_text_scaled
+    try:
+        main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2: drawn_texts.append(s)
+        app.draw_dev_overlay()
+        assert any("SHORTCUT: [I] INVULNERABILITY" in t for t in drawn_texts)
+    finally:
+        main.draw_text_scaled = orig_draw
+
+

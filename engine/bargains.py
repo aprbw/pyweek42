@@ -111,7 +111,7 @@ BARGAIN_REGISTRY: Dict[SinType, BargainDefinition] = {
         boon_name="Freeze Hazards",
         curse_name="Lateral Drag",
         boon_base=8.0,
-        curse_base=0.05,
+        curse_base=0.20,
         boon_unit="s freeze",
         curse_unit="drag",
     ),
@@ -231,9 +231,9 @@ class BargainManager:
         elif sin == SinType.SLOTH:
             # Boon: Freeze hazards immediately, linear recovery over 8.0s (240 frames)
             state.sloth_freeze_timer = state.SLOTH_FREEZE_FRAMES
-            # Curse: Lateral drag: 0.05 * 1.5^k reduction, min 0.35
-            drag_reduction = 0.05 * (1.5 ** k)
-            state.sloth_player_speed_mod = max(0.35, state.sloth_player_speed_mod - drag_reduction)
+            # Curse: Aggressive lateral drag: 0.20 * 1.5^k reduction, min 0.20
+            drag_reduction = 0.20 * (1.5 ** k)
+            state.sloth_player_speed_mod = max(0.20, state.sloth_player_speed_mod - drag_reduction)
             summary = {
                 "sin": defn.name,
                 "boon": "Freeze Hazards: 8.0s linear recovery",
@@ -330,8 +330,8 @@ class BargainManager:
         elif sin == SinType.SLOTH:
             speed_mod = 1.0
             for i in range(new_k):
-                speed_mod -= 0.05 * (1.5 ** i)
-            state.sloth_player_speed_mod = max(0.35, speed_mod)
+                speed_mod -= 0.20 * (1.5 ** i)
+            state.sloth_player_speed_mod = max(0.20, speed_mod)
             if new_k == 0:
                 state.sloth_freeze_timer = 0
             summary = {

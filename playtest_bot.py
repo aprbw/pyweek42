@@ -49,8 +49,11 @@ def run_single_episode(
                 bot.target_card_index = None
 
         elif state.current_state == GameState.KAIROS:
-            # Bot decides Kairos selection
-            m_left, m_right, confirm = bot.decide_kairos_choice(active_options, cursor_idx)
+            # Bot decides Kairos selection (waits until last moment)
+            frames_rem = state.KAIROS_FRAMES - state.kairos_timer
+            m_left, m_right, confirm = bot.decide_kairos_choice(
+                active_options, cursor_idx, frames_remaining=frames_rem
+            )
             if m_left and cursor_idx > 0:
                 cursor_idx -= 1
             elif m_right and cursor_idx < len(active_options) - 1:

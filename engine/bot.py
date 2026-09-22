@@ -197,10 +197,14 @@ class PlayTestingBot:
         self,
         active_options: List[Tuple[SinType, any, int]],
         current_index: int,
+        frames_remaining: Optional[int] = None,
     ) -> Tuple[bool, bool, bool]:
         """Determine (move_left, move_right, confirm) during Kairos time-freeze.
 
-        Enforces bargain strategy: random choice BUT NEVER Greed.
+        Enforces bargain strategy:
+        - Random choice BUT NEVER Greed.
+        - Navigates immediately to target card, but WAITS until the very last moment
+          (<= 6 frames remaining, ~0.2s before the 2.0s deadline) before confirming.
         """
         if not active_options:
             return (False, False, True)
@@ -222,8 +226,10 @@ class PlayTestingBot:
         elif current_index > self.target_card_index:
             return (True, False, False)  # move left
         else:
-            # Reached target card: confirm
-            return (False, False, True)
+            # Reached target card: wait until the very last moment to seal pact
+            if frames_remaining is not None and frames_remaining > 6:
+                return (False, False, False)  # Hover over chosen card, hold off confirming
+            return (False, False, True)  # Final moment reached: confirm choice
 
     def reset_kairos(self):
         """Clear Kairos target selection when resuming Chronos."""
