@@ -64,12 +64,12 @@ BARGAIN_REGISTRY: Dict[SinType, BargainDefinition] = {
         sin=SinType.GREED,
         name="Greed",
         latin_name="Avaritia",
-        boon_name="Harvest Bounty",
-        curse_name="Kill-Timer Rate",
+        boon_name="Bounty Harvest",
+        curse_name="Borrowed Time",
         boon_base=5.0,
         curse_base=1.5,
         boon_unit="pts/ent",
-        curse_unit="x severity",
+        curse_unit="x tension",
     ),
     SinType.WRATH: BargainDefinition(
         sin=SinType.WRATH,
@@ -170,16 +170,18 @@ class BargainManager:
             harvest_score = int(accrued * boon_val * 10)
             state.score += harvest_score
 
-            # Deterministic sudden death kill timer
-            # Starts at 600 frames (20s), decreases by 1.5^k
-            base_kill_frames = 600
-            kill_frames = max(90, int(base_kill_frames / (1.50 ** k)))
-            state.greed_timer_active = True
-            if state.greed_kill_timer < 0 or kill_frames < state.greed_kill_timer:
-                state.greed_kill_timer = kill_frames
-                state.greed_initial_timer = kill_frames
+            # Greed Borrowed Time: No sudden-death instant kill timer!
+            # Instead plunges the world into escalating borrowed time tension:
+            # - Triggers ominous blood-red background / amber flare atmosphere
+            # - Accelerates descent pace and entity spawns
+            # - Halves the vignette vision area
+            state.greed_active = True
+            state.greed_level += 1
+            state.speed_multiplier += 0.20 * curse_val
+            state.spawn_rate_multiplier += 0.25 * curse_val
+            state.update_effective_scroll_speed()
 
-            # Greed curse: Halve visual area (radius reduced to ~70.7%, e.g., 800 -> 566 ~ 600)
+            # Greed curse: Halve visual area (radius reduced to ~70.7%, e.g., 1000 -> 707 -> 500)
             state.vignette_radius = max(state.min_vignette_radius, state.vignette_radius * 0.7071)
 
         elif sin == SinType.WRATH:

@@ -133,32 +133,32 @@ def test_compounding_math_gate():
 
 
 # ---------------------------------------------------------------------------
-# Gate 4: Greed Deterministic Kill-Timer Gate
+# Gate 4: Greed Borrowed Time Mechanics Gate
 # ---------------------------------------------------------------------------
-def test_greed_deterministic_kill_timer_gate():
-    """Verify Greed initializes deterministic kill-timer terminating game upon expiration."""
+def test_greed_borrowed_time_mechanics_gate():
+    """Verify Greed activates Borrowed Time without instant kill-timer, cuts vignette, and scales tension."""
     state = StateManager()
     state.start_game()
     bargains = BargainManager()
 
-    assert not state.greed_timer_active
-    assert state.greed_kill_timer == -1
+    assert not state.greed_active
+    assert state.greed_level == 0
+    initial_vignette = state.vignette_radius
+    initial_spd = state.speed_multiplier
+    initial_spawn = state.spawn_rate_multiplier
 
     # Apply Greed
     bargains.apply_bargain(SinType.GREED, state)
-    assert state.greed_timer_active is True
-    assert state.greed_kill_timer > 0
-    initial_timer = state.greed_kill_timer
+    assert state.greed_active is True
+    assert state.greed_level == 1
+    assert state.vignette_radius < initial_vignette  # 50% area cut (~70.7% radius)
+    assert state.speed_multiplier > initial_spd      # Borrowed time pace escalation
+    assert state.spawn_rate_multiplier > initial_spawn
 
-    # Advance timer until 1 frame before death
-    for _ in range(initial_timer - 1):
+    # Verify NO sudden death kill timer: advancing 1000 frames does NOT kill the player
+    for _ in range(1000):
         state.update_timers()
-        assert state.current_state != GameState.GAMEOVER
-
-    # Last tick triggers sudden death
-    state.update_timers()
-    assert state.current_state == GameState.GAMEOVER
-    assert "Greed" in state.death_reason
+        assert state.current_state != GameState.GAMEOVER, "Greed must not arbitrarily terminate game via kill timer!"
 
 
 # ---------------------------------------------------------------------------
@@ -295,3 +295,43 @@ def test_video_recorder_unique_filename():
         # Next increment: test_002.mp4
         res3 = VideoRecorder._resolve_unique_filename(base)
         assert res3 == os.path.join(tmpdir, "test_002.mp4")
+
+
+def test_video_recorder_produces_colored_frames():
+    """Verify video frames are encoded with actual colors (not pitch black)."""
+    import os
+    import shutil
+    import subprocess
+    import tempfile
+    import pyxel
+    from engine.video import VideoRecorder
+
+    if shutil.which("ffmpeg") is None:
+        return  # Skip if ffmpeg not in test environment
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        out_mp4 = os.path.join(tmpdir, "color_test.mp4")
+        recorder = VideoRecorder(output_path=out_mp4, width=600, height=800, fps=30)
+
+        pyxel.init(600, 800, headless=True)
+        pyxel.cls(7)  # Off-white
+        pyxel.rect(50, 50, 200, 200, 8)  # Crimson Pink
+
+        started = recorder.start(pyxel_module=pyxel, filename=out_mp4)
+        assert started is True
+        for _ in range(5):
+            recorder.record_frame(pyxel)
+        recorder.stop()
+
+        assert os.path.exists(out_mp4)
+        assert os.path.getsize(out_mp4) > 0
+
+        # Decode 1 frame to rgb24 and assert colors are not all black (0, 0, 0)
+        dec_cmd = ["ffmpeg", "-y", "-i", out_mp4, "-vframes", "1", "-f", "rawvideo", "-pix_fmt", "rgb24", "-"]
+        proc = subprocess.Popen(dec_cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        raw_rgb, _ = proc.communicate()
+        assert len(raw_rgb) == 600 * 800 * 3
+        # Ensure we have high brightness colors (>15)
+        bright_bytes = [b for b in raw_rgb if b > 50]
+        assert len(bright_bytes) > 10000, "Recorded frame was pitch black! Pal8 layout failed!"
+

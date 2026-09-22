@@ -13,7 +13,7 @@ class StateManager:
     # 30 FPS timing constants
     CHRONOS_FRAMES: int = 240  # 8.0 seconds
     KAIROS_FRAMES: int = 60    # 2.0 seconds
-    INVULNERABLE_FRAMES: int = 30  # 1.0 second
+    INVULNERABLE_FRAMES: int = 20  # 0.66 second for tighter evasion
     SHAKE_FRAMES: int = 8
     SHAKE_INTENSITY: float = 12.0
 
@@ -39,13 +39,12 @@ class StateManager:
         self.score_multiplier: float = 1.0
         self.speed_multiplier: float = 1.0
 
-        # Entity tracking & Greed kill-timer
+        # Entity tracking & Greed Borrowed Time state
         self.total_entities_spawned: int = 0
         self.total_sand_collected: int = 0
         self.total_shards_dodged: int = 0
-        self.greed_timer_active: bool = False
-        self.greed_kill_timer: int = -1  # frames remaining if active
-        self.greed_initial_timer: int = -1
+        self.greed_active: bool = False
+        self.greed_level: int = 0
 
         # Wrath zero-yield timer
         self.wrath_wipe_timer: int = 0
@@ -149,14 +148,6 @@ class StateManager:
             self.lust_attract_timer -= 1
             if self.lust_attract_timer == 0:
                 self.lust_attract_radius = 0.0
-
-        # Greed deterministic sudden-death timer
-        if self.greed_timer_active:
-            if self.greed_kill_timer > 0:
-                self.greed_kill_timer -= 1
-                if self.greed_kill_timer <= 0:
-                    self.trigger_game_over("Debt Collector: Greed Expired")
-                    return
 
         # Total lifetime frames
         self.total_frames += 1

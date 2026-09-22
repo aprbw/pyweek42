@@ -97,7 +97,8 @@ class VideoRecorder:
                 self.palette_header = self._build_palette(pyxel_module)
 
             screen_bytes = bytes(pyxel_module.screen.data_ptr())
-            frame_payload = self.palette_header + screen_bytes
+            # FFmpeg rawvideo pal8 demuxer expects frame pixels FIRST, then 1024-byte palette!
+            frame_payload = screen_bytes + self.palette_header
             self.proc.stdin.write(frame_payload)
             self.frames_recorded += 1
         except (BrokenPipeError, OSError):

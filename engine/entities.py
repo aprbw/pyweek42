@@ -217,20 +217,25 @@ class EntityManager:
         if camera_x is None:
             camera_x = self.player.x - self.screen_w / 2.0
 
-        # Calibrated generation rate for ~1 minute median survival curve
-        self.spawn_accumulator += (spawn_rate_mult * 0.32)
+        # Calibrated generation rate for engaging retro-arcade challenge (~40-60s survival curve)
+        self.spawn_accumulator += (spawn_rate_mult * 0.45)
         while self.spawn_accumulator >= 1.0:
             self.spawn_accumulator -= 1.0
             spawn_y = self.screen_h + random.uniform(20, 80)
-            # Procedural SkiFree wide spawn horizon around camera viewport
-            margin = 350.0
+            # Focused spawn horizon centered around camera viewport with 140px buffer
+            margin = 140.0
             spawn_x = random.uniform(camera_x - margin, camera_x + self.screen_w + margin)
 
-            # 72% chance sand grain, 28% chance glass shard
-            if random.random() < 0.72:
+            # 55% chance sand grain, 45% chance glass shard
+            if random.random() < 0.55:
                 self.sands.append(SandGrain(spawn_x, spawn_y))
             else:
                 self.shards.append(GlassShard(spawn_x, spawn_y))
+                # 20% chance to spawn an offset hazard cluster pair for weaving challenge
+                if random.random() < 0.20:
+                    offset_x = spawn_x + random.choice([-55.0, 55.0])
+                    offset_y = spawn_y + random.uniform(20.0, 45.0)
+                    self.shards.append(GlassShard(offset_x, offset_y))
 
     def update(self, state):
         if state.current_state != state.current_state.__class__.CHRONOS:

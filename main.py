@@ -328,8 +328,13 @@ class GrainOfDoubtApp:
             oy = random.randint(-int(self.state.shake_intensity), int(self.state.shake_intensity))
         pyxel.camera(cam_x + ox, oy)
 
-        # Clear background void (Color 0: Black)
-        pyxel.cls(0)
+        # Clear background void (Color 0: Black, or ominous cosmic blood-night if Greed is active)
+        if self.state.greed_active:
+            # Color 2 is dark purple/crimson void; subtle pulsing gives borrowed time atmosphere
+            bg_col = 2 if (pyxel.frame_count // 18) % 2 == 0 else 0
+            pyxel.cls(bg_col)
+        else:
+            pyxel.cls(0)
 
         # Compute Chronos progress towards Kairos (0.0 to 1.0)
         prog = 0.0
@@ -343,7 +348,11 @@ class GrainOfDoubtApp:
             rel_x = (sx - cam_x * spd * 0.4) % wrap_w - 120
             draw_sx = cam_x + rel_x
 
-            if prog < 0.35:
+            if self.state.greed_active:
+                # Borrowed Time: stars turn into burning crimson embers
+                flame_pulse = (pyxel.frame_count // 3 + int(sx)) % 3
+                sc = [8, 9, 10][flame_pulse]
+            elif prog < 0.35:
                 sc = base_c
             elif prog < 0.65:
                 sc = 9 if base_c == 6 else (6 if base_c == 5 else 5)
@@ -412,7 +421,11 @@ class GrainOfDoubtApp:
     def draw_cosmic_nebula_streams(self, cam_x: int, prog: float = 0.0):
         """Draw ethereal celestial aurora ribbons across infinite horizontal void."""
         t = pyxel.frame_count * (0.04 + prog * 0.06)
-        if prog < 0.65:
+        if self.state.greed_active:
+            flash = (pyxel.frame_count // 4) % 2 == 0
+            col_inner = 8 if flash else 9  # Burning crimson/orange flares
+            col_outer = 4                  # Dark rust void boundary
+        elif prog < 0.65:
             col_inner = 5
             col_outer = 1
         elif prog < 0.85:
@@ -607,13 +620,12 @@ class GrainOfDoubtApp:
         else:
             draw_text_scaled(self.SCREEN_WIDTH - 110, 80, "[V] REC: OFF", 5, scale=1)
 
-        # Greed Kill-Timer Warning
-        if self.state.greed_timer_active and self.state.greed_kill_timer > 0:
-            secs_left = self.state.greed_kill_timer / 30.0
-            flash = (pyxel.frame_count // 4) % 2 == 0
-            col = 8 if flash else 7
-            msg = f"DEBT DUE: {secs_left:.1f}s"
-            draw_text_scaled(self.SCREEN_WIDTH // 2 - 80, 48, msg, col, scale=2)
+        # Greed Borrowed Time Warning Indicator
+        if self.state.greed_active:
+            flash = (pyxel.frame_count // 5) % 2 == 0
+            col = 8 if flash else 9
+            msg = f"BORROWED TIME (k={self.state.greed_level})"
+            draw_text_scaled(self.SCREEN_WIDTH // 2 - 100, 48, msg, col, scale=2)
 
         # Wrath Zero Yield Warning
         if self.state.wrath_zero_yield_timer > 0:
