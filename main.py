@@ -631,46 +631,84 @@ class GrainOfDoubtApp:
         self.video_recorder.record_frame(pyxel)
 
     def draw_celestial_depth_astrolabe(self, cam_x: int, prog: float = 0.0):
-        """Draw clean, non-particle Celestial Astrolabe & Spacetime Depth Isobars.
-        Completely eliminates floating particle clutter and squiggly ribbons,
-        giving sand grains and glass shards 100% visual clarity.
+        """Draw clean, non-particle Celestial Astrolabe, Spacetime Depth Isobars,
+        and Aerodynamic Slipstream lines that rush UPWARDS continuously with descent.
+        Provides a visceral sensation of falling down through infinite cosmic space
+        with zero particle clutter.
         """
-        # Palette selections
+        # Dynamic palette according to state and Kairos countdown
         if self.state.greed_active:
-            col_geo = 2
-            col_iso = 4
-        elif prog < 0.65:
-            col_geo = 1
-            col_iso = 1
+            col_far = 2      # Dark purple
+            col_mid = 4      # Dark brown/amber
+            col_stream = 14  # Soft pink slipstream
+        elif prog < 0.60:
+            col_far = 1      # Deep midnight
+            col_mid = 5      # Slate gray
+            col_stream = 6   # Light cyan/gray slipstream
         elif prog < 0.85:
-            col_geo = 5
-            col_iso = 1
+            col_far = 5
+            col_mid = 6
+            col_stream = 12  # Celestial light blue slipstream
         else:
             flash = (pyxel.frame_count // 4) % 2 == 0
-            col_geo = 5 if flash else 1
-            col_iso = 5
+            col_far = 5 if flash else 1
+            col_mid = 7 if flash else 6
+            col_stream = 7   # White warning slipstream
 
-        # 1. Depth Isobars: Horizontal stratum lines scrolling upward with descent distance
-        iso_spacing = 160
-        y_offset = int(self.state.distance * 0.4) % iso_spacing
-        for y in range(-y_offset, self.SCREEN_HEIGHT + iso_spacing, iso_spacing):
-            if 0 <= y <= self.SCREEN_HEIGHT:
-                pyxel.line(cam_x, y, cam_x + self.SCREEN_WIDTH, y, col_iso)
-                for tick_x in (cam_x + 16, cam_x + 32, cam_x + self.SCREEN_WIDTH - 32, cam_x + self.SCREEN_WIDTH - 16):
-                    pyxel.line(tick_x, y - 3, tick_x, y + 3, col_geo)
+        dist = self.state.distance
 
-        # 2. Celestial Astrolabe Geometry: Concentric astronomical rings & quadrant axes
-        ring_spacing = 700
-        start_center = int(cam_x // ring_spacing) * ring_spacing
-        for cx in (start_center, start_center + ring_spacing, start_center + ring_spacing * 2):
-            cy = 400
-            pyxel.circb(cx, cy, 140, col_geo)
-            pyxel.circb(cx, cy, 260, col_geo)
-            pyxel.circb(cx, cy, 380, col_geo)
-            pyxel.line(cx - 390, cy, cx + 390, cy, col_geo)
-            pyxel.line(cx, cy - 390, cx, cy + 390, col_geo)
-            pyxel.line(cx - 180, cy - 180, cx + 180, cy + 180, col_geo)
-            pyxel.line(cx - 180, cy + 180, cx + 180, cy - 180, col_geo)
+        # 1. FAR LAYER: Concentric Celestial Astrolabe Dials scrolling UPWARDS (Parallax ~0.35x)
+        # Giant astrological navigation dials spaced every 650px vertically that sweep continuously upwards
+        dial_v_spacing = 650
+        dial_h_spacing = 600
+        y_dial_offset = int(dist * 0.35) % dial_v_spacing
+        start_dial_x = int(cam_x // dial_h_spacing) * dial_h_spacing - dial_h_spacing
+        end_dial_x = start_dial_x + dial_h_spacing * 3
+
+        for cx in range(start_dial_x, end_dial_x, dial_h_spacing):
+            for base_cy in range(-dial_v_spacing, self.SCREEN_HEIGHT + dial_v_spacing * 2, dial_v_spacing):
+                cy = base_cy - y_dial_offset
+                if -250 <= cy <= self.SCREEN_HEIGHT + 250:
+                    pyxel.circb(cx, cy, 90, col_far)
+                    pyxel.circb(cx, cy, 180, col_far)
+                    pyxel.circb(cx, cy, 270, col_far)
+                    pyxel.line(cx - 280, cy, cx + 280, cy, col_far)
+                    pyxel.line(cx, cy - 280, cx, cy + 280, col_far)
+                    pyxel.line(cx - 140, cy - 140, cx + 140, cy + 140, col_far)
+                    pyxel.line(cx - 140, cy + 140, cx + 140, cy - 140, col_far)
+
+        # 2. MID LAYER: Spacetime Depth Isobars scrolling UPWARDS (Parallax ~0.75x)
+        # Horizontal strata spaced every 90px with precision measurement tick marks
+        iso_spacing = 90
+        y_iso_offset = int(dist * 0.75) % iso_spacing
+        for base_y in range(-iso_spacing, self.SCREEN_HEIGHT + iso_spacing, iso_spacing):
+            y = base_y - y_iso_offset
+            if -10 <= y <= self.SCREEN_HEIGHT + 10:
+                pyxel.line(cam_x, y, cam_x + self.SCREEN_WIDTH, y, col_mid)
+                # Outer depth gauge tick marks
+                for offset_x in (25, 50, self.SCREEN_WIDTH - 50, self.SCREEN_WIDTH - 25):
+                    tx = cam_x + offset_x
+                    pyxel.line(tx, y - 3, tx, y + 3, col_mid)
+
+        # 3. NEAR LAYER: Aerodynamic Slipstream Velocity Vectors scrolling UPWARDS (Parallax ~1.05x)
+        # Deterministic, non-particle vertical line streaks that streak straight upwards at terminal velocity
+        slip_v_cycle = 750
+        y_slip_offset = int(dist * 1.05) % slip_v_cycle
+        # Deterministic column offsets and line lengths across the chamber
+        slipstream_columns = [
+            (28, 60, 42), (72, 280, 30), (120, 520, 55), (165, 140, 36),
+            (210, 410, 48), (255, 670, 32), (300, 90, 60), (345, 340, 38),
+            (390, 590, 50), (435, 200, 34), (480, 460, 45), (525, 710, 30),
+            (570, 160, 52), (615, 390, 40), (660, 620, 35)
+        ]
+        start_strip_x = int(cam_x // 600) * 600 - 300
+        for strip_base in (start_strip_x, start_strip_x + 600, start_strip_x + 1200):
+            for col_x, init_y, length in slipstream_columns:
+                sx = strip_base + col_x
+                if cam_x - 30 <= sx <= cam_x + self.SCREEN_WIDTH + 30:
+                    sy = (init_y - y_slip_offset) % slip_v_cycle - 50
+                    if -length <= sy <= self.SCREEN_HEIGHT:
+                        pyxel.line(sx, sy, sx, sy + length, col_stream)
 
     def draw_player_hourglass(self):
         """Draw horizontal hourglass sprite (60x40) that tilts dynamically with control velocity."""
