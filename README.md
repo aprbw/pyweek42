@@ -172,8 +172,15 @@ python3 -m http.server 8000
 * **Complete Visual Decluttering (Zero Particles):**
   * Removed all noisy particle popups (sand sparks, explosion debris, hourglass trail drips). Players enjoy crystal-clear visibility of all incoming grains and shards.
   * Internal scoring feedback: collecting sand grains now causes the hourglass bulbs and waist neck to flash in radiant gold/amber glints directly on the player sprite.
-* **Celestial Depth Astrolabe & Spacetime Depth Isobars:**
-  * Replaced the parallax star dots and vertical squiggly lines with an elegant, non-particle celestial depth coordinate system: subtle horizontal depth isobars drifting upwards with descent, framed by concentric astrolabe rings.
+* **Atmospheric Sand Dunes & Broken Glass Background:**
+  * Implemented a rich, non-particle 3-layer upward parallax background evoking a deep descent through a yellow-bluish foggy desert chasm:
+    * *Far Layer (0.28x)*: Distant shattered glass crystalline fracture web in misty slate-blue (`13`/`1`).
+    * *Mid Layer (0.60x)*: Rolling sand dune ridges with pale sandy peach (`15`) and foggy sky-blue (`6`) crests and amber shadows (`4`), scrolling continuously upwards.
+    * *Near Layer (1.05x)*: Fine pale sand silt and wind-blown atmospheric sand drift noise (`15`, `6`, `13`) rushing upward with terminal descent velocity.
+* **Gluttony Bent Frame UI:**
+  * In the Kairos circuit breaker modal, the card frame borders now visibly bend and bulge outward by 22 pixels around the oversized `GLUTTONY` title, making its massive width look completely intentional, humorous, and thematic.
+* **Hourglass Player Silky Gliding Physics:**
+  * Rebalanced air friction damping from aggressive `0.85` down to a gentle `0.94` (`air_friction = 0.06`, `base_accel = 2.4`), allowing the player hourglass to glide smoothly and preserve momentum naturally when controls are released.
 * **Obtuse Glass Shards & Aerodynamic Tumbling:**
   * Glass shards now procedurally generate as obtuse triangles (one angle $> 90^\circ$, verified by negative dot product $< -8.0$) as well as acute/scalene triangles (never right-angled).
   * Shard spin rate is aerodynamically coupled to horizontal airspeed $V_x$, naturally simulating aerodynamic torque during horizontal drift.
@@ -185,12 +192,9 @@ python3 -m http.server 8000
   * When Sloth hurls shards downward, oncoming hazards are seeded at the bottom horizon ($y \in [1050, 1450]$ px), causing hurled shards to catch up and overlap into a doubly dangerous wall of glass.
 * **Envy Recalibration (Envy 1 = Envy 3):**
   * Recalibrated Envy starting point to former Envy 3 ($k_{\text{eff}} = k + 2$): Level 1 outer radius $= 614.4$ px, inner radius $= 409.6$ px.
-* **Player Lateral Acceleration with Air Friction:**
-  * Continuous lateral acceleration (`base_accel = 5.2`) with natural aerodynamic air friction (`friction = 0.85`, `air_friction = 0.15`).
 * **UI & HUD Polish:**
   * Time display formatted with space before units (`TIME: 24.5 s`).
   * Top-right HUD box widened to 180px with full title `FAUSTIAN PACTS`.
-  * Kairos card title for Gluttony playfully enlarged beyond card boundaries (`title_scale = 8`).
 
 ### v0.17.0 (September 2026)
 * **Multi-Frame Burst Acceleration Curve:**

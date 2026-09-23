@@ -630,85 +630,98 @@ class GrainOfDoubtApp:
         # Capture video frame for MP4 export
         self.video_recorder.record_frame(pyxel)
 
-    def draw_celestial_depth_astrolabe(self, cam_x: int, prog: float = 0.0):
-        """Draw clean, non-particle Celestial Astrolabe, Spacetime Depth Isobars,
-        and Aerodynamic Slipstream lines that rush UPWARDS continuously with descent.
-        Provides a visceral sensation of falling down through infinite cosmic space
-        with zero particle clutter.
+    def draw_atmospheric_dunes_and_glass_background(self, cam_x: int, prog: float = 0.0):
+        """Draw atmospheric pale yellow-bluish sand dunes and distant shattered glass background.
+        Multi-layer upward parallax motion creates a visceral sense of falling down at terminal velocity:
+        1. Far Layer (0.28x): Distant shattered glass web in foggy slate-blue (13 / 1).
+        2. Mid Layer (0.60x): Rolling pale sand dune ridges (15 pale sand, 6 sky fog, 4 amber shadow).
+        3. Near Layer (1.05x): Fine pale sand silt / wind-blown atmospheric sand drift noise (15, 6, 13).
         """
-        # Dynamic palette according to state and Kairos countdown
         if self.state.greed_active:
-            col_far = 2      # Dark purple
-            col_mid = 4      # Dark brown/amber
-            col_stream = 14  # Soft pink slipstream
+            col_glass = 2       # Dark crimson/purple fracture
+            col_dune_a = 4      # Dark brown sand
+            col_dune_b = 2      # Dark purple fog
+            col_dune_shadow = 0 # Pitch shadow
+            col_sand_noise = 14 # Pale pink sand drift
         elif prog < 0.60:
-            col_far = 1      # Deep midnight
-            col_mid = 5      # Slate gray
-            col_stream = 6   # Light cyan/gray slipstream
+            col_glass = 13      # Misty slate-blue cracked glass
+            col_dune_a = 15     # Pale sandy peach (yellow in distant fog)
+            col_dune_b = 6      # Pale sky-blue fog
+            col_dune_shadow = 4 # Amber-brown shadow
+            col_sand_noise = 15 # Fine pale sand
         elif prog < 0.85:
-            col_far = 5
-            col_mid = 6
-            col_stream = 12  # Celestial light blue slipstream
+            col_glass = 6
+            col_dune_a = 15
+            col_dune_b = 12     # Sky blue
+            col_dune_shadow = 5
+            col_sand_noise = 6
         else:
             flash = (pyxel.frame_count // 4) % 2 == 0
-            col_far = 5 if flash else 1
-            col_mid = 7 if flash else 6
-            col_stream = 7   # White warning slipstream
+            col_glass = 7 if flash else 6
+            col_dune_a = 10 if flash else 15
+            col_dune_b = 7 if flash else 6
+            col_dune_shadow = 9 if flash else 4
+            col_sand_noise = 7
 
         dist = self.state.distance
 
-        # 1. FAR LAYER: Concentric Celestial Astrolabe Dials scrolling UPWARDS (Parallax ~0.35x)
-        # Giant astrological navigation dials spaced every 650px vertically that sweep continuously upwards
-        dial_v_spacing = 650
-        dial_h_spacing = 600
-        y_dial_offset = int(dist * 0.35) % dial_v_spacing
-        start_dial_x = int(cam_x // dial_h_spacing) * dial_h_spacing - dial_h_spacing
-        end_dial_x = start_dial_x + dial_h_spacing * 3
+        # 1. FAR LAYER: Distant Broken Glass Crystalline Web (Parallax ~0.28x scrolling UP)
+        crack_h = 420
+        crack_w = 300
+        y_crack_offset = int(dist * 0.28) % crack_h
+        start_cx = int(cam_x // crack_w) * crack_w - crack_w
 
-        for cx in range(start_dial_x, end_dial_x, dial_h_spacing):
-            for base_cy in range(-dial_v_spacing, self.SCREEN_HEIGHT + dial_v_spacing * 2, dial_v_spacing):
-                cy = base_cy - y_dial_offset
-                if -250 <= cy <= self.SCREEN_HEIGHT + 250:
-                    pyxel.circb(cx, cy, 90, col_far)
-                    pyxel.circb(cx, cy, 180, col_far)
-                    pyxel.circb(cx, cy, 270, col_far)
-                    pyxel.line(cx - 280, cy, cx + 280, cy, col_far)
-                    pyxel.line(cx, cy - 280, cx, cy + 280, col_far)
-                    pyxel.line(cx - 140, cy - 140, cx + 140, cy + 140, col_far)
-                    pyxel.line(cx - 140, cy + 140, cx + 140, cy - 140, col_far)
+        for cx in (start_cx, start_cx + crack_w, start_cx + crack_w * 2, start_cx + crack_w * 3):
+            for base_cy in range(-crack_h, self.SCREEN_HEIGHT + crack_h, crack_h):
+                cy = base_cy - y_crack_offset
+                if -180 <= cy <= self.SCREEN_HEIGHT + 180:
+                    pyxel.line(cx, cy, cx + 180, cy - 80, col_glass)
+                    pyxel.line(cx, cy, cx - 120, cy - 140, col_glass)
+                    pyxel.line(cx, cy, cx + 90, cy + 160, col_glass)
+                    pyxel.line(cx + 180, cy - 80, cx + 90, cy + 160, col_glass)
+                    pyxel.line(cx - 120, cy - 140, cx - 180, cy + 50, col_glass)
+                    pyxel.line(cx - 180, cy + 50, cx, cy, col_glass)
 
-        # 2. MID LAYER: Spacetime Depth Isobars scrolling UPWARDS (Parallax ~0.75x)
-        # Horizontal strata spaced every 90px with precision measurement tick marks
-        iso_spacing = 90
-        y_iso_offset = int(dist * 0.75) % iso_spacing
-        for base_y in range(-iso_spacing, self.SCREEN_HEIGHT + iso_spacing, iso_spacing):
-            y = base_y - y_iso_offset
-            if -10 <= y <= self.SCREEN_HEIGHT + 10:
-                pyxel.line(cam_x, y, cam_x + self.SCREEN_WIDTH, y, col_mid)
-                # Outer depth gauge tick marks
-                for offset_x in (25, 50, self.SCREEN_WIDTH - 50, self.SCREEN_WIDTH - 25):
-                    tx = cam_x + offset_x
-                    pyxel.line(tx, y - 3, tx, y + 3, col_mid)
+        # 2. MID LAYER: Rolling Pale Sand Dunes (Parallax ~0.60x scrolling UP)
+        dune_spacing = 180
+        y_dune_offset = int(dist * 0.60) % dune_spacing
 
-        # 3. NEAR LAYER: Aerodynamic Slipstream Velocity Vectors scrolling UPWARDS (Parallax ~1.05x)
-        # Deterministic, non-particle vertical line streaks that streak straight upwards at terminal velocity
-        slip_v_cycle = 750
-        y_slip_offset = int(dist * 1.05) % slip_v_cycle
-        # Deterministic column offsets and line lengths across the chamber
-        slipstream_columns = [
-            (28, 60, 42), (72, 280, 30), (120, 520, 55), (165, 140, 36),
-            (210, 410, 48), (255, 670, 32), (300, 90, 60), (345, 340, 38),
-            (390, 590, 50), (435, 200, 34), (480, 460, 45), (525, 710, 30),
-            (570, 160, 52), (615, 390, 40), (660, 620, 35)
+        for base_y in range(-dune_spacing, self.SCREEN_HEIGHT + dune_spacing, dune_spacing):
+            y = base_y - y_dune_offset
+            crest_col = col_dune_a if (base_y // dune_spacing) % 2 == 0 else col_dune_b
+            prev_x = cam_x
+            prev_y = y + int(24 * math.sin((cam_x + base_y) * 0.009) + 12 * math.cos(cam_x * 0.022))
+            for x in range(cam_x + 6, cam_x + self.SCREEN_WIDTH + 6, 6):
+                cur_y = y + int(24 * math.sin((x + base_y) * 0.009) + 12 * math.cos(x * 0.022))
+                if -25 <= cur_y <= self.SCREEN_HEIGHT + 25:
+                    pyxel.line(prev_x, prev_y, x, cur_y, crest_col)
+                    # Subtle vertical shadow hatching below dune crests for depth
+                    if x % 12 == 0:
+                        pyxel.line(x, cur_y + 1, x, cur_y + 6, col_dune_shadow)
+                prev_x = x
+                prev_y = cur_y
+
+        # 3. NEAR LAYER: Fine Pale Sand Silt & Wind Mist Noise (Parallax ~1.05x scrolling UP)
+        sand_specks = [
+            (35, 120, 2, 1.05, col_sand_noise), (78, 450, 3, 0.98, col_dune_b), (115, 680, 1, 1.12, col_sand_noise),
+            (160, 220, 3, 1.02, col_glass), (205, 590, 2, 1.15, col_dune_b), (245, 80, 4, 1.08, col_sand_noise),
+            (290, 340, 2, 0.95, col_dune_b), (330, 710, 3, 1.20, col_sand_noise), (375, 190, 1, 1.04, col_glass),
+            (420, 510, 3, 1.10, col_dune_b), (460, 290, 2, 0.97, col_sand_noise), (505, 640, 4, 1.18, col_sand_noise),
+            (545, 150, 1, 1.03, col_dune_b), (585, 420, 3, 1.14, col_sand_noise),
+            (50, 750, 2, 1.06, col_dune_b), (140, 390, 3, 0.96, col_sand_noise), (225, 160, 2, 1.16, col_sand_noise),
+            (315, 530, 3, 1.01, col_dune_b), (400, 780, 2, 1.22, col_sand_noise), (485, 80, 3, 1.07, col_glass),
+            (90, 260, 2, 1.00, col_sand_noise), (180, 620, 3, 1.13, col_dune_b), (270, 480, 2, 1.07, col_sand_noise),
+            (360, 130, 4, 1.19, col_sand_noise), (440, 720, 2, 0.99, col_dune_b), (520, 310, 3, 1.08, col_sand_noise),
+            (570, 560, 1, 1.04, col_glass), (20, 430, 3, 1.11, col_sand_noise)
         ]
-        start_strip_x = int(cam_x // 600) * 600 - 300
-        for strip_base in (start_strip_x, start_strip_x + 600, start_strip_x + 1200):
-            for col_x, init_y, length in slipstream_columns:
-                sx = strip_base + col_x
-                if cam_x - 30 <= sx <= cam_x + self.SCREEN_WIDTH + 30:
-                    sy = (init_y - y_slip_offset) % slip_v_cycle - 50
-                    if -length <= sy <= self.SCREEN_HEIGHT:
-                        pyxel.line(sx, sy, sx, sy + length, col_stream)
+        for col_x, init_y, length, spd, col in sand_specks:
+            sx = cam_x + col_x
+            sy = (init_y - int(dist * spd)) % 820 - 10
+            pyxel.line(sx, sy, sx, sy + length, col)
+
+    def draw_celestial_depth_astrolabe(self, cam_x: int, prog: float = 0.0):
+        """Backward-compatible alias for draw_atmospheric_dunes_and_glass_background."""
+        self.draw_atmospheric_dunes_and_glass_background(cam_x, prog)
 
     def draw_player_hourglass(self):
         """Draw horizontal hourglass sprite (60x40) that tilts dynamically with control velocity."""
@@ -1018,18 +1031,54 @@ class GrainOfDoubtApp:
             cx = start_x + i * (col_w + col_gap)
             is_selected = (i == self.selected_card_index)
 
-            # Card background
+            # Card background & frame
             bg_col = 1 if not is_selected else 5
-            pyxel.rect(cx, col_y, col_w, col_h, bg_col)
-            if sin == SinType.GLUTTONY:
-                # Gluttony: card intentionally bulges and bursts past normal card dimensions!
-                pyxel.rectb(cx - 5, col_y - 4, col_w + 10, col_h + 8, 9 if is_selected else 8)
-
-            # Card border (flashing gold if selected)
             border_col = 10 if (is_selected and (pyxel.frame_count // 3) % 2 == 0) else (6 if is_selected else 1)
-            pyxel.rectb(cx, col_y, col_w, col_h, border_col)
-            if is_selected:
-                pyxel.rectb(cx + 1, col_y + 1, col_w - 2, col_h - 2, 10)
+
+            if sin == SinType.GLUTTONY:
+                # Gluttony: card intentionally bulges and bends the frame outward around the oversized title!
+                bulge_x = 22
+                y_t1 = col_y + 34
+                y_t2 = col_y + 44
+                y_t3 = col_y + 88
+                y_t4 = col_y + 98
+
+                # Fill main rectangular card body
+                pyxel.rect(cx, col_y, col_w, col_h, bg_col)
+                # Fill bulging belly background around the oversized title
+                pyxel.rect(cx - bulge_x, y_t2, col_w + bulge_x * 2, y_t3 - y_t2, bg_col)
+                pyxel.tri(cx, y_t1, cx - bulge_x, y_t2, cx, y_t2, bg_col)
+                pyxel.tri(cx + col_w, y_t1, cx + col_w + bulge_x, y_t2, cx + col_w, y_t2, bg_col)
+                pyxel.tri(cx, y_t4, cx - bulge_x, y_t3, cx, y_t3, bg_col)
+                pyxel.tri(cx + col_w, y_t4, cx + col_w + bulge_x, y_t3, cx + col_w, y_t3, bg_col)
+
+                # Draw bent frame outline
+                def draw_bent_outline(d: int, col: int):
+                    bx = bulge_x + d
+                    # Top & Bottom edges
+                    pyxel.line(cx - d, col_y - d, cx + col_w + d, col_y - d, col)
+                    pyxel.line(cx - d, col_y + col_h + d, cx + col_w + d, col_y + col_h + d, col)
+                    # Right side bending outward
+                    pyxel.line(cx + col_w + d, col_y - d, cx + col_w + d, y_t1, col)
+                    pyxel.line(cx + col_w + d, y_t1, cx + col_w + bx, y_t2, col)
+                    pyxel.line(cx + col_w + bx, y_t2, cx + col_w + bx, y_t3, col)
+                    pyxel.line(cx + col_w + bx, y_t3, cx + col_w + d, y_t4, col)
+                    pyxel.line(cx + col_w + d, y_t4, cx + col_w + d, col_y + col_h + d, col)
+                    # Left side bending outward
+                    pyxel.line(cx - d, col_y - d, cx - d, y_t1, col)
+                    pyxel.line(cx - d, y_t1, cx - bx, y_t2, col)
+                    pyxel.line(cx - bx, y_t2, cx - bx, y_t3, col)
+                    pyxel.line(cx - bx, y_t3, cx - d, y_t4, col)
+                    pyxel.line(cx - d, y_t4, cx - d, col_y + col_h + d, col)
+
+                draw_bent_outline(0, border_col)
+                if is_selected:
+                    draw_bent_outline(1, 10)
+            else:
+                pyxel.rect(cx, col_y, col_w, col_h, bg_col)
+                pyxel.rectb(cx, col_y, col_w, col_h, border_col)
+                if is_selected:
+                    pyxel.rectb(cx + 1, col_y + 1, col_w - 2, col_h - 2, 10)
 
             # Directional badge (justified center)
             badge_col = 8 if is_selected else 1

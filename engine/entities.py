@@ -47,9 +47,9 @@ class HourglassPlayer:
         self.base_y: float = 200.0
         self.y: float = self.base_y
         self.vx: float = 0.0
-        self.air_friction: float = 0.15
-        self.friction: float = 0.85
-        self.base_accel: float = 5.2
+        self.air_friction: float = 0.06
+        self.friction: float = 0.94
+        self.base_accel: float = 2.4
         self.min_x: float = 45.0
         self.max_x: float = screen_w - 45.0
         self.sand_drain_phase: float = 0.0

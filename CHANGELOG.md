@@ -11,7 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Complete Visual Decluttering (Zero Particles)**: Removed all screen-space particle clutter, including sand collection sparks, hazard explosion bursts, and hourglass drip trails, ensuring players maintain unobstructed focus on essential sand grains and lethal glass shards.
 - **Hourglass Interior Scoring Feedback**: Replaced distracting particle popups with localized sprite feedback: upon collecting sand grains, the hourglass bulbs and waist neck flash in radiant gold/amber glints (`player_score_flash_timer = 8`).
-- **Celestial Depth Astrolabe & Spacetime Isobars**: Brainstormed and implemented a zero-particle, museum-grade atmospheric background. Faint spacetime depth isobars with interval tick marks drift upwards with descent speed, framed by subtle, concentric astrolabe coordinate rings that expand gracefully with camera motion.
+- **Atmospheric Sand Dunes & Broken Glass Background**: Implemented a rich, non-particle 3-layer upward parallax background evoking a deep descent through a yellow-bluish foggy desert chasm:
+  - *Far Layer (0.28x)*: Distant shattered glass crystalline fracture web in misty slate-blue (`13`/`1`).
+  - *Mid Layer (0.60x)*: Rolling sand dune ridges with pale sandy peach (`15`) and foggy sky-blue (`6`) crests and amber shadows (`4`), scrolling continuously upwards.
+  - *Near Layer (1.05x)*: Fine pale sand silt and wind-blown atmospheric sand drift noise (`15`, `6`, `13`) rushing upward with terminal descent velocity.
+- **Gluttony Bent Frame UI**: In the Kairos modal, the card frame borders now visibly bend and bulge outward by 22 pixels around the oversized `GLUTTONY` title, making its massive width look completely intentional, humorous, and thematic.
+- **Hourglass Player Silky Gliding Physics**: Rebalanced air friction damping from aggressive `0.85` down to a gentle `0.94` (`air_friction = 0.06`, `base_accel = 2.4`), allowing the player hourglass to glide smoothly and preserve momentum naturally when controls are released.
 - **Obtuse Glass Shard Geometry**: Shards now procedurally generate as obtuse triangles (one angle $> 90^\circ$, verified by negative vector dot product $< -8.0$) as well as acute/scalene triangles, while maintaining strict exclusion of right-angled shapes.
 - **Aerodynamic Shard Rotation**: Shard angular velocity is now proportional to horizontal airspeed $V_x = \text{base\_vx} + v_x$, realistically simulating aerodynamic torque as glass shards flutter through the air.
 - **Gluttony Fat Entities Rework**: Completely redesigned Gluttony progression:
@@ -19,11 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Fat Sand Grains**: $\sim 3\times$ radius / length-wise ($10\times$ area), awarding $3\times$ score ($3$ points per grain).
   - **Fat Glass Shards**: $\sim 2.8\times$ linear dimensions ($10\times$ area), creating massive, menacing obstacles.
 - **Double Danger Sloth Overlap**: When Sloth hurls shards downward, new hazards are seeded at the bottom horizon ($y \in [1050, 1450]$ px). The hurled shards catch up and overlap with oncoming hazards, creating a doubly dangerous wall of glass that returns when descent resumes.
-- **Hourglass Player Lateral Acceleration with Air Friction**: Left and right steering now operates on continuous lateral acceleration ($\text{base\_accel} = 5.2$ px/frame$^2$) paired with natural aerodynamic air friction damping ($\text{friction} = 0.85$, $\text{air\_friction} = 0.15$), giving snappy, responsive input that glides smoothly to rest when released.
 - **UI & HUD Polish**:
   - Spaced time display: Added clear whitespace before units (`TIME: 24.5 s`).
   - Faustian Pacts board: Widened the top-right HUD box to 180px with full title `FAUSTIAN PACTS`.
-  - Intentional Kairos Gluttony card: Scaled the `GLUTTONY` title and card playfully past standard modal card margins (`title_scale = 8`), visually embodying excess.
 
 ### Changed
 - **Envy Starting Point Recalibration**: Recalibrated Envy dual-radius progression so Envy 1 equals previous Envy 3:

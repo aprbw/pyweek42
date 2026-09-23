@@ -1673,6 +1673,7 @@ def test_all_game_states_draw_without_render_errors():
     import pyxel
     from main import GrainOfDoubtApp
     from engine.state import GameState
+    from engine.bargains import SinType, BARGAIN_REGISTRY
 
     try:
         pyxel.init(600, 800, headless=True)
@@ -1680,6 +1681,11 @@ def test_all_game_states_draw_without_render_errors():
         pass  # Already initialized in previous tests
 
     app = GrainOfDoubtApp(headless=True)
+    # Test Kairos explicitly with Gluttony (verifying bent bulging frame)
+    app.active_options = [
+        (SinType.GLUTTONY, BARGAIN_REGISTRY[SinType.GLUTTONY], 0),
+        (SinType.PRIDE, BARGAIN_REGISTRY[SinType.PRIDE], 1),
+    ]
     for state in [GameState.CHRONOS, GameState.KAIROS, GameState.GAMEOVER, GameState.TITLE]:
         app.state.current_state = state
         app.draw()
