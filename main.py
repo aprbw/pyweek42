@@ -22,6 +22,7 @@ from engine.bargains import BargainManager, SinType, BARGAIN_REGISTRY
 from engine.audio import AudioManager
 from engine.bot import PlayTestingBot, BotConfig
 from engine.video import VideoRecorder
+from engine.themes import ALL_THEMES, get_theme, Theme, SandPalette, ShardPalette, HourglassPalette
 
 
 def render_vignette(px: float, py: float, radius: float, screen_w: int = 600, screen_h: int = 800, pyxel_module=None, inner_radius: float = None):
@@ -197,7 +198,7 @@ def is_dev_environment() -> bool:
 
 
 class GrainOfDoubtApp:
-    VERSION: str = "v0.18.0"
+    VERSION: str = "v0.19.0"
     SCREEN_WIDTH: int = 600
     SCREEN_HEIGHT: int = 800
 
@@ -231,6 +232,8 @@ class GrainOfDoubtApp:
         self.touch_right: bool = False
         self.kairos_left_released: bool = True
         self.kairos_right_released: bool = True
+        self.current_theme_index: int = 0
+        self.theme_banner_timer: int = 0
 
         # Cosmic void background stars (parallax)
         self.stars: List[List[float]] = []
@@ -378,12 +381,24 @@ class GrainOfDoubtApp:
                     self.selected_feedback = fb
                     self.feedback_timer = 90
 
+            # Comma (',') and Period ('.') cycle through all 20 divergent aesthetic themes
+            if pyxel.btnp(pyxel.KEY_COMMA):
+                self.current_theme_index = (self.current_theme_index - 1) % len(ALL_THEMES)
+                self.theme_banner_timer = 90
+            elif pyxel.btnp(pyxel.KEY_PERIOD):
+                self.current_theme_index = (self.current_theme_index + 1) % len(ALL_THEMES)
+                self.theme_banner_timer = 90
+
         # Enforce speed handicap in physics when bot is active
         self.state._bot_speed_handicap = self.bot.config.speed_handicap if self.bot_mode else 1.0
 
         # Feedback banner timer
         if self.feedback_timer > 0:
             self.feedback_timer -= 1
+
+        # Theme banner timer
+        if self.theme_banner_timer > 0:
+            self.theme_banner_timer -= 1
 
         # State dispatch
         if self.state.current_state == GameState.TITLE:
@@ -554,52 +569,63 @@ class GrainOfDoubtApp:
             oy = random.randint(-int(self.state.shake_intensity), int(self.state.shake_intensity))
         pyxel.camera(cam_x + ox, oy)
 
-        # Clear background void (Color 15: Warm daylight sand, or blood-red twilight if Greed is active)
-        if self.state.greed_active:
-            # Color 2 is dark purple/crimson void; subtle pulsing gives borrowed time atmosphere
-            bg_col = 2 if (pyxel.frame_count // 18) % 2 == 0 else 4
-            pyxel.cls(bg_col)
-        else:
-            pyxel.cls(15)
+        # Get active aesthetic theme
+        theme = get_theme(self.current_theme_index)
+
+        # Clear background void according to active theme
+        bg_col = theme.get_clear_color(self.state.greed_active)
+        pyxel.cls(bg_col)
 
         # Compute Chronos progress towards Kairos (0.0 to 1.0)
         prog = 0.0
         if self.state.current_state == GameState.CHRONOS:
             prog = self.state.chronos_timer / float(self.state.CHRONOS_FRAMES)
 
-        # Draw procedural SkiFree-style sand dune moguls, wind ripples, and pebbles
-        self.draw_skifree_desert_terrain(cam_x, prog)
+        # Render procedural background for active theme
+        theme.render(
+            pyxel,
+            cam_x=cam_x,
+            prog=prog,
+            dist=int(self.entities.player.y),
+            screen_w=self.SCREEN_WIDTH,
+            screen_h=self.SCREEN_HEIGHT,
+            is_greed=self.state.greed_active,
+        )
 
         if self.state.current_state == GameState.TITLE:
             pyxel.camera(0, 0)
             self.draw_title_screen()
+            if self.theme_banner_timer > 0:
+                self.draw_theme_banner()
             return
 
-        # Draw Sand grains in world coordinates with high daylight contrast (drop shadow + amber outline)
+        # Draw Sand grains in world coordinates with theme-aware palette
+        s_pal = theme.sand
         for sand in self.entities.sands:
-            c = 10 if (pyxel.frame_count // 3 + int(sand.shimmer_phase * 4)) % 2 == 0 else 9
+            c = s_pal.body if (pyxel.frame_count // 3 + int(sand.shimmer_phase * 4)) % 2 == 0 else s_pal.border
             if getattr(sand, "is_fat", False):
-                # Cast warm shadow on sand
-                pyxel.rect(int(sand.x - 11), int(sand.y - 11), 26, 26, 4)
-                # Golden chunk body
-                pyxel.rect(int(sand.x - 13), int(sand.y - 13), 26, 26, c)
-                pyxel.rectb(int(sand.x - 13), int(sand.y - 13), 26, 26, 4)
-                pyxel.rectb(int(sand.x - 12), int(sand.y - 12), 24, 24, 7)
-                pyxel.rect(int(sand.x - 5), int(sand.y - 5), 10, 10, 7)
+                # Cast shadow
+                pyxel.rect(int(sand.x - 11), int(sand.y - 11), 26, 26, s_pal.shadow)
+                # Golden / thematic chunk body
+                c_fat = s_pal.fat_body if (pyxel.frame_count // 3 + int(sand.shimmer_phase * 4)) % 2 == 0 else s_pal.fat_border
+                pyxel.rect(int(sand.x - 13), int(sand.y - 13), 26, 26, c_fat)
+                pyxel.rectb(int(sand.x - 13), int(sand.y - 13), 26, 26, s_pal.shadow)
+                pyxel.rectb(int(sand.x - 12), int(sand.y - 12), 24, 24, s_pal.fat_border)
+                pyxel.rect(int(sand.x - 5), int(sand.y - 5), 10, 10, s_pal.fat_glint)
             else:
-                # Cast warm shadow on sand
-                pyxel.rect(int(sand.x - 4), int(sand.y - 4), 10, 10, 4)
-                # Golden grain body
+                # Cast shadow
+                pyxel.rect(int(sand.x - 4), int(sand.y - 4), 10, 10, s_pal.shadow)
+                # Grain body
                 pyxel.rect(int(sand.x - 5), int(sand.y - 5), 10, 10, c)
-                pyxel.rectb(int(sand.x - 5), int(sand.y - 5), 10, 10, 4)
-                pyxel.rect(int(sand.x - 2), int(sand.y - 2), 4, 4, 7)  # Center glint
+                pyxel.rectb(int(sand.x - 5), int(sand.y - 5), 10, 10, s_pal.shadow)
+                pyxel.rect(int(sand.x - 2), int(sand.y - 2), 4, 4, s_pal.glint)  # Center glint
 
-        # Draw Glass shards in world coordinates
+        # Draw Glass shards in world coordinates with theme-aware palette
         for shard in self.entities.shards:
-            self.draw_glass_shard(shard)
+            self.draw_glass_shard(shard, theme.shard)
 
-        # Draw Player Hourglass in world coordinates
-        self.draw_player_hourglass()
+        # Draw Player Hourglass in world coordinates with theme-aware palette
+        self.draw_player_hourglass(theme.hourglass)
 
         # Reset camera for screen-space UI overlays (Vignette, HUD, Modals)
         pyxel.camera(0, 0)
@@ -631,6 +657,10 @@ class GrainOfDoubtApp:
         # Selected feedback banner
         if self.feedback_timer > 0 and self.selected_feedback:
             self.draw_feedback_banner()
+
+        # Theme switcher banner (displayed on switch via ',' and '.' keys)
+        if self.theme_banner_timer > 0:
+            self.draw_theme_banner()
 
         # Developer debug overlay (toggled with '`')
         if self.dev_mode:
@@ -774,17 +804,19 @@ class GrainOfDoubtApp:
         """Backward-compatible alias for draw_braided_sandfall_terrain."""
         self.draw_braided_sandfall_terrain(cam_x, prog)
 
-    def draw_player_hourglass(self):
+    def draw_player_hourglass(self, pal: Optional[HourglassPalette] = None):
         """Draw horizontal hourglass sprite (60x40) that tilts dynamically with control velocity."""
+        if pal is None:
+            pal = get_theme(self.current_theme_index).hourglass
         player = self.entities.player
         px = player.x
         py = player.y
 
-        # Cast drop shadow on the sand slope below the hourglass
+        # Cast drop shadow on the terrain below the hourglass
         shadow_y = int(py + 16)
-        pyxel.line(int(px - 18), shadow_y, int(px + 18), shadow_y, 4)
-        pyxel.line(int(px - 22), shadow_y + 1, int(px + 22), shadow_y + 1, 4)
-        pyxel.line(int(px - 18), shadow_y + 2, int(px + 18), shadow_y + 2, 4)
+        pyxel.line(int(px - 18), shadow_y, int(px + 18), shadow_y, pal.shadow)
+        pyxel.line(int(px - 22), shadow_y + 1, int(px + 22), shadow_y + 1, pal.shadow)
+        pyxel.line(int(px - 18), shadow_y + 2, int(px + 18), shadow_y + 2, pal.shadow)
 
         # Invulnerability flash
         if self.state.invulnerable_timer > 0 and (self.state.invulnerable_timer // 3) % 2 == 1:
@@ -804,47 +836,42 @@ class GrainOfDoubtApp:
         for yo in range(-15, 16):
             p1 = rot(-29, yo)
             p2 = rot(-24, yo)
-            pyxel.line(p1[0], p1[1], p2[0], p2[1], 4)
+            pyxel.line(p1[0], p1[1], p2[0], p2[1], pal.caps)
         # Left Brass Highlight & Rivet
         hl1 = rot(-26, -6)
         hl2 = rot(-26, 6)
-        pyxel.line(hl1[0], hl1[1], hl2[0], hl2[1], 9)
+        pyxel.line(hl1[0], hl1[1], hl2[0], hl2[1], pal.cap_hl)
         riv_l = rot(-26, 0)
-        pyxel.pset(riv_l[0], riv_l[1], 10)
+        pyxel.pset(riv_l[0], riv_l[1], pal.cap_rivet)
 
         # 2. Right Brass Cap (vertical end bar at lx = 24 to 30)
         for yo in range(-15, 16):
             p1 = rot(24, yo)
             p2 = rot(29, yo)
-            pyxel.line(p1[0], p1[1], p2[0], p2[1], 4)
+            pyxel.line(p1[0], p1[1], p2[0], p2[1], pal.caps)
         # Right Brass Highlight & Rivet
         hr1 = rot(26, -6)
         hr2 = rot(26, 6)
-        pyxel.line(hr1[0], hr1[1], hr2[0], hr2[1], 9)
+        pyxel.line(hr1[0], hr1[1], hr2[0], hr2[1], pal.cap_hl)
         riv_r = rot(26, 0)
-        pyxel.pset(riv_r[0], riv_r[1], 10)
+        pyxel.pset(riv_r[0], riv_r[1], pal.cap_rivet)
 
         # 3. Left Bulb Glass Walls (tapering from lx=-24 to waist lx=-4)
-        pyxel.line(*rot(-24, -15), *rot(-4, -5), 6)
-        pyxel.line(*rot(-24, 15), *rot(-4, 5), 6)
+        pyxel.line(*rot(-24, -15), *rot(-4, -5), pal.glass_walls)
+        pyxel.line(*rot(-24, 15), *rot(-4, 5), pal.glass_walls)
 
         # 4. Right Bulb Glass Walls (tapering from waist lx=4 to lx=24)
-        pyxel.line(*rot(4, -5), *rot(24, -15), 6)
-        pyxel.line(*rot(4, 5), *rot(24, 15), 6)
+        pyxel.line(*rot(4, -5), *rot(24, -15), pal.glass_walls)
+        pyxel.line(*rot(4, 5), *rot(24, 15), pal.glass_walls)
 
         # 5. Center Waist Neck
-        pyxel.line(*rot(-4, -5), *rot(4, -5), 7)
-        pyxel.line(*rot(-4, 5), *rot(4, 5), 7)
+        pyxel.line(*rot(-4, -5), *rot(4, -5), pal.waist_neck)
+        pyxel.line(*rot(-4, 5), *rot(4, 5), pal.waist_neck)
 
         # 6. Bulb Sand Levels (dynamically shifting with tilt)
         tilt_ratio = max(-1.0, min(1.0, tilt / 0.38)) if abs(tilt) > 0.01 else 0.0
         # When tilted right (tilt > 0): left bulb drains (scale < 1.0), right bulb fills (scale > 1.0)
         # When tilted left (tilt < 0): right bulb drains (scale < 1.0), left bulb fills (scale > 1.0)
-        l_scale = max(0.20, min(1.45, 1.0 - tilt_ratio * 0.50))
-        r_scale = max(0.20, min(1.45, 1.0 + tilt_ratio * 0.50))
-
-        # 6. Bulb Sand Levels (dynamically shifting with tilt)
-        tilt_ratio = max(-1.0, min(1.0, tilt / 0.38)) if abs(tilt) > 0.01 else 0.0
         l_scale = max(0.20, min(1.45, 1.0 - tilt_ratio * 0.50))
         r_scale = max(0.20, min(1.45, 1.0 + tilt_ratio * 0.50))
         is_score_flash = (self.state.player_score_flash_timer > 0)
@@ -854,9 +881,9 @@ class GrainOfDoubtApp:
             half_h = int(13 * (abs(dx) / 24.0) * l_scale)
             if half_h > 1:
                 if is_score_flash:
-                    col = 7 if (self.state.player_score_flash_timer % 2 == 0) else 10
+                    col = 7 if (self.state.player_score_flash_timer % 2 == 0) else pal.sand_a
                 else:
-                    col = 10 if (dx % 4 == 0) else 9
+                    col = pal.sand_a if (dx % 4 == 0) else pal.sand_b
                 p_top = rot(dx, -half_h + 1)
                 p_bot = rot(dx, half_h - 1)
                 pyxel.line(p_top[0], p_top[1], p_bot[0], p_bot[1], col)
@@ -866,15 +893,14 @@ class GrainOfDoubtApp:
             half_h = int(13 * (abs(dx) / 24.0) * r_scale)
             if half_h > 1:
                 if is_score_flash:
-                    col = 7 if (self.state.player_score_flash_timer % 2 == 0) else 10
+                    col = 7 if (self.state.player_score_flash_timer % 2 == 0) else pal.sand_a
                 else:
-                    col = 10 if (dx % 4 == 0) else 9
+                    col = pal.sand_a if (dx % 4 == 0) else pal.sand_b
                 p_top = rot(dx, -half_h + 1)
                 p_bot = rot(dx, half_h - 1)
                 pyxel.line(p_top[0], p_top[1], p_bot[0], p_bot[1], col)
 
         # 8. Animated Sand Flow across waist:
-        # Direction and speed of sand falling across the neck is proportional to how tilted it is
         if abs(tilt) > 0.02:
             flow_sign = 1.0 if tilt > 0 else -1.0
             for i in range(3):
@@ -882,18 +908,20 @@ class GrainOfDoubtApp:
                 stream_lx = (-5.0 + frac * 10.0) * flow_sign
                 stream_ly = math.sin((player.sand_drain_phase + i) * 3.14) * 1.5
                 sp = rot(stream_lx, stream_ly)
-                col = 7 if is_score_flash else (10 if i == 0 else 9)
+                col = 7 if is_score_flash else (pal.sand_a if i == 0 else pal.sand_b)
                 pyxel.rect(sp[0] - 1, sp[1] - 1, 2, 2, col)
         else:
             sp = rot(0, 0)
-            col = 7 if is_score_flash else 9
+            col = 7 if is_score_flash else pal.sand_b
             pyxel.rect(sp[0] - 1, sp[1] - 1, 2, 2, col)
 
         # 9. Specular Reflections
         pyxel.line(*rot(-18, -10), *rot(-8, -5), 7)
         pyxel.line(*rot(8, -5), *rot(18, -10), 7)
 
-    def draw_glass_shard(self, shard: GlassShard):
+    def draw_glass_shard(self, shard: GlassShard, pal: Optional[ShardPalette] = None):
+        if pal is None:
+            pal = get_theme(self.current_theme_index).shard
         sx = int(shard.x)
         sy = int(shard.y)
         angle = shard.rotation_angle
@@ -912,25 +940,25 @@ class GrainOfDoubtApp:
         x2, y2 = rot_pts[2]
         is_fat = getattr(shard, "is_fat", False)
 
-        # Cast drop shadow on the daylight sand slope
-        pyxel.tri(x0 + 3, y0 + 4, x1 + 3, y1 + 4, x2 + 3, y2 + 4, 4)
+        # Cast drop shadow
+        pyxel.tri(x0 + 3, y0 + 4, x1 + 3, y1 + 4, x2 + 3, y2 + 4, pal.shadow)
 
         if is_fat:
-            pyxel.tri(x0, y0, x1, y1, x2, y2, 8)
-            pyxel.line(x0, y0, x1, y1, 0)
-            pyxel.line(x1, y1, x2, y2, 0)
-            pyxel.line(x2, y2, x0, y0, 0)
-            pyxel.line(x0, y0, (x1 + x2) // 2, (y1 + y2) // 2, 7)
+            pyxel.tri(x0, y0, x1, y1, x2, y2, pal.fat_facet)
+            pyxel.line(x0, y0, x1, y1, pal.border)
+            pyxel.line(x1, y1, x2, y2, pal.border)
+            pyxel.line(x2, y2, x0, y0, pal.border)
+            pyxel.line(x0, y0, (x1 + x2) // 2, (y1 + y2) // 2, pal.fat_border)
         else:
-            # Pale icy crystalline facet
-            pyxel.tri(x0, y0, x1, y1, x2, y2, 6)
-            # Crisp black razor perimeter outline
-            pyxel.line(x0, y0, x1, y1, 0)
-            pyxel.line(x1, y1, x2, y2, 0)
-            pyxel.line(x2, y2, x0, y0, 0)
+            # Facet
+            pyxel.tri(x0, y0, x1, y1, x2, y2, pal.facet)
+            # Razor perimeter outline
+            pyxel.line(x0, y0, x1, y1, pal.border)
+            pyxel.line(x1, y1, x2, y2, pal.border)
+            pyxel.line(x2, y2, x0, y0, pal.border)
             # Specular glint along leading edge
             if (pyxel.frame_count // 3) % 2 == 0:
-                pyxel.line(x0, y0, x1, y1, 7)
+                pyxel.line(x0, y0, x1, y1, pal.glint)
 
     def draw_hud(self):
         # Universal Dither Alpha on HUD containers
@@ -1407,12 +1435,33 @@ class GrainOfDoubtApp:
         pyxel.rectb(rx + 2, btn_y + 2, btn_w - 4, btn_h - 4, 7 if self.touch_right else 1)
         draw_text_scaled(rx + 65, btn_y + 24, "RIGHT >", 10 if self.touch_right else 7, scale=3)
 
+    def draw_theme_banner(self):
+        """Render prominent theme switcher banner without HUD overlap."""
+        theme = get_theme(self.current_theme_index)
+        box_w = 520
+        box_h = 46
+        box_x = (self.SCREEN_WIDTH - box_w) // 2  # 40
+        box_y = 196
+
+        if hasattr(pyxel, "dither"):
+            pyxel.dither(0.85)
+        pyxel.rect(box_x, box_y, box_w, box_h, 0)
+        if hasattr(pyxel, "dither"):
+            pyxel.dither(1.0)
+        pyxel.rectb(box_x, box_y, box_w, box_h, 10)
+        pyxel.rectb(box_x + 1, box_y + 1, box_w - 2, box_h - 2, 9)
+
+        name_str = f"THEME [{self.current_theme_index + 1}/20]: {theme.name}"
+        sub_str = "[,] PREV THEME    [.] NEXT THEME"
+        draw_text_scaled(box_x + 16, box_y + 8, name_str, 10, scale=2)
+        draw_text_scaled(box_x + 16, box_y + 28, sub_str, 7, scale=1)
+
     def draw_dev_overlay(self):
         """Render developer debug overlay at bottom of screen with alpha transparency."""
         box_x = 10
         box_w = 580
-        box_h = 160
-        box_y = self.SCREEN_HEIGHT - box_h - 10  # 630..790
+        box_h = 188
+        box_y = self.SCREEN_HEIGHT - box_h - 10  # 602..790
 
         # Alpha semi-transparent dark panel with mint neon border
         if hasattr(pyxel, "dither"):
@@ -1426,31 +1475,35 @@ class GrainOfDoubtApp:
         bot_str = "ON" if self.bot_mode else "OFF"
         rec_str = "ON" if self.video_recorder.is_recording else "OFF"
         inv_str = "ACTIVE (IMMORTAL)" if self.state.godmode else "OFF"
+        theme = get_theme(self.current_theme_index)
 
         # Line 1: Header + Version + Shortcut for Invulnerability
         draw_text_scaled(box_x + 12, box_y + 8, f"[DEV MODE] (` close) {self.VERSION} | SHORTCUT: [I] INVULNERABILITY: {inv_str}", 11, scale=2)
 
-        # Line 2: Other shortcuts and Faustian Bargains controls
-        draw_text_scaled(box_x + 12, box_y + 36, f"[B] BOT:{bot_str}  [V] REC:{rec_str}  [X] MENU  |  PACTS: 1-7:ADD  Q-U:REDUCE", 10, scale=2)
+        # Line 2: Active Theme and Hotkeys
+        draw_text_scaled(box_x + 12, box_y + 36, f"[,] PREV THEME  [.] NEXT THEME | THEME [{self.current_theme_index + 1}/20]: {theme.name}", 10, scale=2)
 
-        # Line 3: Player and Camera telemetry
+        # Line 3: Other shortcuts and Faustian Bargains controls
+        draw_text_scaled(box_x + 12, box_y + 64, f"[B] BOT:{bot_str}  [V] REC:{rec_str}  [X] MENU  |  PACTS: 1-7:ADD  Q-U:REDUCE", 7, scale=2)
+
+        # Line 4: Player and Camera telemetry
         px = self.entities.player.x
         vx = self.entities.player.vx
         spd = self.state.scroll_speed
         sp_m = self.state.speed_multiplier
-        draw_text_scaled(box_x + 12, box_y + 64, f"PLAYER: X={px:.0f} VX={vx:.2f} | SPD:{spd:.1f} (x{sp_m:.2f})", 7, scale=2)
+        draw_text_scaled(box_x + 12, box_y + 92, f"PLAYER: X={px:.0f} VX={vx:.2f} | SPD:{spd:.1f} (x{sp_m:.2f})", 7, scale=2)
 
-        # Line 4: Entities and Spawning telemetry
+        # Line 5: Entities and Spawning telemetry
         spawn_m = self.state.spawn_rate_multiplier
         n_sands = len(self.entities.sands)
         n_shards = len(self.entities.shards)
-        draw_text_scaled(box_x + 12, box_y + 92, f"SPAWN: x{spawn_m:.2f} | SANDS:{n_sands} SHARDS:{n_shards} | VIG:{self.state.vignette_radius:.0f}/{self.state.vignette_inner_radius:.0f}px", 9, scale=2)
+        draw_text_scaled(box_x + 12, box_y + 120, f"SPAWN: x{spawn_m:.2f} | SANDS:{n_sands} SHARDS:{n_shards} | VIG:{self.state.vignette_radius:.0f}/{self.state.vignette_inner_radius:.0f}px", 9, scale=2)
 
-        # Line 5: State and Timer telemetry
+        # Line 6: State and Timer telemetry
         elapsed = self.state.total_frames / 30.0
         st_name = self.state.current_state.name
         greed_str = f"{self.state.greed_timer / 30.0:4.1f}s (LETHAL)" if self.state.greed_active else "OFF"
-        draw_text_scaled(box_x + 12, box_y + 120, f"STATE:{st_name} | GREED:{greed_str} | TIME:{elapsed:4.1f}s | PRIDE:{self.state.pride_level}", 6, scale=2)
+        draw_text_scaled(box_x + 12, box_y + 148, f"STATE:{st_name} | GREED:{greed_str} | TIME:{elapsed:4.1f}s | PRIDE:{self.state.pride_level}", 6, scale=2)
 
 
 def main():

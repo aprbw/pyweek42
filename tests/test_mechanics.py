@@ -1732,6 +1732,116 @@ def test_skifree_desert_terrain_and_daylight_contrast():
     app.draw_celestial_depth_astrolabe(cam_x=100, prog=0.0)
 
 
+def test_all_20_divergent_themes_registry():
+    """Verify ALL_THEMES has exactly 20 distinct themes with unique IDs, names, and palettes."""
+    from engine.themes import ALL_THEMES, get_theme
+
+    assert len(ALL_THEMES) == 20, f"Expected exactly 20 themes, found {len(ALL_THEMES)}"
+
+    theme_ids = set()
+    theme_names = set()
+
+    for idx, theme in enumerate(ALL_THEMES):
+        assert theme.id == idx, f"Theme id {theme.id} must match index {idx}"
+        assert theme.id not in theme_ids, f"Duplicate theme id: {theme.id}"
+        theme_ids.add(theme.id)
+
+        assert theme.name and len(theme.name) > 0, "Theme name must not be empty"
+        assert theme.name not in theme_names, f"Duplicate theme name: {theme.name}"
+        theme_names.add(theme.name)
+
+        # Palettes
+        assert theme.sand is not None
+        assert theme.shard is not None
+        assert theme.hourglass is not None
+        assert callable(theme.render_bg)
+
+        # Check get_theme wrapping
+        assert get_theme(idx).id == idx
+        assert get_theme(idx + 20).id == idx
+
+
+def test_all_20_themes_render_without_error():
+    """Verify that all 20 themes render cleanly across CHRONOS, KAIROS, and Greed states."""
+    import pyxel
+    from main import GrainOfDoubtApp
+    from engine.state import GameState
+    from engine.themes import ALL_THEMES
+
+    try:
+        pyxel.init(600, 800, headless=True)
+    except BaseException:
+        pass
+
+    app = GrainOfDoubtApp(headless=True)
+    app.start_new_game()
+
+    for theme_idx in range(len(ALL_THEMES)):
+        app.current_theme_index = theme_idx
+
+        # Test normal Chronos
+        app.state.current_state = GameState.CHRONOS
+        app.state.greed_active = False
+        app.draw()
+
+        # Test Greed Chronos
+        app.state.greed_active = True
+        app.draw()
+
+        # Test Title screen with active theme
+        app.state.current_state = GameState.TITLE
+        app.theme_banner_timer = 30
+        app.draw()
+
+        # Reset
+        app.state.greed_active = False
+
+
+def test_dev_mode_comma_period_theme_cycling():
+    """Verify that ',' and '.' cycle themes backward and forward in Dev Mode and set banner."""
+    import pyxel
+    from main import GrainOfDoubtApp
+    from engine.themes import ALL_THEMES
+
+    app = GrainOfDoubtApp(headless=True, dev_mode=True)
+    assert app.current_theme_index == 0
+    assert app.theme_banner_timer == 0
+
+    orig_btnp = pyxel.btnp
+    try:
+        # Press '.' -> next theme (index 1)
+        pyxel.btnp = lambda k: k == pyxel.KEY_PERIOD
+        app.update()
+        assert app.current_theme_index == 1
+        assert app.theme_banner_timer == 89
+
+        # Press ',' -> previous theme (index 0)
+        pyxel.btnp = lambda k: k == pyxel.KEY_COMMA
+        app.update()
+        assert app.current_theme_index == 0
+        assert app.theme_banner_timer == 89
+
+        # Press ',' again -> wraps to index 19 (Theme 20)
+        pyxel.btnp = lambda k: k == pyxel.KEY_COMMA
+        app.update()
+        assert app.current_theme_index == len(ALL_THEMES) - 1
+        assert app.theme_banner_timer == 89
+
+        # Test timer countdown
+        pyxel.btnp = lambda k: False
+        app.update()
+        assert app.theme_banner_timer == 88
+
+        # Ensure non-dev mode ignores ',' and '.'
+        app.dev_mode = False
+        app.current_theme_index = 0
+        pyxel.btnp = lambda k: k == pyxel.KEY_PERIOD
+        app.update()
+        assert app.current_theme_index == 0  # Should NOT change when dev_mode is False
+    finally:
+        pyxel.btnp = orig_btnp
+
+
 
 
 

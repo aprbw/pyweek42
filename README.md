@@ -1,7 +1,7 @@
 # Grain of Doubt
 
 > **By Arian Prabowo**  
-> **Version:** v0.16.0  
+> **Version:** v0.19.0  
 > **PyWeek 42 Entry ("Borrowed Time")** — September 2026  
 > An endless retro downhill falling-hourglass arcade runner built with the **Pyxel** retro game engine.  
 > **Target Resolution:** 600 × 800 pixels (3:4 Portrait Aspect Ratio, Infinite Horizontal Arena).
@@ -35,6 +35,35 @@ Steer left or right to avoid falling glass shards while collecting glistening go
 
 ---
 
+## 🎨 20 Divergent Aesthetic Themes (Dev Mode Swapping)
+
+In **Dev Mode** (toggle with `` ` ``), you can freely cycle through **20 completely unique, divergent aesthetic themes** in real time using the `,` (previous theme) and `.` (next theme) keys:
+
+1. **SkiFree Sandfall**: Classic golden rushing sand dunes, braided chutes, white frothing crests, and spray motes.
+2. **Cosmic Chronometer**: Deep space midnight, concentric celestial orbits, astrolabe ticks, and starry void.
+3. **Abyssal Hourglass**: Stygian black ocean abyss, bioluminescent cyan ribbons, and deep-sea current pulses.
+4. **Shattered Mirror Chasm**: Iridescent lavender crystal chasm, reflecting diamond fractures, and prism facets.
+5. **Magma Caldera**: Volcanic caldera, basalt crags, obsidian riverbed, and bubbling liquid lava flumes.
+6. **Cartographer's Scroll**: Antique nautical map parchment, compass rhumb lines, and sea monster territorial borders.
+7. **Bioluminescent Trench**: Oceanic trench with undulating sea kelp fronds and shimmering glowing plankton.
+8. **Copper & Verdigris**: Steampunk weathered bronze, verdigris patina corrosion, and ticking brass gears.
+9. **Solar Flare**: Blinding coronal solar mass ejections, magnetic prominence arcs, and fiery plasma ribbons.
+10. **Monochrome Blueprint**: Engineering architectural drafting cyan blueprint with white millimeter grids.
+11. **Twilight Mirage**: Dusty mauve desert, sunset horizon gradient, and purple desert mirage winds.
+12. **Glacial Crevasse**: Sub-zero glacial ice sheet, deep blue crevasse crevasses, and permafrost frost needles.
+13. **Retro Terminal Matrix**: Phosphor green cathode-ray tube monitor with falling hexadecimal digital rain.
+14. **Haunted Mausoleum**: Dark gothic stone crypt, ectoplasmic spirit wisps, and crumbling gargoyle masonry.
+15. **Autumn Windstorm**: Russet forest floor, spiraling autumn leaves, and gusting wind vortex squalls.
+16. **Neon Noir Megacity**: Cyberpunk rainy skyscraper canyon, glowing magenta neon signs, and dark tarmac.
+17. **Liminal Vaporwave**: Pastel pink and cyan retro-futuristic wireframe perspective grid and digital horizon.
+18. **Chalkboard Theory**: Dark classroom slate chalkboard inscribed with theoretical physics equations and integrals.
+19. **Blood Moon Eclipse**: Total lunar eclipse crimson aura, cosmic corona rays, and dark blood dunes.
+20. **Zen Ink Wash (Sumi-e)**: Traditional Japanese washi parchment, black ink calligraphy brush strokes, and red cinnabar seal.
+
+Each theme dynamically transforms the procedural background terrain as well as the complete color palettes of the player's hourglass, sand grains, and glass shards to ensure aesthetic harmony and sharp contrast!
+
+---
+
 ## 🎮 Controls
 
 | Control | Action | Mechanic |
@@ -45,6 +74,8 @@ Steer left or right to avoid falling glass shards while collecting glistening go
 | `Space` / `Enter` or Tap Screen | Start / Restart | Start game or restart after a 2.0s post-mortem lockout (debounced) |
 | `X` | Return to Menu / Quit | In gameplay: return to Title Menu. On Title Menu: quit game (no-op in browser) |
 | `~` / `` ` `` (Backtick) | Toggle Dev Mode | On-screen debug HUD, live telemetry, and shortcut cheats |
+| `,` (Comma in Dev Mode) | Previous Theme | Cycle backwards through all 20 divergent aesthetic themes |
+| `.` (Period in Dev Mode) | Next Theme | Cycle forward through all 20 divergent aesthetic themes |
 | `I` (in Dev Mode) | Toggle God Mode | Invulnerability toggle (immune to glass shards and void collision) |
 | `B` (in Dev Mode) | Toggle GOFAI Bot | Autonomous kinematic AI playtesting agent (80% speed handicap, 20% bottom blind zone) |
 | `V` (in Dev Mode) | Toggle MP4 Recording | Lossless FFmpeg background canvas video recorder |
@@ -97,6 +128,7 @@ Every 10.0 seconds (300 frames), normal time flow stops and **Kairos** strikes. 
 │   ├── state.py                # GameState enum, StateManager, Chronos/Kairos timers
 │   ├── entities.py             # HourglassPlayer, SandGrain, GlassShard, EntityManager
 │   ├── bargains.py             # Faustian Bargain registry, compounding decay mathematics
+│   ├── themes.py               # 20 Divergent Aesthetic Themes, procedural backgrounds & palettes
 │   ├── bot.py                  # GOFAI kinematic playtesting agent (trajectory projection)
 │   ├── video.py                # Real-time FFmpeg MP4 recording engine
 │   └── audio.py                # 4-channel procedural retro synth sound matrix
