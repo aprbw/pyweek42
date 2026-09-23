@@ -246,31 +246,62 @@ def test_wrath_entity_wipe_and_zero_yield():
 
 
 def test_sloth_speed_modifiers():
+    """Verify Sloth Lazy Reprieve:
+    - Sloth means lazy; lazy means doing nothing!
+    - In a single high acceleration frame, all shards below player (within 3 screens wide)
+      are hurled downward toward the bottom horizon (vy >= 38, y >= 720).
+    - Shards above the player are unaffected.
+    - Creates ~2s safe space below player where they can do literally nothing and survive.
+    - Shards clump together at the bottom horizon into a dangerous wave.
+    - Permanent lateral drag curse reduces player steering speed.
+    """
     state = StateManager()
     state.start_game()
     bargains = BargainManager()
+    entities = EntityManager(600, 800)
 
-    init_hazard_spd = state.sloth_hazard_speed_mod
+    # Place shards below player (py = 320)
+    s1 = GlassShard(300, 380)
+    s2 = GlassShard(350, 500)
+    s3 = GlassShard(250, 700)
+    # And one shard above player (y = 150)
+    s_above = GlassShard(300, 150)
+    entities.shards.extend([s1, s2, s3, s_above])
+
     init_player_spd = state.sloth_player_speed_mod
-    assert init_hazard_spd == 1.0
+    assert init_player_spd == 1.0
 
-    bargains.apply_bargain(SinType.SLOTH, state)
+    # Apply Sloth bargain
+    summary = bargains.apply_bargain(SinType.SLOTH, state, entities)
+    assert "Lazy Reprieve" in summary["boon"]
+    assert "3 hazards hurled" in summary["boon"]
 
-    # Immediately upon selection: hazards are fully frozen (speed mod = 0.0)
-    assert state.sloth_hazard_speed_mod == 0.0
-    assert state.sloth_freeze_timer == 240
+    # Shard above player unaffected
+    assert s_above.y == 150
+    assert s_above.vy == 0.0
+
+    # Shards below player are hurled down with explosive downward velocity
+    for shard in [s1, s2, s3]:
+        assert shard.y >= 720.0
+        assert shard.vy >= 38.0
+
+    # Lateral drag curse is applied
     assert state.sloth_player_speed_mod < init_player_spd
 
-    # Halfway (120 frames / 4.0s): recovered to ~0.50
-    for _ in range(120):
-        state.update_timers()
-    assert 0.49 <= state.sloth_hazard_speed_mod <= 0.51
+    # Player can do literally NOTHING for ~2 seconds (90+ frames) and survive without hitting any shards
+    player = entities.player
+    for frame in range(90):
+        for s in entities.shards:
+            s.update(scroll_speed=state.scroll_speed, hazard_speed_mod=1.0, player_x=player.x, player_y=player.y)
+        # Verify no collision with player during lazy reprieve period
+        for s in [s1, s2, s3]:
+            assert s.y > player.y + 10.0 or not s.alive
 
-    # Full 240 frames (8.0s): fully recovered back to 1.0
-    for _ in range(120):
-        state.update_timers()
-    assert state.sloth_hazard_speed_mod == 1.0
-    assert state.sloth_freeze_timer == 0
+    # The hurled shards clumped together at the bottom horizon
+    # Their y coordinates are tightly grouped together
+    y_coords = [s.y for s in [s1, s2, s3] if s.alive]
+    assert len(y_coords) >= 2
+    assert max(y_coords) - min(y_coords) < 150.0  # tightly clumped wave
 
 
 def test_envy_and_lust_mechanics():
@@ -1272,6 +1303,54 @@ def test_lust_momentum_continuation_for_sands_and_shards():
     assert shard.vx > 0.0, "Shard must continue traveling right with momentum after Lust ends"
     assert abs(sand.vx) < abs(sand_vx_end), "Sand momentum decays gracefully via drag"
     assert abs(shard.vx) < abs(shard_vx_end), "Shard momentum decays gracefully via drag"
+
+
+def test_sloth_do_nothing_survival_and_clumped_wave():
+    """Verify that Sloth (lazy = doing nothing) clears all shards below the player
+    for ~2 seconds in a single high acceleration frame, allowing survival with zero inputs,
+    and clumps the thrown shards at the bottom into a dangerous wave.
+    """
+    state = StateManager()
+    state.start_game()
+    entities = EntityManager(600, 800)
+
+    # Spawn 6 shards at varied positions below the player (player.y = 200)
+    shards_below = [
+        GlassShard(260.0, 250.0),
+        GlassShard(300.0, 320.0),
+        GlassShard(340.0, 400.0),
+        GlassShard(280.0, 500.0),
+        GlassShard(320.0, 600.0),
+        GlassShard(350.0, 680.0),
+    ]
+    for s in shards_below:
+        s.lateral_drift = 0.0
+    entities.shards.extend(shards_below)
+
+    # Trigger Sloth downward hurling
+    thrown_count = entities.sloth_hurl_shards_downward(screen_width_factor=3.0, impulse_speed=38.0)
+    assert thrown_count == 6
+
+    # All shards hurled to at least y >= 720.0 with vy >= 38.0
+    for s in shards_below:
+        assert s.y >= 720.0
+        assert s.vy >= 38.0
+
+    # Simulate 80 frames where player does NOTHING (literally zero inputs)
+    for _ in range(80):
+        for s in entities.shards:
+            s.update(scroll_speed=state.scroll_speed, hazard_speed_mod=1.0, player_x=entities.player.x, player_y=entities.player.y)
+        # Verify complete survival: no shard ever touches or gets above player during this window
+        for s in shards_below:
+            assert s.y > entities.player.y + 20.0
+
+    # Verify that the shards are clumped together at the bottom horizon
+    active_ys = [s.y for s in shards_below if s.alive]
+    assert len(active_ys) == 6
+    # In a clumped wave, the vertical dispersion is greatly condensed
+    spread = max(active_ys) - min(active_ys)
+    assert spread < 180.0, f"Expected clumped wave at bottom horizon, got spread={spread}"
+
 
 
 

@@ -75,7 +75,7 @@ BARGAIN_REGISTRY: Dict[SinType, BargainDefinition] = {
         sin=SinType.ENVY,
         name="Envy",
         latin_name="Invidia",
-        boon_name="Mega Lust (2s)",
+        boon_name="Tidal Pull (2s)",
         curse_name="Vignette Vision",
         boon_base=1920.0,
         curse_base=960.0,
@@ -108,11 +108,11 @@ BARGAIN_REGISTRY: Dict[SinType, BargainDefinition] = {
         sin=SinType.SLOTH,
         name="Sloth",
         latin_name="Acedia",
-        boon_name="Freeze Hazards",
+        boon_name="Lazy Reprieve",
         curse_name="Lateral Drag",
-        boon_base=8.0,
+        boon_base=2.0,
         curse_base=0.20,
-        boon_unit="s freeze",
+        boon_unit="s safe",
         curse_unit="drag",
     ),
 }
@@ -195,12 +195,12 @@ class BargainManager:
             state.vignette_radius = max(state.min_vignette_radius, outer_r)
             state.vignette_inner_radius = max(state.min_vignette_radius * 0.6, inner_r)
 
-            # Boon: Temporary Mega Lust for 2.0s (60 frames) attracting all grains within 2x vignette radius
+            # Boon: Temporary Tidal Pull for 2.0s (60 frames) attracting all grains within 2x vignette radius
             state.envy_mega_lust_timer = 60
             mega_r = 2.0 * state.vignette_radius
             summary = {
                 "sin": defn.name,
-                "boon": f"Mega Lust: 2.0s pull ({mega_r:.0f}px radius)",
+                "boon": f"Tidal Pull: 2.0s pull ({mega_r:.0f}px radius)",
                 "curse": f"Vignette: outer={state.vignette_radius:.0f}px inner={state.vignette_inner_radius:.0f}px",
             }
 
@@ -227,14 +227,17 @@ class BargainManager:
             }
 
         elif sin == SinType.SLOTH:
-            # Boon: Freeze hazards immediately, linear recovery over 8.0s (240 frames)
-            state.sloth_freeze_timer = state.SLOTH_FREEZE_FRAMES
+            # Boon: Sloth means lazy; lazy means doing nothing!
+            # Single high acceleration frame throws all shards below player (within 3 screens wide) down to bottom
+            thrown_count = 0
+            if entities_manager:
+                thrown_count = entities_manager.sloth_hurl_shards_downward()
             # Curse: Aggressive lateral drag: 0.20 * 1.5^k reduction, min 0.20
             drag_reduction = 0.20 * (1.5 ** k)
             state.sloth_player_speed_mod = max(0.20, state.sloth_player_speed_mod - drag_reduction)
             summary = {
                 "sin": defn.name,
-                "boon": "Freeze Hazards: 8.0s linear recovery",
+                "boon": f"Lazy Reprieve: {thrown_count} hazards hurled to bottom (~2s safe)",
                 "curse": f"Lateral Drag: -{drag_reduction * 100:.1f}% steering (mod={state.sloth_player_speed_mod:.2f})",
             }
 

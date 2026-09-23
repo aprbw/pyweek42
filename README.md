@@ -1,10 +1,10 @@
 # Grain of Doubt
 
 > **By Arian Prabowo**  
-> **Version:** v0.14.0  
+> **Version:** v0.15.0  
 > **PyWeek 42 Entry ("Borrowed Time")** — September 2026  
 > An endless retro downhill falling-hourglass arcade runner built with the **Pyxel** retro game engine.  
-> **Target Resolution:** $600 \times 800$ pixels ($3:4$ Portrait Aspect Ratio, Infinite Horizontal Arena).
+> **Target Resolution:** 600 × 800 pixels (3:4 Portrait Aspect Ratio, Infinite Horizontal Arena).
 
 **PLAY! https://aprbw.github.io/pyweek42/index.html**
 
@@ -20,7 +20,7 @@ You control a fragile hourglass falling through the neck of an infinite, crumbli
 Steer left or right to avoid razor-sharp falling glass shards while collecting glistening golden grains of sand.
 
 ### Chronos vs. Kairos (The Dual-Clock Engine)
-* **Chronos (8.0s descent):** Relentless kinetic tension. Steer left or right across an infinitely wide horizontal arena ($\pm 4.5$ screen procedural generation horizon) to dodge oncoming glass shards while reaping cascading sand motes.
+* **Chronos (8.0s descent):** Relentless kinetic tension. Steer left or right across an infinitely wide horizontal arena (±4.5 screen procedural generation horizon) to dodge oncoming glass shards while reaping cascading sand motes.
 * **Kairos (2.0s circuit breaker):** Every 8 seconds, normal time freezes. You are presented with **2 Faustian Bargain cards** drawn from the Seven Deadly Sins. You must choose within 2.0 seconds—if you hesitate, doubt shatters your vessel (*Paralyzed by Doubt: Kairos Expired*). A vertical side timer drains from top to bottom.
   * **Input Re-press Protection:** Entering Kairos requires unpressing/releasing lateral steering first before choosing, preventing accidental card selection if holding arrows during Chronos.
 * **Faustian Bargains:** Every bargain grants an immediate survival boon at the cost of a permanent curse. Repeatedly choosing sins compounds their effects.
@@ -31,7 +31,7 @@ Steer left or right to avoid razor-sharp falling glass shards while collecting g
 
 | Control | Action | Mechanic |
 | :--- | :--- | :--- |
-| `A` / `D` or `Left` / `Right` | Lateral Steering | Steer hourglass horizontally ($\mu_x = 0.82$ viscous damping) |
+| `A` / `D` or `Left` / `Right` | Lateral Steering | Steer hourglass horizontally (viscous damping coefficient: 0.82) |
 | Touch `< LEFT` / `RIGHT >` | Mobile Touch Steering | Semi-transparent on-screen buttons (visible on mobile only) or bottom screen tap |
 | `Left` / `Right` or Tap Card | Select Faustian Bargain | Steer left or right during Kairos to choose between the 2 bargain cards within 2.0s (requires fresh press after release) |
 | `Space` / `Enter` or Tap Screen | Start / Restart | Start game or restart after a 2.0s post-mortem lockout (debounced) |
@@ -47,34 +47,34 @@ Steer left or right to avoid razor-sharp falling glass shards while collecting g
 
 ## 📜 Seven Deadly Faustian Bargains
 
-Every 10.0 seconds ($300$ frames), normal time flow stops and **Kairos** strikes. The player is presented with **two randomly chosen Faustian Bargains** in Catholic Gregorian canonical order. You have exactly 2.0 seconds ($60$ frames) to choose one, or your hourglass shatters instantly.
+Every 10.0 seconds (300 frames), normal time flow stops and **Kairos** strikes. The player is presented with **two randomly chosen Faustian Bargains** in Catholic Gregorian canonical order. You have exactly 2.0 seconds (60 frames) to choose one, or your hourglass shatters instantly.
 
-*Exact mathematical values ($k \ge 0$ is the repeat pact count):*
+*Exact mathematical values (where k ≥ 0 is the repeat pact count):*
 
 1. **Pride:**
-   * *Boon:* Spawns golden sand in organic randomized clusters: $+1$ grain per pact level (1st pact: pairs $= 2$ grains; 2nd: triplets $= 3$; 3rd: quadruplets $= 4$; grains share trajectory with randomized non-overlapping offsets; 1 sand = 1 point).
-   * *Curse:* Increases descent velocity multiplier by flat $+25\%$ per pact level ($+0.25$).
+   * *Boon:* Spawns golden sand in organic randomized clusters: +1 grain per pact level (1st pact: pairs = 2 grains; 2nd: triplets = 3; 3rd: quadruplets = 4; grains share trajectory with randomized non-overlapping offsets; 1 sand = 1 point).
+   * *Curse:* Increases descent velocity multiplier by flat +25% per pact level (+0.25).
 2. **Greed:**
    * Triggers **Borrowed Time**
-   * *Boon:* During Borrowed Time, each sand multiplies the current score by 110% ($Score \leftarrow \max(Score + 1, \lfloor Score \times 1.10 \rfloor)$) instead of adding 1 point.
-   * *Curse:* Triggers **Borrowed Time** for a randomized window of **10.0 to 18.0 seconds** ($300$ to $540$ frames). At the end, you definitely die (*Borrowed Time Expired: Debt Collected*). Warning HUD shows `BORROWED TIME`, and Dev Mode displays the countdown timer.
+   * *Boon:* During Borrowed Time, each sand multiplies the current score by 110% (Score = max(Score + 1, floor(Score × 1.10))) instead of adding 1 point.
+   * *Curse:* Triggers **Borrowed Time** for a randomized window of **10.0 to 18.0 seconds** (300 to 540 frames). At the end, you definitely die (*Borrowed Time Expired: Debt Collected*). Warning HUD shows `BORROWED TIME`, and Dev Mode displays the countdown timer.
 3. **Lust:**
-   * *Boon:* Sand magnetic attraction permanently pulls golden sands within radius toward hourglass ($180.0$px on 1st pact, $+60.0$px on subsequent pacts).
-   * *Curse:* Hazard magnetic attraction permanently pulls razor glass shards within radius toward hourglass ($180.0$px on 1st pact, $+60.0$px on subsequent pacts).
+   * *Boon:* Sand magnetic attraction permanently pulls golden sands within radius toward hourglass (180.0px on 1st pact, +60.0px on subsequent pacts).
+   * *Curse:* Hazard magnetic attraction permanently pulls razor glass shards within radius toward hourglass (180.0px on 1st pact, +60.0px on subsequent pacts).
 4. **Envy:**
-   * *Boon:* Activates **Mega Lust** for 2.0 seconds (60 frames), very strongly attracting all golden sand grains within $2\times$ the current vignette pixel radius ($2 \times R_{\text{vignette}}$, $1920$px on Pact 1) toward the hourglass.
-   * *Curse:* Inflicts **Vignette Vision**, a multi-circle concentric mask with 5 graduated dither transparency tiers between an inner clear core and outer void boundary.
-     * **Outermost circle** (zero vision beyond): $1200 \times 0.8^k$ px — Pact 1 → $960$px, Pact 2 → $768$px, Pact 3 → $614$px, Pact 4 → $491$px, Pact 5 → $393$px.
-     * **Innermost circle** (full clear vision): $1000 \times 0.8^{k+1}$ px — Pact 1 → $640$px, Pact 2 → $512$px, Pact 3 → $410$px, Pact 4 → $328$px, Pact 5 → $262$px.
+   * *Boon:* Activates **Tidal Pull** for 2.0 seconds (60 frames), very strongly attracting all golden sand grains within 2× the current vignette pixel radius (1920px on Pact 1) toward the hourglass with full Newtonian momentum.
+   * *Curse:* Inflicts **Vignette Vision**, a multi-circle concentric mask with 5 graduated dither transparency tiers between an inner clear core and outer void boundary:
+     * **Outermost circle** (zero vision beyond): radius = 1200 × 0.8^k px (Pact 1: 960px, Pact 2: 768px, Pact 3: 614px, Pact 4: 491px, Pact 5: 393px).
+     * **Innermost circle** (full clear vision): radius = 1000 × 0.8^(k+1) px (Pact 1: 640px, Pact 2: 512px, Pact 3: 410px, Pact 4: 328px, Pact 5: 262px).
 5. **Gluttony:**
-   * *Boon:* Increases golden sand spawn rate by $+50\%$ per pact level ($+0.50$).
-   * *Curse:* Increases razor hazard spawn rate by $+50\%$ per pact level ($+0.50$).
+   * *Boon:* Increases golden sand spawn rate by +50% per pact level (+0.50).
+   * *Curse:* Increases razor hazard spawn rate by +50% per pact level (+0.50).
 6. **Wrath:**
-   * *Boon:* Instantly purges all razor hazards on screen, granting a 10.0-second ($300$ frames) hazard-free grace window. (The only sin that does not compound after multiple use).
-   * *Curse:* Zero yield: all sand grains collected yield 0 points for 10.0 seconds ($300$ frames).
+   * *Boon:* Instantly purges all razor hazards on screen, granting a 10.0-second (300 frames) hazard-free grace window. (The only sin that does not compound after multiple use).
+   * *Curse:* Zero yield: all sand grains collected yield 0 points for 10.0 seconds (300 frames).
 7. **Sloth:**
-   * *Boon:* Freeze Hazards immediately ($0.0$ velocity), slowly recovering speed linearly over $8.0$ seconds ($240$ frames) back to full speed ($1.0$).
-   * *Curse:* Imposes lateral drag on hourglass steering, reducing horizontal translation speed by $20\% \times 1.5^k$ ($0.20$ reduction on 1st pact, $0.30$ on 2nd, $0.45$ on 3rd; minimum modifier $0.20$).
+   * *Boon:* **Lazy Reprieve** — Sloth means lazy; lazy means doing nothing! In a single high-acceleration impulse frame, all razor shards below the player within 3 screens wide are hurled downward toward the bottom horizon (vy ≥ 38 px/frame, pushed to y ≥ y_player + 520 px). For ~2.0 to 2.5 seconds, the entire descent space below you is completely cleared of hazards, allowing you to literally do nothing and survive.
+   * *Curse:* The hurled shards clump together into a dense, dangerous wave near the bottom horizon that later scrolls back upward toward the player. Additionally, imposes permanent compounding lateral drag on hourglass steering, reducing horizontal translation speed by -20% × 1.5^k (0.20 reduction on 1st pact, 0.30 on 2nd, 0.45 on 3rd; minimum modifier 0.20).
 
 ---
 
@@ -157,11 +157,23 @@ python3 -m http.server 8000
 
 ## 📝 Changelog
 
+### v0.15.0 (September 2026)
+* **Sloth Rework — Lazy Reprieve (Lazy = Doing Nothing):**
+  * Reworked Sloth into the "Lazy Reprieve": Sloth means lazy; lazy means doing nothing!
+  * In a single high-acceleration impulse frame, all shards below the player within 3 screens wide are hurled downward toward the bottom horizon (`vy >= 38.0`, pushed to `y >= y_player + 520.0`).
+  * Creates a 2.0 to 2.5 second safe void directly below the player where they can literally do nothing and survive without touching controls.
+  * Trade-off: all thrown shards clump together into a dense, dangerous wave near the bottom horizon that later scrolls back upward.
+  * Permanent lateral drag curse remains active (-20% × 1.5^k).
+* **Envy Terminology Alignment:**
+  * Standardized on **Tidal Pull** across the game HUD, Kairos cards, engine summaries, and documentation.
+* **Markdown & LaTeX Typography Polish:**
+  * Cleaned up all mathematical delimiters and percent escapes across the documentation to ensure seamless rendering on GitHub Flavored Markdown and KaTeX parsers without syntax errors.
+
 ### v0.14.0 (September 2026)
 * **Kinematic Momentum & Acceleration Physics for Lust & Envy:**
-  * Replaced discrete positional translation with proper second-order Newtonian physics (`acceleration` $\to$ `velocity` $\to$ `position`).
-  * Grains and razor shards accumulate velocity (`vx`, `vy`) under Lust magnetic attraction, Envy Mega Lust pull, and Envy repulsion.
-  * When Envy Mega Lust or Lust ends, entities carry their accumulated velocity forward with momentum and smoothly decelerate through natural viscous damping (`0.94` drag), gliding across the screen instead of abruptly stopping.
+  * Replaced discrete positional translation with proper second-order Newtonian physics (`acceleration` → `velocity` → `position`).
+  * Grains and razor shards accumulate velocity (`vx`, `vy`) under Lust magnetic attraction, Envy Tidal Pull, and Envy repulsion.
+  * When Envy Tidal Pull or Lust ends, entities carry their accumulated velocity forward with momentum and smoothly decelerate through natural viscous damping (`0.94` drag), gliding across the screen instead of abruptly stopping.
   * GOFAI bot kinematics updated to integrate entity momentum into spacetime danger projection.
 
 ### v0.13.0 (September 2026)
@@ -173,8 +185,8 @@ python3 -m http.server 8000
 ### v0.12.0 (September 2026)
 * **Score Formatting with Space Separator:**
   * Removed all leading zeros across HUD and Game Over screen; scores and statistics now format cleanly using a single space thousands separator (e.g. `SCORE: 1 234`, `0`).
-* **Envy Mega Lust Boon:**
-  * Reworked Envy into temporary Mega Lust: for 2.0 seconds (60 frames), all sand grains within $2\times$ the current vignette pixel radius ($1920$px at Pact 1) are strongly drawn into the hourglass.
+* **Envy Tidal Pull Boon:**
+  * Reworked Envy into temporary Tidal Pull: for 2.0 seconds (60 frames), all sand grains within 2× the current vignette pixel radius (1920px at Pact 1) are strongly drawn into the hourglass.
 * **Hourglass Sand Physics & Tilt Proportionality:**
   * Direction and speed of falling sand (both internal neck flow, dynamic bulb sand redistribution, and external dripping sand cascade) are directly proportional to the hourglass tilt angle.
 * **GOFAI Bot Envy Handicap:**
@@ -182,10 +194,10 @@ python3 -m http.server 8000
 
 ### v0.11.0 (September 2026)
 * **Difficulty Rebalance: Halved Base Spawn Rate:**
-  * Reduced base entity spawn accumulator from $0.45$ to $0.225$ per frame, halving the initial amount of sand grains and glass shards at the start for a gentler learning curve.
+  * Reduced base entity spawn accumulator from 0.45 to 0.225 per frame, halving the initial amount of sand grains and glass shards at the start for a gentler learning curve.
 * **Envy Vignette Rework (Dual-Radius):**
-  * Outermost circle (zero vision beyond): radius $= 1200 \times 0.8^k$ px (Pact 1: 960px, Pact 2: 768px, Pact 3: 614px, Pact 4: 491px, Pact 5: 393px).
-  * Innermost circle (full clear vision): radius $= 1000 \times 0.8^{k+1}$ px (Pact 1: 640px, Pact 2: 512px, Pact 3: 410px, Pact 4: 328px, Pact 5: 262px).
+  * Outermost circle (zero vision beyond): radius = 1200 × 0.8^k px (Pact 1: 960px, Pact 2: 768px, Pact 3: 614px, Pact 4: 491px, Pact 5: 393px).
+  * Innermost circle (full clear vision): radius = 1000 × 0.8^(k+1) px (Pact 1: 640px, Pact 2: 512px, Pact 3: 410px, Pact 4: 328px, Pact 5: 262px).
   * 5 graduated dither tiers are smoothly interpolated between inner and outer radii.
 * **Top-Right Numbered Pact Menu:**
   * In-game HUD pact list moved to top right, removed `(7)` header, and formatted as canonical numbered list (`1. pride 0`, `2. greed 0`, etc.).
@@ -212,12 +224,12 @@ python3 -m http.server 8000
 * **Dev Mode Faustian Pact Reduction:**
   * Keys `Q`, `W`, `E`, `R`, `T`, `Y`, `U` in Dev Mode decrement corresponding pact levels in canonical order (Pride, Greed, Lust, Envy, Gluttony, Wrath, Sloth) and dynamically relax active modifiers.
 * **Faustian Bargains Recalibration:**
-  * **Pride:** Organic randomized clusters (+1 grain per level, starting with pairs then triplets); flat $+25\%$ descent speed per pact.
-  * **Greed:** Borrowed Time (10.0–18.0s); sand multiplies score by $110\%$; lethal timer expiration.
-  * **Lust:** Permanent magnetic attraction for both sand and razor hazards; subsequent pacts widen attraction radius by $+60$px.
-  * **Gluttony:** Symmetric $+50\%$ boost to sand and hazard spawn rates per pact level.
+  * **Pride:** Organic randomized clusters (+1 grain per level, starting with pairs then triplets); flat +25% descent speed per pact.
+  * **Greed:** Borrowed Time (10.0–18.0s); sand multiplies score by 110%; lethal timer expiration.
+  * **Lust:** Permanent magnetic attraction for both sand and razor hazards; subsequent pacts widen attraction radius by +60px.
+  * **Gluttony:** Symmetric +50% boost to sand and hazard spawn rates per pact level.
   * **Wrath:** Flat 10.0s hazard wipe and 10.0s zero-yield window; does not compound on repeat pacts.
-  * **Sloth:** Immediate hazard freeze ($0.0$ speed) with linear recovery over $8.0$ seconds ($240$ frames); lateral drag curse scales by $-5\% \times 1.5^k$.
+  * **Sloth:** Immediate hazard freeze (0.0 speed) with linear recovery over 8.0 seconds (240 frames); lateral drag curse scales by -5% × 1.5^k.
 * **Automated Testing & Balance:**
   * Expanded test suite to 32 unit tests passing with 100% pass rate.
   * Validated GOFAI kinematic bot stability across multi-episode headless benchmarks.
@@ -230,9 +242,9 @@ python3 -m http.server 8000
   * Prevented accidental pact selection upon entering Kairos if holding lateral keys or touch during Chronos.
   * Players must unpress/release the button first before choosing a pact on fresh press.
 * **Sloth Rework (Hazard Freeze & 8s Recovery):**
-  * Replaced flat hazard drag with immediate Hazard Freeze ($0.0$ speed) that linearly recovers back to normal speed over $8.0$ seconds ($240$ frames). Permanent lateral drag curse remains.
+  * Replaced flat hazard drag with immediate Hazard Freeze (0.0 speed) that linearly recovers back to normal speed over 8.0 seconds (240 frames). Permanent lateral drag curse remains.
 * **Pride Organic Cluster Randomization:**
-  * Sand clusters now spawn with randomized relative non-overlapping offsets ($r \in [14, 36]$ px) while preserving shared velocity and trajectory.
+  * Sand clusters now spawn with randomized relative non-overlapping offsets (r ∈ [14, 36] px) while preserving shared velocity and trajectory.
 * **Clean End Game Screen:**
   * Removed "k=" syntax from pact counts (shows simple clean counts).
   * Removed "CANONICAL ORDER" wording; now titled "PACTS SEALED SUMMARY:".

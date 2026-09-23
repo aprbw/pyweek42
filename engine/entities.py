@@ -265,6 +265,29 @@ class EntityManager:
             self.spawn_particles(shard.x, shard.y, 10, [6, 7], size=4)
         self.shards.clear()
 
+    def sloth_hurl_shards_downward(self, screen_width_factor: float = 3.0, impulse_speed: float = 38.0) -> int:
+        """Sloth Boon: Sloth means lazy; lazy means doing nothing.
+        In a single high acceleration frame, all shards below the player within 2-3 screens wide
+        are thrown downward toward the bottom horizon, creating ~2s of safe empty space below the player
+        where they can literally do nothing to survive, while shards clump up dangerously at the bottom.
+        """
+        px, py = self.player.x, self.player.y
+        half_width = (self.screen_w * screen_width_factor) / 2.0
+
+        thrown = 0
+        for shard in self.shards:
+            if not shard.alive:
+                continue
+            # Target shards below the player (oncoming hazards: shard.y > py)
+            if shard.y > py and abs(shard.x - px) <= half_width:
+                self.spawn_particles(shard.x, shard.y, 6, [7, 6, 8], speed_range=(3.0, 8.0), size=3)
+                shard.y = max(shard.y, py + 520.0)
+                shard.vy = max(shard.vy + impulse_speed, impulse_speed)
+                shard.spin_speed *= 2.5
+                thrown += 1
+
+        return thrown
+
     def reclaim_bypassed_sand(self) -> int:
         count = self.bypassed_sand_pool
         self.bypassed_sand_pool = 0

@@ -196,7 +196,7 @@ def is_dev_environment() -> bool:
 
 
 class GrainOfDoubtApp:
-    VERSION: str = "v0.14.0"
+    VERSION: str = "v0.15.0"
     SCREEN_WIDTH: int = 600
     SCREEN_HEIGHT: int = 800
 
@@ -920,13 +920,13 @@ class GrainOfDoubtApp:
             draw_text_scaled(15, badge_y + 4, "[GODMODE]", 10, scale=2)
             badge_y += 24
 
-        # Envy Mega Lust Badge
+        # Envy Tidal Pull Badge
         if self.state.envy_mega_lust_active:
             lust_secs = (self.state.envy_mega_lust_timer + 29) // 30
             flash = (pyxel.frame_count // 4) % 2 == 0
             pyxel.rect(10, badge_y, 100, 20, 0)
             pyxel.rectb(10, badge_y, 100, 20, 10 if flash else 9)
-            draw_text_scaled(15, badge_y + 4, f"MEGA LUST {lust_secs}s", 10 if flash else 7, scale=2)
+            draw_text_scaled(15, badge_y + 4, f"TIDAL PULL {lust_secs}s", 10 if flash else 7, scale=2)
             badge_y += 24
 
         # Greed Borrowed Time Warning Indicator
@@ -1035,14 +1035,14 @@ class GrainOfDoubtApp:
                 next_k = k + 1
                 outer_preview = int(1200.0 * (0.8 ** next_k))
                 mega_r = outer_preview * 2
-                draw_text_scaled(cx + 16, col_y + 144, "Mega Lust (2.0s)", 7, scale=2)
+                draw_text_scaled(cx + 16, col_y + 144, "Tidal Pull (2.0s)", 7, scale=2)
                 draw_text_scaled(cx + 16, col_y + 168, f"Pull {mega_r}px Radius", 11, scale=2)
             elif sin == SinType.GREED:
                 draw_text_scaled(cx + 16, col_y + 144, "Score Multiplier", 7, scale=2)
                 draw_text_scaled(cx + 16, col_y + 168, "x110% per sand", 11, scale=2)
             elif sin == SinType.SLOTH:
-                draw_text_scaled(cx + 16, col_y + 144, "Freeze Hazards", 7, scale=2)
-                draw_text_scaled(cx + 16, col_y + 168, "8.0s Speed Recovery", 11, scale=2)
+                draw_text_scaled(cx + 16, col_y + 144, "Lazy Reprieve", 7, scale=2)
+                draw_text_scaled(cx + 16, col_y + 168, "Hurl Hazards Down (2s)", 11, scale=2)
             elif sin == SinType.LUST:
                 draw_text_scaled(cx + 16, col_y + 144, "Sand Magnet", 7, scale=2)
                 draw_text_scaled(cx + 16, col_y + 168, f"{180 + k * 60}px (Permanent)", 11, scale=2)
@@ -1076,7 +1076,7 @@ class GrainOfDoubtApp:
             elif sin == SinType.SLOTH:
                 drag = 0.20 * (1.5 ** k) * 100
                 draw_text_scaled(cx + 16, col_y + 244, "Lateral Drag", 7, scale=2)
-                draw_text_scaled(cx + 16, col_y + 268, f"-{drag:.0f}% Steering", 8, scale=2)
+                draw_text_scaled(cx + 16, col_y + 268, f"-{drag:.0f}% Steering (Wave)", 8, scale=2)
             elif sin == SinType.LUST:
                 draw_text_scaled(cx + 16, col_y + 244, "Hazard Magnet", 7, scale=2)
                 draw_text_scaled(cx + 16, col_y + 268, f"{180 + k * 60}px (Permanent)", 8, scale=2)
