@@ -77,8 +77,8 @@ BARGAIN_REGISTRY: Dict[SinType, BargainDefinition] = {
         latin_name="Invidia",
         boon_name="Tidal Pull (2s)",
         curse_name="Vignette Vision",
-        boon_base=1920.0,
-        curse_base=960.0,
+        boon_base=1228.0,
+        curse_base=614.4,
         boon_unit="px pull radius",
         curse_unit="px radius",
     ),
@@ -86,12 +86,12 @@ BARGAIN_REGISTRY: Dict[SinType, BargainDefinition] = {
         sin=SinType.GLUTTONY,
         name="Gluttony",
         latin_name="Gula",
-        boon_name="+Sand Spawn Rate",
-        curse_name="+Hazard Spawn Rate",
-        boon_base=50.0,
-        curse_base=50.0,
-        boon_unit="%",
-        curse_unit="%",
+        boon_name="Fat Sand Grains (3x pts)",
+        curse_name="Fat Glass Shards (10x area)",
+        boon_base=10.0,
+        curse_base=10.0,
+        boon_unit="% fat grains",
+        curse_unit="% fat shards",
     ),
     SinType.WRATH: BargainDefinition(
         sin=SinType.WRATH,
@@ -187,11 +187,12 @@ class BargainManager:
             }
 
         elif sin == SinType.ENVY:
-            # Curse: Vignette Vision (dual-radius)
+            # Curse: Vignette Vision (dual-radius), starting at former Envy 3 (k_eff = k + 2)
             state.envy_level += 1
             k = state.envy_level
-            outer_r = round(1200.0 * (0.80 ** k), 4)
-            inner_r = round(1000.0 * (0.80 ** (k + 1)), 4)
+            k_eff = k + 2
+            outer_r = round(1200.0 * (0.80 ** k_eff), 4)
+            inner_r = round(1000.0 * (0.80 ** (k_eff + 1)), 4)
             state.vignette_radius = max(state.min_vignette_radius, outer_r)
             state.vignette_inner_radius = max(state.min_vignette_radius * 0.6, inner_r)
 
@@ -205,13 +206,13 @@ class BargainManager:
             }
 
         elif sin == SinType.GLUTTONY:
-            # Symmetric language & numbers: +50% sand spawn rate, +50% hazard spawn rate
             state.gluttony_level = getattr(state, "gluttony_level", 0) + 1
-            state.spawn_rate_multiplier += 0.50
+            k = state.gluttony_level
+            fat_pct = (1.0 - (0.90 ** k)) * 100.0
             summary = {
                 "sin": defn.name,
-                "boon": f"+Sand Spawn Rate: +50% (x{state.spawn_rate_multiplier:.2f})",
-                "curse": f"+Hazard Spawn Rate: +50% (x{state.spawn_rate_multiplier:.2f})",
+                "boon": f"Fat Grains: {fat_pct:.1f}% fat (3x pts, 10x area)",
+                "curse": f"Fat Hazards: {fat_pct:.1f}% fat shards (10x area)",
             }
 
         elif sin == SinType.WRATH:
@@ -302,12 +303,13 @@ class BargainManager:
             state.envy_level = max(0, state.envy_level - 1)
             if state.envy_level == 0:
                 state.vignette_radius = state.base_vignette_radius
-                state.vignette_inner_radius = 900.0
+                state.vignette_inner_radius = 1000.0
                 state.envy_mega_lust_timer = 0
             else:
                 k = state.envy_level
-                outer_r = round(1200.0 * (0.80 ** k), 4)
-                inner_r = round(1000.0 * (0.80 ** (k + 1)), 4)
+                k_eff = k + 2
+                outer_r = round(1200.0 * (0.80 ** k_eff), 4)
+                inner_r = round(1000.0 * (0.80 ** (k_eff + 1)), 4)
                 state.vignette_radius = max(state.min_vignette_radius, outer_r)
                 state.vignette_inner_radius = max(state.min_vignette_radius * 0.6, inner_r)
             summary = {
@@ -318,11 +320,11 @@ class BargainManager:
 
         elif sin == SinType.GLUTTONY:
             state.gluttony_level = max(0, getattr(state, "gluttony_level", 1) - 1)
-            state.spawn_rate_multiplier = max(1.0, state.spawn_rate_multiplier - 0.50)
+            fat_pct = (1.0 - (0.90 ** state.gluttony_level)) * 100.0
             summary = {
                 "sin": defn.name,
-                "boon": f"Gluttony Level: {state.gluttony_level}",
-                "curse": f"Spawn Rate: x{state.spawn_rate_multiplier:.2f}",
+                "boon": f"Fat Grains: {fat_pct:.1f}% fat (3x pts)",
+                "curse": f"Fat Hazards: {fat_pct:.1f}% fat shards (10x area)",
             }
 
         elif sin == SinType.WRATH:
@@ -348,3 +350,22 @@ class BargainManager:
             }
 
         return summary
+
+    def get_fat_chance(self, sin: SinType = SinType.GLUTTONY) -> float:
+        """Calculates fat grain and shard probability: 1 - 0.9^k."""
+        k = self.selection_counts.get(sin, 0)
+        if k <= 0:
+            return 0.0
+        return 1.0 - (0.90 ** k)
+
+    def get_envy_radii(self) -> Tuple[float, float]:
+        """Calculates dual-radius vision bounds for Envy (outer, inner).
+        Envy 1 starts at previous Envy 3 (k_eff = k + 2).
+        """
+        k = self.selection_counts.get(SinType.ENVY, 0)
+        if k <= 0:
+            return 1000.0, 900.0
+        k_eff = k + 2
+        outer_r = round(1200.0 * (0.80 ** k_eff), 4)
+        inner_r = round(1000.0 * (0.80 ** (k_eff + 1)), 4)
+        return outer_r, inner_r

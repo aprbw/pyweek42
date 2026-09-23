@@ -241,15 +241,25 @@ def test_wrath_explosion_and_zero_yield():
 
     bargains = BargainManager()
     bargains.apply_bargain(SinType.WRATH, state, entities)
-    # Shards and sand are NOT deleted; they are blasted away with huge acceleration
+    # Shards and sand are NOT deleted; they receive an initial moderate kick and multi-frame burst acceleration
     assert len(entities.shards) == 2
     assert len(entities.sands) == 1
-    assert math.hypot(s1.vx, s1.vy) >= 40.0
-    assert math.hypot(s2.vx, s2.vy) >= 40.0
-    assert math.hypot(sand1.vx, sand1.vy) >= 40.0
-    # Blast direction is outward away from player (y > player.y => vy > 0)
     assert s1.vy > 0
     assert sand1.vy > 0
+    assert math.hypot(s1.vx, s1.vy) >= 10.0
+    assert math.hypot(s2.vx, s2.vy) >= 10.0
+    assert math.hypot(sand1.vx, sand1.vy) >= 10.0
+    assert s1.burst_timer > 0
+    assert sand1.burst_timer > 0
+
+    # Advance through burst acceleration frames to build full explosive momentum
+    for _ in range(8):
+        s1.update(scroll_speed=0.0, hazard_speed_mod=1.0, player_x=300.0, player_y=200.0)
+        s2.update(scroll_speed=0.0, hazard_speed_mod=1.0, player_x=300.0, player_y=200.0)
+        sand1.update(scroll_speed=0.0, player_x=300.0, player_y=200.0)
+    assert math.hypot(s1.vx, s1.vy) >= 30.0
+    assert math.hypot(s2.vx, s2.vy) >= 30.0
+    assert math.hypot(sand1.vx, sand1.vy) >= 30.0
     assert state.wrath_zero_yield_timer == 300
 
     # In zero yield, collecting sand adds 0 points
@@ -293,10 +303,10 @@ def test_sloth_speed_modifiers():
     assert s_above.y == 150
     assert s_above.vy == 0.0
 
-    # Shards below player are hurled down with explosive downward velocity
+    # Shards below player receive initial downward acceleration kick and sustained burst timer
     for shard in [s1, s2, s3]:
-        assert shard.y >= 720.0
-        assert shard.vy >= 38.0
+        assert shard.vy >= 12.0
+        assert shard.burst_timer > 0
 
     # Lateral drag curse is applied
     assert state.sloth_player_speed_mod < init_player_spd
@@ -311,10 +321,10 @@ def test_sloth_speed_modifiers():
             assert s.y > player.y + 10.0 or not s.alive
 
     # The hurled shards clumped together at the bottom horizon
-    # Their y coordinates are tightly grouped together
     y_coords = [s.y for s in [s1, s2, s3] if s.alive]
     assert len(y_coords) >= 2
-    assert max(y_coords) - min(y_coords) < 220.0  # tightly clumped wave
+    assert all(y > 700.0 for y in y_coords)  # all hurled far down below screen
+    assert max(y_coords) - min(y_coords) < 500.0  # clumped wave without teleportation
 
 
 def test_envy_and_lust_mechanics():
@@ -324,7 +334,7 @@ def test_envy_and_lust_mechanics():
     entities = EntityManager(600, 800)
     entities.player.x = 300.0
 
-    # Add 2 on-screen sands and 1 far sand (outside 1920px mega lust radius, but inside 3500px arena bounds)
+    # Add 2 on-screen sands and 1 far sand (outside mega lust radius, but inside 3500px arena bounds)
     far_sand = SandGrain(2500.0, 400.0)
     entities.sands = [
         SandGrain(300.0, 400.0),
@@ -337,12 +347,13 @@ def test_envy_and_lust_mechanics():
     initial_score = state.score
 
     # Envy activates 2.0s (60 frames) Mega Lust (boon) and applies vignette vision (curse)
+    # Envy 1 starts at former Envy 3 (k_eff = 3: outer=614.4, inner=409.6)
     bargains.apply_bargain(SinType.ENVY, state, entities)
     assert state.envy_mega_lust_active is True
     assert state.envy_mega_lust_timer == 60
-    assert state.envy_mega_lust_radius == 1920.0  # 2x outer vignette radius (960.0 * 2)
-    assert state.vignette_radius == 960.0  # Vignette Vision outer radius (1200 * 0.8^1)
-    assert state.vignette_inner_radius == 640.0  # Vignette Vision inner radius (1000 * 0.8^2)
+    assert state.envy_mega_lust_radius == pytest.approx(1228.8, rel=1e-3)
+    assert state.vignette_radius == pytest.approx(614.4, rel=1e-3)
+    assert state.vignette_inner_radius == pytest.approx(409.6, rel=1e-3)
 
     # Grains within 2x vignette radius get attracted strongly when updated
     entities.update(state)
@@ -840,8 +851,8 @@ def test_dev_mode_qwertyu_pact_reduction():
 
     # 4. ENVY (R)
     bargains.apply_bargain(SinType.ENVY, state, entities)
-    assert state.vignette_radius == 960.0
-    assert state.vignette_inner_radius == 640.0
+    assert state.vignette_radius == pytest.approx(614.4, rel=1e-3)
+    assert state.vignette_inner_radius == pytest.approx(409.6, rel=1e-3)
     assert state.envy_level == 1
     # Reduce Envy
     bargains.reduce_bargain(SinType.ENVY, state, entities)
@@ -850,12 +861,11 @@ def test_dev_mode_qwertyu_pact_reduction():
     assert state.vignette_radius == 1000.0
 
     # 5. GLUTTONY (T)
-    initial_spawn = state.spawn_rate_multiplier
     bargains.apply_bargain(SinType.GLUTTONY, state, entities)
-    assert state.spawn_rate_multiplier == pytest.approx(initial_spawn + 0.50)
+    assert state.gluttony_level == 1
     # Reduce Gluttony
     bargains.reduce_bargain(SinType.GLUTTONY, state, entities)
-    assert state.spawn_rate_multiplier == pytest.approx(initial_spawn)
+    assert state.gluttony_level == 0
 
     # 6. WRATH (Y)
     bargains.apply_bargain(SinType.WRATH, state, entities)
@@ -1091,16 +1101,16 @@ def test_pact_menu_top_right_numbered_format():
         main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2: calls.append((x, y, s))
         app.draw_hud()
 
-        # Check title is "PACTS" (not "PACTS (7)")
-        pact_titles = [c for c in calls if c[2] == "PACTS"]
-        assert len(pact_titles) == 1, "Must render 'PACTS' header"
-        # Must be on the right side of the 600px screen (x > 400)
-        assert pact_titles[0][0] >= 440, f"Pact menu header must be at top right (x >= 440), got {pact_titles[0][0]}"
+        # Check title is "FAUSTIAN PACTS" (not "PACTS (7)")
+        pact_titles = [c for c in calls if c[2] in ("PACTS", "FAUSTIAN PACTS")]
+        assert len(pact_titles) == 1, "Must render 'FAUSTIAN PACTS' header"
+        # Must be on the right side of the 600px screen (x >= 400)
+        assert pact_titles[0][0] >= 400, f"Pact menu header must be at top right (x >= 400), got {pact_titles[0][0]}"
 
         # Check numbered rows: '1. pride', '2. greed', etc.
         pride_entry = [c for c in calls if "1. pride" in c[2]]
         assert len(pride_entry) == 1, f"Must find '1. pride' in HUD text, found {calls}"
-        assert pride_entry[0][0] >= 440, "Pact row must be at top right"
+        assert pride_entry[0][0] >= 400, "Pact row must be at top right"
 
         greed_entry = [c for c in calls if "2. greed" in c[2]]
         assert len(greed_entry) == 1, f"Must find '2. greed' in HUD text, found {calls}"
@@ -1340,10 +1350,10 @@ def test_sloth_do_nothing_survival_and_clumped_wave():
     thrown_count = entities.sloth_hurl_shards_downward(screen_width_factor=3.0, impulse_speed=38.0)
     assert thrown_count == 6
 
-    # All shards hurled to at least y >= 720.0 with vy >= 38.0
+    # All shards receive initial downward kick and multi-frame burst timer (no 1-frame teleport)
     for s in shards_below:
-        assert s.y >= 720.0
-        assert s.vy >= 38.0
+        assert s.vy >= 12.0
+        assert s.burst_timer > 0
 
     # Simulate 80 frames where player does NOTHING (literally zero inputs)
     for _ in range(80):
@@ -1353,12 +1363,14 @@ def test_sloth_do_nothing_survival_and_clumped_wave():
         for s in shards_below:
             assert s.y > entities.player.y + 20.0
 
-    # Verify that the shards are clumped together at the bottom horizon
+    # Verify that the shards are hurled to the bottom horizon and overlap with oncoming hazards (double danger)
     active_ys = [s.y for s in shards_below if s.alive]
     assert len(active_ys) == 6
-    # In a clumped wave, the vertical dispersion is greatly condensed
+    assert all(y > 600.0 for y in active_ys)
+    # The hurled shards and seeded oncoming hazards overlap, doubling hazard count
+    assert len(entities.shards) >= 12
     spread = max(active_ys) - min(active_ys)
-    assert spread < 180.0, f"Expected clumped wave at bottom horizon, got spread={spread}"
+    assert spread < 380.0, f"Expected clumped wave at bottom horizon, got spread={spread}"
 
 
 def test_glass_shards_randomized_velocity_and_non_right_triangle_geometry():
@@ -1404,17 +1416,22 @@ def test_wrath_explosion_blasts_both_sand_and_shards_away():
     assert shards_hit == 1
     assert sands_hit == 1
 
-    # Near shard blasted downward away from player (y > py)
-    assert near_shard.vy > 40.0
-    assert math.hypot(near_shard.vx, near_shard.vy) >= 40.0
-
-    # Near sand blasted rightward away from player (x > px)
-    assert near_sand.vx > 40.0
-    assert math.hypot(near_sand.vx, near_sand.vy) >= 40.0
+    # Near entities receive initial moderate acceleration kick
+    assert near_shard.vy >= 10.0
+    assert near_sand.vx >= 10.0
+    assert near_shard.burst_timer > 0
+    assert near_sand.burst_timer > 0
 
     # Far entities unaffected
     assert math.hypot(far_shard.vx, far_shard.vy) == 0.0
     assert math.hypot(far_sand.vx, far_sand.vy) == 0.0
+
+    # Advance through burst acceleration frames: momentum accumulates to full blast velocity
+    for _ in range(8):
+        near_shard.update(scroll_speed=0.0, hazard_speed_mod=1.0, player_x=300.0, player_y=200.0)
+        near_sand.update(scroll_speed=0.0, player_x=300.0, player_y=200.0)
+    assert math.hypot(near_shard.vx, near_shard.vy) >= 30.0
+    assert math.hypot(near_sand.vx, near_sand.vy) >= 30.0
 
 
 def test_deep_world_simulation_consequence_catchup_ten_seconds_down():
@@ -1448,6 +1465,206 @@ def test_deep_world_simulation_consequence_catchup_ten_seconds_down():
     # Deep shard moved from y=3200 down to y = 3200 - 500*5 = 700!
     assert deep_shard.alive is True
     assert deep_shard.y <= 800.0, f"Expected shard to catch up onto screen, got y={deep_shard.y}"
+
+
+def test_sloth_and_wrath_multi_frame_acceleration_curve():
+    """Verify that Sloth and Wrath do not apply massive single-frame spikes, but smooth multi-frame bursts."""
+    entities = EntityManager(600, 800)
+    entities.player.x = 300.0
+    entities.player.y = 200.0
+
+    # Test Wrath multi-frame acceleration
+    target_shard = GlassShard(300.0, 350.0)
+    entities.shards.append(target_shard)
+    entities.wrath_explosion(explosion_radius=1200.0, impulse_strength=46.0, burst_frames=8)
+
+    # Frame 0 kick is moderate (< 15.0 px/frame, not 46.0)
+    init_speed = math.hypot(target_shard.vx, target_shard.vy)
+    assert 8.0 <= init_speed <= 15.0
+    assert target_shard.burst_timer == 8
+
+    # Velocity grows over subsequent frames
+    velocities = [init_speed]
+    for _ in range(8):
+        target_shard.update(scroll_speed=0.0, hazard_speed_mod=1.0, player_x=300.0, player_y=200.0)
+        velocities.append(math.hypot(target_shard.vx, target_shard.vy))
+
+    # Peak velocity after multi-frame acceleration exceeds 30 px/frame
+    assert max(velocities) >= 30.0
+
+    # Test Sloth multi-frame acceleration (no coordinate teleport)
+    sloth_shard = GlassShard(300.0, 260.0)
+    orig_y = sloth_shard.y
+    entities.shards = [sloth_shard]
+    entities.sloth_hurl_shards_downward(screen_width_factor=3.0, impulse_speed=46.0, burst_frames=10)
+
+    # Initial kick is moderate (< 20.0 px/frame) and y was NOT teleported
+    assert sloth_shard.y == orig_y
+    assert 12.0 <= sloth_shard.vy <= 20.0
+    assert sloth_shard.burst_timer == 10
+
+    # Advances through frames and builds downward velocity
+    for _ in range(10):
+        sloth_shard.update(scroll_speed=0.0, hazard_speed_mod=1.0, player_x=300.0, player_y=200.0)
+    assert sloth_shard.vy >= 30.0
+
+
+def test_spawning_spatial_density_preserved_when_sped_up_by_pride():
+    """Verify that when descent speed is multiplied (e.g. by Pride), spawn rate scales proportionally,
+    preventing hazard dilution and ensuring the screen does not become empty or easier.
+    """
+    entities_normal = EntityManager(600, 800)
+    entities_fast = EntityManager(600, 800)
+
+    # Simulate 200 frames at normal speed (multiplier = 1.0)
+    for _ in range(200):
+        entities_normal.spawn_wave(spawn_rate_mult=1.0, wrath_active=False, speed_multiplier=1.0)
+
+    # Simulate 200 frames at double speed (multiplier = 2.0, e.g. high Pride)
+    for _ in range(200):
+        entities_fast.spawn_wave(spawn_rate_mult=1.0, wrath_active=False, speed_multiplier=2.0)
+
+    # At double speed, the world travels twice as far in 200 frames (2000px vs 1000px).
+    # To maintain spatial density (entities per 1000px fallen), entities_fast must have spawned
+    # approximately twice as many entities!
+    count_normal = len(entities_normal.sands) + len(entities_normal.shards)
+    count_fast = len(entities_fast.sands) + len(entities_fast.shards)
+
+    ratio = count_fast / max(1, count_normal)
+    assert 1.7 <= ratio <= 2.3, f"Expected ~2x spawn rate at 2x speed, got ratio={ratio:.2f}"
+
+
+def test_glass_shard_obtuse_triangles_and_aerodynamic_spin():
+    """Verify that GlassShard supports obtuse triangles (dot product < -8.0),
+    never generates right angles (|dot product| >= 8.0), and aerodynamic rotation
+    is proportional to horizontal velocity Vx.
+    """
+    from engine.entities import GlassShard
+    # Sample many shards to confirm obtuse triangles exist and right angles do not
+    obtuse_found = False
+    for _ in range(100):
+        shard = GlassShard(100.0, 100.0)
+        p0, p1, p2 = shard.vertices
+        # Dot products at all 3 vertices
+        d0 = (p1[0] - p0[0]) * (p2[0] - p0[0]) + (p1[1] - p0[1]) * (p2[1] - p0[1])
+        d1 = (p0[0] - p1[0]) * (p2[0] - p1[0]) + (p0[1] - p1[1]) * (p2[1] - p1[1])
+        d2 = (p0[0] - p2[0]) * (p1[0] - p2[0]) + (p0[1] - p2[1]) * (p1[1] - p2[1])
+
+        # Never right-angled
+        assert abs(d0) >= 7.0 and abs(d1) >= 7.0 and abs(d2) >= 7.0
+
+        # Obtuse means at least one vertex has angle > 90 deg (dot product < 0)
+        if d0 < -8.0 or d1 < -8.0 or d2 < -8.0:
+            obtuse_found = True
+
+    assert obtuse_found, "Expected at least some generated shards to be obtuse triangles"
+
+    # Aerodynamic spin test: higher horizontal velocity produces higher rotational displacement
+    shard_slow = GlassShard(200.0, 200.0)
+    shard_fast = GlassShard(200.0, 200.0)
+    shard_slow.lateral_drift = 0.0
+    shard_fast.lateral_drift = 0.0
+    shard_slow.rotation_angle = 0.0
+    shard_fast.rotation_angle = 0.0
+    shard_slow.spin_speed = 0.0
+    shard_fast.spin_speed = 0.0
+
+    shard_slow.vx = 0.0
+    shard_fast.vx = 20.0  # high horizontal airspeed
+
+    shard_slow.update(scroll_speed=0.0, hazard_speed_mod=1.0, player_x=0.0, player_y=0.0)
+    shard_fast.update(scroll_speed=0.0, hazard_speed_mod=1.0, player_x=0.0, player_y=0.0)
+
+    assert abs(shard_fast.rotation_angle) > abs(shard_slow.rotation_angle)
+
+
+def test_gluttony_fat_sand_and_fat_shard_generation_and_scoring():
+    """Verify Gluttony rework:
+    - Level 0: 0% fat (100% normal)
+    - Level N: fat probability = 1 - 0.9^N
+    - Fat sand grains: ~3x radius, worth 3x points
+    - Fat shards: ~2.8x linear dimensions (~10x area)
+    """
+    from engine.entities import SandGrain, GlassShard, EntityManager
+    from engine.bargains import BargainManager, SinType
+
+    # Direct entity property verification
+    normal_sand = SandGrain(100.0, 100.0, is_fat=False)
+    fat_sand = SandGrain(100.0, 100.0, is_fat=True)
+
+    assert normal_sand.POINT_VALUE == 1
+    assert fat_sand.POINT_VALUE == 3
+    assert fat_sand.HITBOX_W > normal_sand.HITBOX_W * 2.5
+    assert fat_sand.is_fat is True
+
+    normal_shard = GlassShard(100.0, 100.0, is_fat=False)
+    fat_shard = GlassShard(100.0, 100.0, is_fat=True)
+    assert fat_shard.is_fat is True
+    assert fat_shard.HITBOX_W >= normal_shard.HITBOX_W * 2.5
+    assert fat_shard.HITBOX_H >= normal_shard.HITBOX_H * 2.5
+
+    # BargainManager fat probability formula check
+    bm = BargainManager()
+    assert bm.get_fat_chance(SinType.GLUTTONY) == 0.0  # level 0
+
+    bm.selection_counts[SinType.GLUTTONY] = 1
+    # 1 - 0.9^1 = 0.10
+    assert abs(bm.get_fat_chance(SinType.GLUTTONY) - 0.10) < 1e-4
+
+    bm.selection_counts[SinType.GLUTTONY] = 3
+    # 1 - 0.9^3 = 1 - 0.729 = 0.271
+    assert abs(bm.get_fat_chance(SinType.GLUTTONY) - 0.271) < 1e-4
+
+    # Spawning verification across 200 spawns at Gluttony 5 (chance ~ 0.40951)
+    bm.selection_counts[SinType.GLUTTONY] = 5
+    em = EntityManager(600, 800)
+    fat_chance = bm.get_fat_chance(SinType.GLUTTONY)
+    for _ in range(250):
+        em.spawn_wave(spawn_rate_mult=2.0, wrath_active=False, speed_multiplier=1.0, gluttony_level=5)
+
+    fat_sands = [s for s in em.sands if s.is_fat]
+    fat_shards = [s for s in em.shards if s.is_fat]
+    assert len(fat_sands) > 0, "Expected fat sands to spawn at Gluttony level 5"
+    assert len(fat_shards) > 0, "Expected fat shards to spawn at Gluttony level 5"
+
+
+def test_hourglass_player_acceleration_and_air_friction():
+    """Verify player hourglass lateral acceleration and aerodynamic air friction."""
+    from engine.entities import HourglassPlayer
+
+    player = HourglassPlayer(300.0, 400.0)
+    assert player.vx == 0.0
+
+    # Accelerate right for 5 frames
+    for _ in range(5):
+        player.move_right()
+        player.update(0.016, 600)
+
+    assert player.vx > 0.0
+    speed_after_accel = player.vx
+
+    # Release keys (no input): air friction should smoothly decelerate the player
+    for _ in range(10):
+        player.update(0.016, 600)
+
+    assert player.vx < speed_after_accel
+    assert player.vx > 0.0  # Still possesses residual forward momentum
+
+
+def test_envy_recalibrated_starting_point():
+    """Verify Envy starting point recalibration:
+    Envy 1 must be equal to previous Envy 3:
+    outer = 1200 * 0.8^(1+2) = 1200 * 0.512 = 614.4
+    inner = 1000 * 0.8^(2+2) = 1000 * 0.4096 = 409.6
+    """
+    from engine.bargains import BargainManager, SinType
+
+    bm = BargainManager()
+    bm.selection_counts[SinType.ENVY] = 1
+    outer_1, inner_1 = bm.get_envy_radii()
+    assert abs(outer_1 - 614.4) < 1e-3
+    assert abs(inner_1 - 409.6) < 1e-3
+
 
 
 

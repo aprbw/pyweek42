@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v0.18.0] - 2026-09-23
+### Added
+- **Complete Visual Decluttering (Zero Particles)**: Removed all screen-space particle clutter, including sand collection sparks, hazard explosion bursts, and hourglass drip trails, ensuring players maintain unobstructed focus on essential sand grains and lethal glass shards.
+- **Hourglass Interior Scoring Feedback**: Replaced distracting particle popups with localized sprite feedback: upon collecting sand grains, the hourglass bulbs and waist neck flash in radiant gold/amber glints (`player_score_flash_timer = 8`).
+- **Celestial Depth Astrolabe & Spacetime Isobars**: Brainstormed and implemented a zero-particle, museum-grade atmospheric background. Faint spacetime depth isobars with interval tick marks drift upwards with descent speed, framed by subtle, concentric astrolabe coordinate rings that expand gracefully with camera motion.
+- **Obtuse Glass Shard Geometry**: Shards now procedurally generate as obtuse triangles (one angle $> 90^\circ$, verified by negative vector dot product $< -8.0$) as well as acute/scalene triangles, while maintaining strict exclusion of right-angled shapes.
+- **Aerodynamic Shard Rotation**: Shard angular velocity is now proportional to horizontal airspeed $V_x = \text{base\_vx} + v_x$, realistically simulating aerodynamic torque as glass shards flutter through the air.
+- **Gluttony Fat Entities Rework**: Completely redesigned Gluttony progression:
+  - At Gluttony level $N$: Probability of fat entities is $1.0 - 0.9^N$ (Level 0: 0% fat, 100% normal).
+  - **Fat Sand Grains**: $\sim 3\times$ radius / length-wise ($10\times$ area), awarding $3\times$ score ($3$ points per grain).
+  - **Fat Glass Shards**: $\sim 2.8\times$ linear dimensions ($10\times$ area), creating massive, menacing obstacles.
+- **Double Danger Sloth Overlap**: When Sloth hurls shards downward, new hazards are seeded at the bottom horizon ($y \in [1050, 1450]$ px). The hurled shards catch up and overlap with oncoming hazards, creating a doubly dangerous wall of glass that returns when descent resumes.
+- **Hourglass Player Lateral Acceleration with Air Friction**: Left and right steering now operates on continuous lateral acceleration ($\text{base\_accel} = 5.2$ px/frame$^2$) paired with natural aerodynamic air friction damping ($\text{friction} = 0.85$, $\text{air\_friction} = 0.15$), giving snappy, responsive input that glides smoothly to rest when released.
+- **UI & HUD Polish**:
+  - Spaced time display: Added clear whitespace before units (`TIME: 24.5 s`).
+  - Faustian Pacts board: Widened the top-right HUD box to 180px with full title `FAUSTIAN PACTS`.
+  - Intentional Kairos Gluttony card: Scaled the `GLUTTONY` title and card playfully past standard modal card margins (`title_scale = 8`), visually embodying excess.
+
+### Changed
+- **Envy Starting Point Recalibration**: Recalibrated Envy dual-radius progression so Envy 1 equals previous Envy 3:
+  - Exponent mapped to $k_{\text{eff}} = k + 2$.
+  - Envy 1: Outer radius $= 1200 \times 0.8^3 = 614.4$ px; Inner radius $= 1000 \times 0.8^4 = 409.6$ px.
+- **Wrath Pure Kinetic Shockwave**: Removed all particle debris from Wrath explosion; radial blast acceleration and screen shake are preserved with pristine visual clarity.
+
+---
+
+## [v0.17.0] - 2026-09-23
+### Added
+- **Multi-Frame Burst Acceleration Curve**: Replaced single-frame extreme impulse spikes in Sloth and Wrath with smooth, multi-frame acceleration curves distributed across 10–12 frames.
+- **Pride Spatial Hazard Density Preservation**: Scaled wave spawn accumulation directly with `speed_multiplier`. When descent speed is increased (e.g. by Pride pacts), the spawn rate scales proportionally so spatial density (entities per 100 vertical pixels fallen) remains constant, preventing the world from diluting or becoming easier at high speeds.
+
+---
+
 ## [v0.16.0] - 2026-09-23
 ### Added
 - **Dynamic Glass Shard Geometry**: Replaced uniform right-angled triangles with procedurally randomized non-right-angled (acute/scalene) triangles verified by vector dot products ($|A \cdot B| > 0.05$).

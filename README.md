@@ -70,19 +70,20 @@ Every 10.0 seconds (300 frames), normal time flow stops and **Kairos** strikes. 
    * *Boon:* Sand magnetic attraction permanently pulls golden sands within radius toward hourglass (100.0px on 1st pact, +50.0px on subsequent pacts).
    * *Curse:* Hazard magnetic attraction permanently pulls glass shards within radius toward hourglass (100.0px on 1st pact, +50.0px on subsequent pacts).
 4. **Envy:**
-   * *Boon:* Activates **Tidal Pull** for 2.0 seconds (60 frames), very strongly attracting all golden sand grains within 2× the current vignette pixel radius (1920px on Pact 1) toward the hourglass with full Newtonian momentum.
-   * *Curse:* Inflicts **Vignette Vision**, a multi-circle concentric mask with 5 graduated dither transparency tiers between an inner clear core and outer void boundary:
-     * **Outermost circle** (zero vision beyond): radius = 1200 × 0.8^k px (Pact 1: 960px, Pact 2: 768px, Pact 3: 614px, Pact 4: 491px, Pact 5: 393px).
-     * **Innermost circle** (full clear vision): radius = 1000 × 0.8^(k+1) px (Pact 1: 640px, Pact 2: 512px, Pact 3: 410px, Pact 4: 328px, Pact 5: 262px).
+   * *Boon:* Activates **Tidal Pull** for 2.0 seconds (60 frames), very strongly attracting all golden sand grains within 2× the current vignette pixel radius (1228px on Pact 1) toward the hourglass with full Newtonian momentum.
+   * *Curse:* Inflicts **Vignette Vision**, a multi-circle concentric mask with 5 graduated dither transparency tiers between an inner clear core and outer void boundary. Envy 1 starts at former Envy 3 ($k_{\text{eff}} = k + 2$):
+     * **Outermost circle** (zero vision beyond): radius = 1200 × 0.8^(k+2) px (Pact 1: 614.4px, Pact 2: 491.5px, Pact 3: 393.2px, Pact 4: 314.6px, Pact 5: 251.7px).
+     * **Innermost circle** (full clear vision): radius = 1000 × 0.8^(k+3) px (Pact 1: 409.6px, Pact 2: 327.7px, Pact 3: 262.1px, Pact 4: 209.7px, Pact 5: 167.8px).
 5. **Gluttony:**
-   * *Boon:* Increases golden sand spawn rate by +50% per pact level (+0.50).
-   * *Curse:* Increases glass shard spawn rate by +50% per pact level (+0.50).
+   * At Gluttony level $N$, normal entity chance is $0.9^N$ and fat entity chance is $1.0 - 0.9^N$ (Level 0: 0% fat, 100% normal).
+   * *Boon:* **Fat Sand Grains** — $\sim 3\times$ larger radius/length-wise ($10\times$ area), awarding $3\times$ score ($3$ points per grain).
+   * *Curse:* **Fat Glass Shards** — $\sim 2.8\times$ linear dimensions ($10\times$ area), creating massive, menacing hazard obstacles.
 6. **Wrath:**
-   * *Boon:* **Wrath Blast** — Detonates an instant kinetic explosion centered on the player: all entities (both golden sand grains and glass shards) within a **1200-pixel radius** are blasted outward with a massive acceleration impulse away from the hourglass.
+   * *Boon:* **Wrath Blast** — Detonates an instant kinetic explosion centered on the player: all entities (both golden sand grains and glass shards) within a **1200-pixel radius** are blasted outward with a smooth multi-frame acceleration impulse away from the hourglass. Zero visual particle clutter.
    * *Curse:* Zero yield: all sand grains collected yield 0 points for 10.0 seconds (300 frames).
 7. **Sloth:**
-   * *Boon:* **Lazy Reprieve** — Sloth means lazy; lazy means doing nothing! In a single high-acceleration impulse frame, all glass shards below the player within 3 screens wide are hurled downward toward the bottom horizon (vy ≥ 38 px/frame, pushed to y ≥ y_player + 520 px). For ~2.0 to 2.5 seconds, the entire descent space below you is completely cleared of hazards, allowing you to literally do nothing and survive.
-   * *Curse:* The hurled glass shards clump together into a dense, dangerous wave near the bottom horizon that later scrolls back upward toward the player. Additionally, imposes permanent compounding lateral drag on hourglass steering, reducing horizontal translation speed by -20% × 1.5^k (0.20 reduction on 1st pact, 0.30 on 2nd, 0.45 on 3rd; minimum modifier 0.20).
+   * *Boon:* **Lazy Reprieve** — Sloth means lazy; lazy means doing nothing! All glass shards below the player within 3 screens wide are hurled downward toward the bottom horizon over a multi-frame burst. For ~2.0 to 2.5 seconds, the descent space below you is completely cleared of hazards, allowing you to literally do nothing and survive.
+   * *Curse:* The hurled glass shards catch up and overlap with bottom-seeded hazards, forming a doubly dangerous wave of glass at the bottom horizon that scrolls back upward. Additionally, imposes permanent compounding lateral drag on hourglass steering, reducing horizontal translation speed by -20% × 1.5^k (0.20 reduction on 1st pact, 0.30 on 2nd, 0.45 on 3rd; minimum modifier 0.20).
 
 ---
 
@@ -165,7 +166,37 @@ python3 -m http.server 8000
 
 ## 📝 Changelog
 
-> Complete version history for every release from **v0.1.0** through **v0.16.0** is detailed below and in [CHANGELOG.md](CHANGELOG.md).
+> Complete version history for every release from **v0.1.0** through **v0.18.0** is detailed below and in [CHANGELOG.md](CHANGELOG.md).
+
+### v0.18.0 (September 2026)
+* **Complete Visual Decluttering (Zero Particles):**
+  * Removed all noisy particle popups (sand sparks, explosion debris, hourglass trail drips). Players enjoy crystal-clear visibility of all incoming grains and shards.
+  * Internal scoring feedback: collecting sand grains now causes the hourglass bulbs and waist neck to flash in radiant gold/amber glints directly on the player sprite.
+* **Celestial Depth Astrolabe & Spacetime Depth Isobars:**
+  * Replaced the parallax star dots and vertical squiggly lines with an elegant, non-particle celestial depth coordinate system: subtle horizontal depth isobars drifting upwards with descent, framed by concentric astrolabe rings.
+* **Obtuse Glass Shards & Aerodynamic Tumbling:**
+  * Glass shards now procedurally generate as obtuse triangles (one angle $> 90^\circ$, verified by negative dot product $< -8.0$) as well as acute/scalene triangles (never right-angled).
+  * Shard spin rate is aerodynamically coupled to horizontal airspeed $V_x$, naturally simulating aerodynamic torque during horizontal drift.
+* **Gluttony Fat Entities Rework:**
+  * At Gluttony level $N$: Fat entity probability is $1.0 - 0.9^N$ (Level 0: 100% normal).
+  * Fat Sand Grains: $\sim 3\times$ larger radius/length-wise ($10\times$ area), awarding $3\times$ points ($3$ points per grain).
+  * Fat Glass Shards: $\sim 2.8\times$ linear dimensions ($10\times$ area), creating massive, menacing hazard obstacles.
+* **Sloth Bottom Wave Hazard Overlap (Double Danger):**
+  * When Sloth hurls shards downward, oncoming hazards are seeded at the bottom horizon ($y \in [1050, 1450]$ px), causing hurled shards to catch up and overlap into a doubly dangerous wall of glass.
+* **Envy Recalibration (Envy 1 = Envy 3):**
+  * Recalibrated Envy starting point to former Envy 3 ($k_{\text{eff}} = k + 2$): Level 1 outer radius $= 614.4$ px, inner radius $= 409.6$ px.
+* **Player Lateral Acceleration with Air Friction:**
+  * Continuous lateral acceleration (`base_accel = 5.2`) with natural aerodynamic air friction (`friction = 0.85`, `air_friction = 0.15`).
+* **UI & HUD Polish:**
+  * Time display formatted with space before units (`TIME: 24.5 s`).
+  * Top-right HUD box widened to 180px with full title `FAUSTIAN PACTS`.
+  * Kairos card title for Gluttony playfully enlarged beyond card boundaries (`title_scale = 8`).
+
+### v0.17.0 (September 2026)
+* **Multi-Frame Burst Acceleration Curve:**
+  * Replaced discrete impulse spikes in Sloth and Wrath with smooth, multi-frame acceleration curves distributed across 10–12 frames.
+* **Pride Spatial Hazard Density Preservation:**
+  * Scaled wave spawn accumulation directly with `speed_multiplier`. When descent speed is increased by Pride, entity spawn rates scale proportionally so spatial hazard density remains constant.
 
 ### v0.16.0 (September 2026)
 * **Wrath Rework — Radial Kinetic Explosion:**

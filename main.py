@@ -196,7 +196,7 @@ def is_dev_environment() -> bool:
 
 
 class GrainOfDoubtApp:
-    VERSION: str = "v0.16.0"
+    VERSION: str = "v0.18.0"
     SCREEN_WIDTH: int = 600
     SCREEN_HEIGHT: int = 800
 
@@ -384,21 +384,6 @@ class GrainOfDoubtApp:
         if self.feedback_timer > 0:
             self.feedback_timer -= 1
 
-        # Background cosmic drift (speed accelerates as Kairos approaches)
-        chronos_prog = 0.0
-        if self.state.current_state == GameState.CHRONOS:
-            chronos_prog = self.state.chronos_timer / float(self.state.CHRONOS_FRAMES)
-
-        speed_factor = 1.0 + chronos_prog * 1.5
-        scroll_drift = max(2.0, self.state.scroll_speed) * speed_factor
-        cam_x = self.entities.player.x - self.SCREEN_WIDTH / 2.0
-
-        for star in self.stars:
-            star[1] -= scroll_drift * star[4]
-            if star[1] < 0:
-                star[1] = self.SCREEN_HEIGHT
-                star[0] = random.uniform(cam_x - 120, cam_x + self.SCREEN_WIDTH + 120)
-
         # State dispatch
         if self.state.current_state == GameState.TITLE:
             # Start game with any lateral key, space/enter, or mouse/touch tap
@@ -581,31 +566,8 @@ class GrainOfDoubtApp:
         if self.state.current_state == GameState.CHRONOS:
             prog = self.state.chronos_timer / float(self.state.CHRONOS_FRAMES)
 
-        # Draw cosmic void stars (color and shimmer dynamically shift, parallax wrapped relative to cam_x)
-        wrap_w = self.SCREEN_WIDTH + 240
-        for star in self.stars:
-            sx, sy, base_c, sz, spd = star
-            rel_x = (sx - cam_x * spd * 0.4) % wrap_w - 120
-            draw_sx = cam_x + rel_x
-
-            if self.state.greed_active:
-                # Borrowed Time: stars turn into burning crimson embers
-                flame_pulse = (pyxel.frame_count // 3 + int(sx)) % 3
-                sc = [8, 9, 10][flame_pulse]
-            elif prog < 0.35:
-                sc = base_c
-            elif prog < 0.65:
-                sc = 9 if base_c == 6 else (6 if base_c == 5 else 5)
-            elif prog < 0.85:
-                sc = 10 if base_c in (5, 6) else (7 if (pyxel.frame_count // 4) % 2 == 0 else 9)
-            else:
-                pulse = (pyxel.frame_count // 2 + int(sx)) % 4
-                sc = [8, 9, 10, 7][pulse]
-
-            pyxel.rect(int(draw_sx), int(sy), sz, sz, sc)
-
-        # Draw drifting astral aurora ribbons across infinite horizontal void
-        self.draw_cosmic_nebula_streams(cam_x, prog)
+        # Draw clean, non-particle Celestial Depth Astrolabe & Spacetime Isobars
+        self.draw_celestial_depth_astrolabe(cam_x, prog)
 
         if self.state.current_state == GameState.TITLE:
             pyxel.camera(0, 0)
@@ -615,16 +577,17 @@ class GrainOfDoubtApp:
         # Draw Sand grains in world coordinates
         for sand in self.entities.sands:
             c = 10 if (pyxel.frame_count // 3 + int(sand.shimmer_phase * 4)) % 2 == 0 else 9
-            pyxel.rect(int(sand.x - 5), int(sand.y - 5), 10, 10, c)
-            pyxel.rect(int(sand.x - 2), int(sand.y - 2), 4, 4, 7)  # Center glint
+            if getattr(sand, "is_fat", False):
+                pyxel.rect(int(sand.x - 13), int(sand.y - 13), 26, 26, c)
+                pyxel.rectb(int(sand.x - 13), int(sand.y - 13), 26, 26, 7)
+                pyxel.rect(int(sand.x - 5), int(sand.y - 5), 10, 10, 7)
+            else:
+                pyxel.rect(int(sand.x - 5), int(sand.y - 5), 10, 10, c)
+                pyxel.rect(int(sand.x - 2), int(sand.y - 2), 4, 4, 7)  # Center glint
 
         # Draw Glass shards in world coordinates
         for shard in self.entities.shards:
             self.draw_glass_shard(shard)
-
-        # Draw Particles in world coordinates
-        for p in self.entities.particles:
-            pyxel.rect(int(p.x), int(p.y), p.size, p.size, p.color)
 
         # Draw Player Hourglass in world coordinates
         self.draw_player_hourglass()
@@ -667,31 +630,47 @@ class GrainOfDoubtApp:
         # Capture video frame for MP4 export
         self.video_recorder.record_frame(pyxel)
 
-    def draw_cosmic_nebula_streams(self, cam_x: int, prog: float = 0.0):
-        """Draw ethereal celestial aurora ribbons across infinite horizontal void."""
-        t = self.state.total_frames * (0.04 + prog * 0.06)
+    def draw_celestial_depth_astrolabe(self, cam_x: int, prog: float = 0.0):
+        """Draw clean, non-particle Celestial Astrolabe & Spacetime Depth Isobars.
+        Completely eliminates floating particle clutter and squiggly ribbons,
+        giving sand grains and glass shards 100% visual clarity.
+        """
+        # Palette selections
         if self.state.greed_active:
-            flash = (pyxel.frame_count // 4) % 2 == 0
-            col_inner = 8 if flash else 9  # Burning crimson/orange flares
-            col_outer = 4                  # Dark rust void boundary
+            col_geo = 2
+            col_iso = 4
         elif prog < 0.65:
-            col_inner = 5
-            col_outer = 1
+            col_geo = 1
+            col_iso = 1
         elif prog < 0.85:
-            col_inner = 9
-            col_outer = 2
+            col_geo = 5
+            col_iso = 1
         else:
-            flash = (pyxel.frame_count // 3) % 2 == 0
-            col_inner = 8 if flash else 10
-            col_outer = 2
+            flash = (pyxel.frame_count // 4) % 2 == 0
+            col_geo = 5 if flash else 1
+            col_iso = 5
 
-        start_grid = (cam_x // 350 - 1) * 350
-        for stream_base_x in range(start_grid, start_grid + self.SCREEN_WIDTH + 700, 350):
-            for y in range(0, self.SCREEN_HEIGHT, 8):
-                drift = math.sin(y * 0.015 + t + stream_base_x * 0.005) * 16.0
-                rx = int(stream_base_x + drift)
-                pyxel.rect(rx - 2, y, 4, 8, col_outer)
-                pyxel.rect(rx - 1, y, 2, 8, col_inner)
+        # 1. Depth Isobars: Horizontal stratum lines scrolling upward with descent distance
+        iso_spacing = 160
+        y_offset = int(self.state.distance * 0.4) % iso_spacing
+        for y in range(-y_offset, self.SCREEN_HEIGHT + iso_spacing, iso_spacing):
+            if 0 <= y <= self.SCREEN_HEIGHT:
+                pyxel.line(cam_x, y, cam_x + self.SCREEN_WIDTH, y, col_iso)
+                for tick_x in (cam_x + 16, cam_x + 32, cam_x + self.SCREEN_WIDTH - 32, cam_x + self.SCREEN_WIDTH - 16):
+                    pyxel.line(tick_x, y - 3, tick_x, y + 3, col_geo)
+
+        # 2. Celestial Astrolabe Geometry: Concentric astronomical rings & quadrant axes
+        ring_spacing = 700
+        start_center = int(cam_x // ring_spacing) * ring_spacing
+        for cx in (start_center, start_center + ring_spacing, start_center + ring_spacing * 2):
+            cy = 400
+            pyxel.circb(cx, cy, 140, col_geo)
+            pyxel.circb(cx, cy, 260, col_geo)
+            pyxel.circb(cx, cy, 380, col_geo)
+            pyxel.line(cx - 390, cy, cx + 390, cy, col_geo)
+            pyxel.line(cx, cy - 390, cx, cy + 390, cy, col_geo)
+            pyxel.line(cx - 180, cy - 180, cx + 180, cy + 180, col_geo)
+            pyxel.line(cx - 180, cy + 180, cx + 180, cy - 180, col_geo)
 
     def draw_player_hourglass(self):
         """Draw horizontal hourglass sprite (60x40) that tilts dynamically with control velocity."""
@@ -756,11 +735,20 @@ class GrainOfDoubtApp:
         l_scale = max(0.20, min(1.45, 1.0 - tilt_ratio * 0.50))
         r_scale = max(0.20, min(1.45, 1.0 + tilt_ratio * 0.50))
 
+        # 6. Bulb Sand Levels (dynamically shifting with tilt)
+        tilt_ratio = max(-1.0, min(1.0, tilt / 0.38)) if abs(tilt) > 0.01 else 0.0
+        l_scale = max(0.20, min(1.45, 1.0 - tilt_ratio * 0.50))
+        r_scale = max(0.20, min(1.45, 1.0 + tilt_ratio * 0.50))
+        is_score_flash = (self.state.player_score_flash_timer > 0)
+
         # Left Bulb Sand
         for dx in range(-21, -4, 2):
             half_h = int(13 * (abs(dx) / 24.0) * l_scale)
             if half_h > 1:
-                col = 10 if (dx % 4 == 0) else 9
+                if is_score_flash:
+                    col = 7 if (self.state.player_score_flash_timer % 2 == 0) else 10
+                else:
+                    col = 10 if (dx % 4 == 0) else 9
                 p_top = rot(dx, -half_h + 1)
                 p_bot = rot(dx, half_h - 1)
                 pyxel.line(p_top[0], p_top[1], p_bot[0], p_bot[1], col)
@@ -769,7 +757,10 @@ class GrainOfDoubtApp:
         for dx in range(5, 22, 2):
             half_h = int(13 * (abs(dx) / 24.0) * r_scale)
             if half_h > 1:
-                col = 10 if (dx % 4 == 0) else 9
+                if is_score_flash:
+                    col = 7 if (self.state.player_score_flash_timer % 2 == 0) else 10
+                else:
+                    col = 10 if (dx % 4 == 0) else 9
                 p_top = rot(dx, -half_h + 1)
                 p_bot = rot(dx, half_h - 1)
                 pyxel.line(p_top[0], p_top[1], p_bot[0], p_bot[1], col)
@@ -777,20 +768,18 @@ class GrainOfDoubtApp:
         # 8. Animated Sand Flow across waist:
         # Direction and speed of sand falling across the neck is proportional to how tilted it is
         if abs(tilt) > 0.02:
-            # Direction: flows from higher bulb toward lower bulb
             flow_sign = 1.0 if tilt > 0 else -1.0
             for i in range(3):
-                # Phase advances with player.sand_drain_phase (speed proportional to tilt)
                 frac = (player.sand_drain_phase * flow_sign + i * 0.33) % 1.0
                 stream_lx = (-5.0 + frac * 10.0) * flow_sign
                 stream_ly = math.sin((player.sand_drain_phase + i) * 3.14) * 1.5
                 sp = rot(stream_lx, stream_ly)
-                col = 10 if i == 0 else 9
+                col = 7 if is_score_flash else (10 if i == 0 else 9)
                 pyxel.rect(sp[0] - 1, sp[1] - 1, 2, 2, col)
         else:
-            # Level: sand rests quietly at the waist neck without flowing
             sp = rot(0, 0)
-            pyxel.rect(sp[0] - 1, sp[1] - 1, 2, 2, 9)
+            col = 7 if is_score_flash else 9
+            pyxel.rect(sp[0] - 1, sp[1] - 1, 2, 2, col)
 
         # 9. Specular Reflections
         pyxel.line(*rot(-18, -10), *rot(-8, -5), 7)
@@ -813,10 +802,17 @@ class GrainOfDoubtApp:
         x0, y0 = rot_pts[0]
         x1, y1 = rot_pts[1]
         x2, y2 = rot_pts[2]
-        pyxel.tri(x0, y0, x1, y1, x2, y2, 7)
-        pyxel.line(x0, y0, x1, y1, 6)
-        pyxel.line(x1, y1, x2, y2, 0)
-        pyxel.line(x2, y2, x0, y0, 6)
+        is_fat = getattr(shard, "is_fat", False)
+        if is_fat:
+            pyxel.tri(x0, y0, x1, y1, x2, y2, 8)
+            pyxel.line(x0, y0, x1, y1, 7)
+            pyxel.line(x1, y1, x2, y2, 8)
+            pyxel.line(x2, y2, x0, y0, 7)
+        else:
+            pyxel.tri(x0, y0, x1, y1, x2, y2, 7)
+            pyxel.line(x0, y0, x1, y1, 6)
+            pyxel.line(x1, y1, x2, y2, 0)
+            pyxel.line(x2, y2, x0, y0, 6)
 
     def draw_hud(self):
         # Universal Dither Alpha on HUD containers
@@ -851,9 +847,9 @@ class GrainOfDoubtApp:
         pyxel.rectb(self.SCREEN_WIDTH // 2 - 76, 8, 152, 30, 1)
 
         elapsed_sec = self.state.total_frames / 30.0
-        time_str = f"TIME: {elapsed_sec:04.1f}s"
+        time_str = f"TIME: {elapsed_sec:04.1f} s"
         flash_time = (pyxel.frame_count // 15) % 2 == 0
-        draw_text_scaled(self.SCREEN_WIDTH // 2 - 62, 14, time_str, 10 if flash_time else 7, scale=2)
+        draw_text_scaled(self.SCREEN_WIDTH // 2 - 47, 14, time_str, 10 if flash_time else 7, scale=2)
 
         # 3. Score container (Top Right)
         if hasattr(pyxel, "dither"):
@@ -873,7 +869,7 @@ class GrainOfDoubtApp:
             draw_text_scaled(self.SCREEN_WIDTH - 65, 14, mult_str, 9, scale=2)
 
         # 4. Vertical Pacts List in Catholic Canonical Order at Top Right (All 7 always listed)
-        pacts_box_w = 146
+        pacts_box_w = 180
         pacts_box_h = 140
         pacts_box_x = self.SCREEN_WIDTH - pacts_box_w - 10
         pacts_box_y = 44
@@ -884,12 +880,12 @@ class GrainOfDoubtApp:
             pyxel.dither(1.0)
         pyxel.rectb(pacts_box_x, pacts_box_y, pacts_box_w, pacts_box_h, 1)
 
-        draw_text_scaled(pacts_box_x + 8, pacts_box_y + 4, "PACTS", 6, scale=2)
+        draw_text_scaled(pacts_box_x + 8, pacts_box_y + 4, "FAUSTIAN PACTS", 6, scale=2)
         for idx, sin in enumerate(CANONICAL_SINS):
             k = self.bargains.selection_counts.get(sin, 0)
             row_y = pacts_box_y + 22 + idx * 16
             sin_lbl = sin.name.lower()
-            line_txt = f"{idx+1}. {sin_lbl:<8} {k}"
+            line_txt = f"{idx+1}. {sin_lbl:<10} {k}"
             col = 10 if k > 0 else 5
             draw_text_scaled(pacts_box_x + 8, row_y, line_txt, col, scale=2)
 
@@ -906,7 +902,7 @@ class GrainOfDoubtApp:
             flash = (pyxel.frame_count // 6) % 2 == 0
             pyxel.rect(10, badge_y, 100, 20, 0)
             pyxel.rectb(10, badge_y, 100, 20, 8)
-            draw_text_scaled(15, badge_y + 4, f"REC {rec_secs:02d}s", 8 if flash else 7, scale=2)
+            draw_text_scaled(15, badge_y + 4, f"REC {rec_secs:02d} s", 8 if flash else 7, scale=2)
             badge_y += 24
 
         # Invulnerability Badge
@@ -922,7 +918,7 @@ class GrainOfDoubtApp:
             flash = (pyxel.frame_count // 4) % 2 == 0
             pyxel.rect(10, badge_y, 100, 20, 0)
             pyxel.rectb(10, badge_y, 100, 20, 10 if flash else 9)
-            draw_text_scaled(15, badge_y + 4, f"TIDAL PULL {lust_secs}s", 10 if flash else 7, scale=2)
+            draw_text_scaled(15, badge_y + 4, f"TIDAL PULL {lust_secs} s", 10 if flash else 7, scale=2)
             badge_y += 24
 
         # Greed Borrowed Time Warning Indicator
@@ -930,7 +926,7 @@ class GrainOfDoubtApp:
             flash = (pyxel.frame_count // 5) % 2 == 0
             col = 8 if flash else 9
             if self.dev_mode:
-                msg = f"BORROWED TIME ({self.state.greed_timer / 30.0:.1f}s)"
+                msg = f"BORROWED TIME ({self.state.greed_timer / 30.0:.1f} s)"
             else:
                 msg = "BORROWED TIME"
             draw_text_scaled(self.SCREEN_WIDTH // 2 - 80, 48, msg, col, scale=2)
@@ -987,6 +983,9 @@ class GrainOfDoubtApp:
             # Card background
             bg_col = 1 if not is_selected else 5
             pyxel.rect(cx, col_y, col_w, col_h, bg_col)
+            if sin == SinType.GLUTTONY:
+                # Gluttony: card intentionally bulges and bursts past normal card dimensions!
+                pyxel.rectb(cx - 5, col_y - 4, col_w + 10, col_h + 8, 9 if is_selected else 8)
 
             # Card border (flashing gold if selected)
             border_col = 10 if (is_selected and (pyxel.frame_count // 3) % 2 == 0) else (6 if is_selected else 1)
@@ -1002,11 +1001,12 @@ class GrainOfDoubtApp:
             draw_text_scaled(cx + col_w // 2 - badge_w // 2, col_y + 18, badge_lbl, 7, scale=2)
 
             # Pure Sin Name: significantly bigger, fills entire box horizontally based on longest character, justified center
-            # Longest sin name across all sins (GLUTTONY, 8 chars, 31px base width) defines the maximum fill scale
             max_sin_len = max(len(d.name) for d in BARGAIN_REGISTRY.values())
-            # Scale 7 gives (8 * 4 - 1) * 7 = 217px in a 228px card (leaves clean 5-6px margins)
             title_scale = max(1, int((col_w - 11) / (max_sin_len * 4 - 1)))
             name = defn.name.upper()
+            if sin == SinType.GLUTTONY:
+                # Make Gluttony so big it gets out of the frame a little bit (looks intentional)
+                title_scale = 8
             title_w = (len(name) * 4 - 1) * title_scale
             center_x = cx + col_w // 2
             title_x = center_x - title_w // 2
@@ -1029,7 +1029,8 @@ class GrainOfDoubtApp:
                 draw_text_scaled(cx + 16, col_y + 168, f"{group_name} (+{k+1} grains)", 11, scale=2)
             elif sin == SinType.ENVY:
                 next_k = k + 1
-                outer_preview = int(1200.0 * (0.8 ** next_k))
+                k_eff = next_k + 2
+                outer_preview = int(1200.0 * (0.8 ** k_eff))
                 mega_r = outer_preview * 2
                 draw_text_scaled(cx + 16, col_y + 144, "Tidal Pull (2.0s)", 7, scale=2)
                 draw_text_scaled(cx + 16, col_y + 168, f"Pull {mega_r}px Radius", 11, scale=2)
@@ -1043,8 +1044,10 @@ class GrainOfDoubtApp:
                 draw_text_scaled(cx + 16, col_y + 144, "Sand Magnet", 7, scale=2)
                 draw_text_scaled(cx + 16, col_y + 168, f"{100 + k * 50}px (Permanent)", 11, scale=2)
             elif sin == SinType.GLUTTONY:
-                draw_text_scaled(cx + 16, col_y + 144, "+Sand Spawn Rate", 7, scale=2)
-                draw_text_scaled(cx + 16, col_y + 168, "+50% Sand Rate", 11, scale=2)
+                next_k = k + 1
+                next_fat = (1.0 - (0.90 ** next_k)) * 100.0
+                draw_text_scaled(cx + 16, col_y + 144, "Fat Grains (3x Pts)", 7, scale=2)
+                draw_text_scaled(cx + 16, col_y + 168, f"{next_fat:.1f}% Fat (10x Area)", 11, scale=2)
             elif sin == SinType.WRATH:
                 draw_text_scaled(cx + 16, col_y + 144, "Wrath Explosion", 7, scale=2)
                 draw_text_scaled(cx + 16, col_y + 168, "Blast 1200px Radius", 11, scale=2)
@@ -1065,10 +1068,11 @@ class GrainOfDoubtApp:
                 draw_text_scaled(cx + 16, col_y + 268, "10-18s (LETHAL END)", 8, scale=2)
             elif sin == SinType.ENVY:
                 next_k = k + 1
-                outer_preview = int(1200.0 * (0.8 ** next_k))
-                inner_preview = int(1000.0 * (0.8 ** (next_k + 1)))
+                k_eff = next_k + 2
+                outer_preview = int(1200.0 * (0.8 ** k_eff))
+                inner_preview = int(1000.0 * (0.8 ** (k_eff + 1)))
                 draw_text_scaled(cx + 16, col_y + 244, "Vignette Vision", 7, scale=2)
-                draw_text_scaled(cx + 16, col_y + 268, f"{outer_preview}/{inner_preview}px", 8, scale=2)
+                draw_text_scaled(cx + 16, col_y + 268, f"{outer_preview}/{inner_preview} px", 8, scale=2)
             elif sin == SinType.SLOTH:
                 drag = 0.20 * (1.5 ** k) * 100
                 draw_text_scaled(cx + 16, col_y + 244, "Lateral Drag", 7, scale=2)
@@ -1077,8 +1081,10 @@ class GrainOfDoubtApp:
                 draw_text_scaled(cx + 16, col_y + 244, "Hazard Magnet", 7, scale=2)
                 draw_text_scaled(cx + 16, col_y + 268, f"{100 + k * 50}px (Permanent)", 8, scale=2)
             elif sin == SinType.GLUTTONY:
-                draw_text_scaled(cx + 16, col_y + 244, "+Hazard Spawn Rate", 7, scale=2)
-                draw_text_scaled(cx + 16, col_y + 268, "+50% Hazard Rate", 8, scale=2)
+                next_k = k + 1
+                next_fat = (1.0 - (0.90 ** next_k)) * 100.0
+                draw_text_scaled(cx + 16, col_y + 244, "Fat Glass Shards", 7, scale=2)
+                draw_text_scaled(cx + 16, col_y + 268, f"{next_fat:.1f}% Fat (10x Area)", 8, scale=2)
             elif sin == SinType.WRATH:
                 draw_text_scaled(cx + 16, col_y + 244, "Zero Yield", 7, scale=2)
                 draw_text_scaled(cx + 16, col_y + 268, "10.0s Zero Yield", 8, scale=2)

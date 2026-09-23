@@ -77,6 +77,7 @@ class StateManager:
         self.invulnerable_timer: int = 0
         self.shake_timer: int = 0
         self.shake_intensity: float = 0.0
+        self.player_score_flash_timer: int = 0
 
         # Visual Vignette (Envy): outer = zero vision beyond, inner = full clear vision
         self.base_vignette_radius: float = 1000.0
@@ -186,6 +187,10 @@ class StateManager:
         # Invulnerability timer
         if self.invulnerable_timer > 0:
             self.invulnerable_timer -= 1
+
+        # Player score interior flash timer
+        if self.player_score_flash_timer > 0:
+            self.player_score_flash_timer -= 1
 
         # Wrath active timers
         if self.wrath_wipe_timer > 0:

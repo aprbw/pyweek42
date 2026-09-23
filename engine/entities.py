@@ -47,8 +47,9 @@ class HourglassPlayer:
         self.base_y: float = 200.0
         self.y: float = self.base_y
         self.vx: float = 0.0
-        self.friction: float = 0.82
-        self.base_accel: float = 6.0
+        self.air_friction: float = 0.15
+        self.friction: float = 0.85
+        self.base_accel: float = 5.2
         self.min_x: float = 45.0
         self.max_x: float = screen_w - 45.0
         self.sand_drain_phase: float = 0.0
@@ -65,7 +66,7 @@ class HourglassPlayer:
         self.sand_drain_phase = 0.0
 
     def apply_input(self, left: bool, right: bool, speed_mod: float = 1.0):
-        """Only lateral A/D and Left/Right arrow controls (Infinite Arena - no wall clamping)."""
+        """Horizontal controls governed purely by continuous acceleration and aerodynamic air friction."""
         ax = 0.0
         effective_accel = self.base_accel * speed_mod
         if left and not right:
@@ -73,7 +74,9 @@ class HourglassPlayer:
         elif right and not left:
             ax = effective_accel
 
-        self.vx = (self.vx + ax) * self.friction
+        # Integrate acceleration into velocity, then apply natural air friction damping
+        self.vx += ax
+        self.vx *= self.friction
         self.x += self.vx
 
         # Steady vertical reference frame
@@ -81,6 +84,16 @@ class HourglassPlayer:
 
         # Animate sand draining: direction & speed proportional to how tilted it is
         self.sand_drain_phase += self.tilt * 0.45
+
+    def move_left(self, speed_mod: float = 1.0):
+        self.apply_input(left=True, right=False, speed_mod=speed_mod)
+
+    def move_right(self, speed_mod: float = 1.0):
+        self.apply_input(left=False, right=True, speed_mod=speed_mod)
+
+    def update(self, dt: float = 0.016, screen_w: int = 600):
+        """Update without active steering key input (air friction damping)."""
+        self.apply_input(left=False, right=False)
 
     def get_hitbox(self) -> Tuple[float, float, float, float]:
         """Returns (center_x, center_y, width, height)"""
@@ -92,9 +105,11 @@ class SandGrain:
     HEIGHT: float = 10.0
     HITBOX_W: float = 30.0
     HITBOX_H: float = 30.0
+    POINT_VALUE: int = 1
 
     def __init__(self, x: float, y: float, speed_variance: float = None,
-                 lateral_drift: float = None, shimmer_phase: float = None):
+                 lateral_drift: float = None, shimmer_phase: float = None,
+                 is_fat: bool = False):
         self.x = x
         self.y = y
         self.vx: float = 0.0
@@ -104,6 +119,23 @@ class SandGrain:
         self.bypassed = False
         self.shimmer_phase = shimmer_phase if shimmer_phase is not None else random.uniform(0, 6.28)
         self.lateral_drift = lateral_drift if lateral_drift is not None else random.uniform(-0.4, 0.4)
+        self.burst_timer: int = 0
+        self.burst_ax: float = 0.0
+        self.burst_ay: float = 0.0
+        self.is_fat: bool = is_fat
+        self.point_value: int = 3 if is_fat else 1
+        if is_fat:
+            self.POINT_VALUE = 3
+            self.WIDTH = 28.0
+            self.HEIGHT = 28.0
+            self.HITBOX_W = 80.0
+            self.HITBOX_H = 80.0
+        else:
+            self.POINT_VALUE = 1
+            self.WIDTH = 10.0
+            self.HEIGHT = 10.0
+            self.HITBOX_W = 30.0
+            self.HITBOX_H = 30.0
 
     def update(self, scroll_speed: float, player_x: float, player_y: float,
                repel_radius: float = 0.0, attract_radius: float = 0.0,
@@ -122,6 +154,12 @@ class SandGrain:
 
         ax = 0.0
         ay = 0.0
+
+        # Multi-frame burst acceleration (Wrath explosion)
+        if self.burst_timer > 0:
+            self.burst_timer -= 1
+            ax += self.burst_ax
+            ay += self.burst_ay
 
         if mega_attract_radius > 0 and dist < mega_attract_radius:
             # Envy Boon: Temporary Mega Lust strongly accelerates all grains within 2x vignette radius
@@ -175,7 +213,7 @@ class GlassShard:
     HITBOX_W: float = 20.0
     HITBOX_H: float = 30.0
 
-    def __init__(self, x: float, y: float, speed_variance: float = None):
+    def __init__(self, x: float, y: float, speed_variance: float = None, is_fat: bool = False):
         self.x = x
         self.y = y
         self.vx: float = 0.0
@@ -184,35 +222,89 @@ class GlassShard:
         self.alive = True
         self.rotation_angle = random.uniform(0, 6.28)
         spin_direction = random.choice([-1.0, 1.0])
-        self.spin_speed = spin_direction * random.uniform(0.04, 0.18)
+        self.spin_speed = spin_direction * random.uniform(0.04, 0.16)
         self.lateral_drift = random.uniform(-1.0, 1.0)
+        self.burst_timer: int = 0
+        self.burst_ax: float = 0.0
+        self.burst_ay: float = 0.0
+        self.is_fat: bool = is_fat
 
-        # Generate unique randomized scalene/acute triangle (never a right-angled triangle)
-        tip_x = random.uniform(-6.0, 6.0)
-        tip_y = random.uniform(-25.0, -15.0)
-        b1_x = random.uniform(7.0, 17.0)
-        b1_y = random.uniform(10.0, 22.0)
-        b2_x = random.uniform(-17.0, -7.0)
-        b2_y = random.uniform(8.0, 20.0)
+        # Generate unique randomized scalene, acute, or obtuse triangle (never right-angled)
+        is_obtuse = (random.random() < 0.40)
+        if is_obtuse:
+            # Obtuse shard: one corner has an angle > 90 deg (dot product < -8.0)
+            obtuse_corner = random.choice([0, 1, 2])
+            if obtuse_corner == 0:
+                tip_x = random.uniform(-4.0, 4.0)
+                tip_y = random.uniform(-8.0, -2.0)
+                b1_x = random.uniform(14.0, 22.0)
+                b1_y = random.uniform(8.0, 18.0)
+                b2_x = random.uniform(-22.0, -14.0)
+                b2_y = random.uniform(8.0, 18.0)
+            elif obtuse_corner == 1:
+                tip_x = random.uniform(-12.0, -4.0)
+                tip_y = random.uniform(-22.0, -14.0)
+                b1_x = random.uniform(4.0, 12.0)
+                b1_y = random.uniform(-4.0, 4.0)
+                b2_x = random.uniform(-18.0, -8.0)
+                b2_y = random.uniform(14.0, 22.0)
+            else:
+                tip_x = random.uniform(4.0, 12.0)
+                tip_y = random.uniform(-22.0, -14.0)
+                b1_x = random.uniform(8.0, 18.0)
+                b1_y = random.uniform(14.0, 22.0)
+                b2_x = random.uniform(-12.0, -4.0)
+                b2_y = random.uniform(-4.0, 4.0)
+        else:
+            tip_x = random.uniform(-6.0, 6.0)
+            tip_y = random.uniform(-25.0, -15.0)
+            b1_x = random.uniform(7.0, 17.0)
+            b1_y = random.uniform(10.0, 22.0)
+            b2_x = random.uniform(-17.0, -7.0)
+            b2_y = random.uniform(8.0, 20.0)
 
-        # Guarantee non-right-angled triangle: check dot products of all 3 corners
-        d1 = (b1_x - tip_x) * (b2_x - tip_x) + (b1_y - tip_y) * (b2_y - tip_y)
-        d2 = (tip_x - b1_x) * (b2_x - b1_x) + (tip_y - b1_y) * (b2_y - b1_y)
-        d3 = (tip_x - b2_x) * (b1_x - b2_x) + (tip_y - b2_y) * (b1_y - b2_y)
-        if any(abs(d) < 8.0 for d in (d1, d2, d3)):
-            tip_x += 3.5
+        # Guarantee non-right-angled triangle: check dot products of all 3 corners (|d| >= 8.0)
+        for _ in range(5):
+            d1 = (b1_x - tip_x) * (b2_x - tip_x) + (b1_y - tip_y) * (b2_y - tip_y)
+            d2 = (tip_x - b1_x) * (b2_x - b1_x) + (tip_y - b1_y) * (b2_y - b1_y)
+            d3 = (tip_x - b2_x) * (b1_x - b2_x) + (tip_y - b2_y) * (b1_y - b2_y)
+            if any(abs(d) < 8.0 for d in (d1, d2, d3)):
+                tip_x += 3.5
+            else:
+                break
 
-        self.vertices: List[Tuple[float, float]] = [(tip_x, tip_y), (b1_x, b1_y), (b2_x, b2_y)]
+        # Scale vertices and hitbox if fat (Gluttony: ~10x area, ~2.8x linear dimensions)
+        scale_fac = 2.8 if is_fat else 1.0
+        self.vertices: List[Tuple[float, float]] = [
+            (tip_x * scale_fac, tip_y * scale_fac),
+            (b1_x * scale_fac, b1_y * scale_fac),
+            (b2_x * scale_fac, b2_y * scale_fac),
+        ]
+        if is_fat:
+            self.WIDTH = 55.0
+            self.HEIGHT = 110.0
+            self.HITBOX_W = 55.0
+            self.HITBOX_H = 85.0
 
     def update(self, scroll_speed: float, hazard_speed_mod: float,
                player_x: float, player_y: float, attract_radius: float = 0.0):
         effective_speed = scroll_speed * hazard_speed_mod * self.speed_variance
         base_vy = -effective_speed
         base_vx = self.lateral_drift + math.sin(self.rotation_angle) * 0.6
-        self.rotation_angle += self.spin_speed
+
+        # Aerodynamic rotation: angular velocity is proportional to horizontal airspeed
+        aerodynamic_spin = 0.045 * (base_vx + self.vx)
+        flutter = self.spin_speed * 0.25
+        self.rotation_angle += (flutter + aerodynamic_spin)
 
         ax = 0.0
         ay = 0.0
+
+        # Multi-frame burst acceleration (Wrath explosion / Sloth hurl)
+        if self.burst_timer > 0:
+            self.burst_timer -= 1
+            ax += self.burst_ax
+            ay += self.burst_ay
 
         # Lust Curse: Glass shards accelerated toward player
         if attract_radius > 0:
@@ -271,24 +363,17 @@ class EntityManager:
         self.spawn_accumulator = 0.0
 
     def spawn_particles(self, x: float, y: float, count: int, colors: List[int], speed_range=(2.0, 8.0), size=3):
-        for _ in range(count):
-            angle = random.uniform(0, 6.28)
-            spd = random.uniform(*speed_range)
-            vx = math.cos(angle) * spd
-            vy = math.sin(angle) * spd
-            color = random.choice(colors)
-            life = random.randint(10, 20)
-            self.particles.append(Particle(x, y, vx, vy, color, life, size=size))
+        # Particle effects removed to eliminate visual clutter and ensure crystal-clear visibility of grains/shards
+        pass
 
     def wipe_all_hazards(self):
-        for shard in self.shards:
-            self.spawn_particles(shard.x, shard.y, 10, [6, 7], size=4)
         self.shards.clear()
 
-    def wrath_explosion(self, explosion_radius: float = 1200.0, impulse_strength: float = 46.0) -> Tuple[int, int]:
+    def wrath_explosion(self, explosion_radius: float = 1200.0, impulse_strength: float = 46.0, burst_frames: int = 8) -> Tuple[int, int]:
         """Wrath Boon: Massive radial explosion centered at the player.
         Everything (both sand and shards) within 1200 pixels radius
-        is given an instant HUGE acceleration / impulse away from the player.
+        is given an initial moderate acceleration kick on frame 0, followed by sustained
+        multi-frame outward acceleration across burst_frames. Particle clutter eliminated.
         """
         px, py = self.player.x, self.player.y
         rad_sq = explosion_radius * explosion_radius
@@ -304,11 +389,17 @@ class EntityManager:
                 dist = math.sqrt(dist_sq) if dist_sq > 0 else 0.001
                 ux = dx / dist
                 uy = dy / dist
-                impulse = impulse_strength * (1.0 - 0.4 * (dist / explosion_radius))
-                shard.vx += ux * impulse
-                shard.vy += uy * impulse
-                shard.spin_speed *= 2.5
-                self.spawn_particles(shard.x, shard.y, 8, [7, 6, 8], speed_range=(4.0, 10.0), size=3)
+                dist_factor = (1.0 - 0.4 * (dist / explosion_radius))
+                # Initial moderate acceleration kick
+                initial_kick = 14.0 * dist_factor
+                shard.vx += ux * initial_kick
+                shard.vy += uy * initial_kick
+                # Multi-frame sustained outward acceleration
+                rem_accel = 6.0 * dist_factor
+                shard.burst_ax = ux * rem_accel
+                shard.burst_ay = uy * rem_accel
+                shard.burst_timer = burst_frames
+                shard.spin_speed *= 1.5
                 shards_affected += 1
 
         sands_affected = 0
@@ -322,37 +413,51 @@ class EntityManager:
                 dist = math.sqrt(dist_sq) if dist_sq > 0 else 0.001
                 ux = dx / dist
                 uy = dy / dist
-                impulse = impulse_strength * (1.0 - 0.4 * (dist / explosion_radius))
-                sand.vx += ux * impulse
-                sand.vy += uy * impulse
-                self.spawn_particles(sand.x, sand.y, 8, [9, 10, 7], speed_range=(4.0, 10.0), size=3)
+                dist_factor = (1.0 - 0.4 * (dist / explosion_radius))
+                initial_kick = 14.0 * dist_factor
+                sand.vx += ux * initial_kick
+                sand.vy += uy * initial_kick
+                rem_accel = 6.0 * dist_factor
+                sand.burst_ax = ux * rem_accel
+                sand.burst_ay = uy * rem_accel
+                sand.burst_timer = burst_frames
                 sands_affected += 1
 
-        # Central blast shockwave particles around player
-        self.spawn_particles(px, py, 24, [7, 10, 8, 2], speed_range=(6.0, 14.0), size=4)
         return (shards_affected, sands_affected)
 
-    def sloth_hurl_shards_downward(self, screen_width_factor: float = 3.0, impulse_speed: float = 38.0) -> int:
+    def sloth_hurl_shards_downward(self, screen_width_factor: float = 3.0, impulse_speed: float = 46.0, burst_frames: int = 12) -> int:
         """Sloth Boon: Sloth means lazy; lazy means doing nothing.
-        In a single high acceleration frame, all shards below the player within 2-3 screens wide
-        are thrown downward toward the bottom horizon, creating ~2s of safe empty space below the player
-        where they can literally do nothing to survive, while shards clump up dangerously at the bottom.
+        Applies a moderate initial downward kick followed by sustained multi-frame downward acceleration
+        to all shards below the player within 2-3 screens wide, sweeping the descent space clear
+        so the player can do literally nothing to survive for ~2 seconds.
+        Crucially seeds oncoming hazards in the target bottom zone so pushed-down shards
+        overlap with oncoming hazards, making the bottom horizon doubly dangerous!
         """
         px, py = self.player.x, self.player.y
         half_width = (self.screen_w * screen_width_factor) / 2.0
 
         thrown = 0
+        new_oncoming = []
         for shard in self.shards:
             if not shard.alive:
                 continue
             # Target shards below the player (oncoming hazards: shard.y > py)
             if shard.y > py and abs(shard.x - px) <= half_width:
-                self.spawn_particles(shard.x, shard.y, 6, [7, 6, 8], speed_range=(3.0, 8.0), size=3)
-                shard.y = max(shard.y, py + 520.0)
-                shard.vy = max(shard.vy + impulse_speed, impulse_speed)
-                shard.spin_speed *= 2.5
+                initial_kick = 18.0
+                shard.vy = max(shard.vy + initial_kick, initial_kick)
+                # Sustained downward acceleration over burst_frames
+                shard.burst_ax = 0.0
+                shard.burst_ay = 6.0
+                shard.burst_timer = burst_frames
+                shard.spin_speed *= 1.5
                 thrown += 1
 
+                # Double danger: generate an oncoming hazard at the bottom horizon so the hurled shard overlaps!
+                overlap_x = shard.x + random.uniform(-35.0, 35.0)
+                overlap_y = random.uniform(1050.0, 1450.0)
+                new_oncoming.append(GlassShard(overlap_x, overlap_y))
+
+        self.shards.extend(new_oncoming)
         return thrown
 
     def reclaim_bypassed_sand(self) -> int:
@@ -374,13 +479,20 @@ class EntityManager:
         for s in self.sands:
             if min_x <= s.x <= max_x and min_y <= s.y <= max_y:
                 collected += 1
-                self.spawn_particles(s.x, s.y, 8, [9, 10, 7], size=3)
             else:
                 remaining.append(s)
         self.sands = remaining
         return collected
 
-    def spawn_wave(self, spawn_rate_mult: float, wrath_active: bool, camera_x: float = None, pride_level: int = 0):
+    def spawn_wave(
+        self,
+        spawn_rate_mult: float,
+        wrath_active: bool,
+        camera_x: float = None,
+        pride_level: int = 0,
+        speed_multiplier: float = 1.0,
+        gluttony_level: int = 0,
+    ):
         if wrath_active:
             return
 
@@ -388,18 +500,27 @@ class EntityManager:
             camera_x = self.player.x - self.screen_w / 2.0
 
         # Kinematic Spawn Horizon Math:
-        # v_x_max = (6.0 * 0.82) / (1 - 0.82) = 27.33 px/frame
-        # t_fall = (850 - 200) / 7.5 = 86.7 frames
-        # Max travel dx = 86.7 * 27.33 = 2369 px (~3.95 screens)
-        # Margin = 4.5 screens = 2700.0 px on either side of camera
         margin = 2700.0
         span_w = self.screen_w + 2.0 * margin
         density_scale = span_w / 880.0
-        self.spawn_accumulator += (spawn_rate_mult * 0.225 * density_scale)
+
+        # Crucial: Scale generation rate by speed_multiplier so spatial density
+        # (entities per 100 vertical pixels) remains constant when the world is sped up!
+        # Otherwise, faster descent stretches out entity spacing and empties the screen.
+        effective_speed = max(1.0, speed_multiplier)
+        effective_rate = spawn_rate_mult * effective_speed
+        self.spawn_accumulator += (effective_rate * 0.225 * density_scale)
+
+        # Gluttony rework: Fat grains (10x area, 3x score) & Fat shards (10x area hazard)
+        # Gluttony N: 0.9^N normal, 1 - 0.9^N fat
+        fat_prob = 1.0 - (0.90 ** max(0, gluttony_level))
+
+        spawn_cycle = 0
         while self.spawn_accumulator >= 1.0:
             self.spawn_accumulator -= 1.0
-            spawn_y = self.screen_h + random.uniform(20, 80)
+            spawn_y = self.screen_h + random.uniform(20, 80) + spawn_cycle * (effective_speed * 1.5)
             spawn_x = random.uniform(camera_x - margin, camera_x + self.screen_w + margin)
+            spawn_cycle += 1
 
             # 55% chance sand grain, 45% chance glass shard
             if random.random() < 0.55:
@@ -408,6 +529,7 @@ class EntityManager:
                 shared_spd = random.uniform(0.85, 1.15)
                 shared_drift = random.uniform(-0.4, 0.4)
                 shared_shimmer = random.uniform(0, 6.28)
+                is_fat_sand = (random.random() < fat_prob)
 
                 offsets = [(0.0, 0.0)]
                 for _ in range(group_size - 1):
@@ -430,15 +552,19 @@ class EntityManager:
                             speed_variance=shared_spd,
                             lateral_drift=shared_drift,
                             shimmer_phase=shared_shimmer,
+                            is_fat=is_fat_sand,
                         )
                     )
             else:
-                self.shards.append(GlassShard(spawn_x, spawn_y))
-                # 20% chance to spawn an offset hazard cluster pair for weaving challenge
-                if random.random() < 0.20:
+                is_fat_shard = (random.random() < fat_prob)
+                self.shards.append(GlassShard(spawn_x, spawn_y, is_fat=is_fat_shard))
+                # Under Pride, as descent speed picks up, allow occasional hazard pairs/triplets
+                # to maintain thrilling obstacle density
+                cluster_prob = min(0.40, 0.20 + 0.05 * pride_level)
+                if random.random() < cluster_prob:
                     offset_x = spawn_x + random.choice([-55.0, 55.0])
                     offset_y = spawn_y + random.uniform(20.0, 45.0)
-                    self.shards.append(GlassShard(offset_x, offset_y))
+                    self.shards.append(GlassShard(offset_x, offset_y, is_fat=is_fat_shard))
 
     def update(self, state):
         if state.current_state != state.current_state.__class__.CHRONOS:
@@ -455,7 +581,14 @@ class EntityManager:
         # Spawning across camera horizon
         wrath_active = (state.wrath_wipe_timer > 0)
         cam_x = self.player.x - self.screen_w / 2.0
-        self.spawn_wave(state.spawn_rate_multiplier, wrath_active, cam_x, pride_level=getattr(state, "pride_level", 0))
+        self.spawn_wave(
+            state.spawn_rate_multiplier,
+            wrath_active,
+            cam_x,
+            pride_level=getattr(state, "pride_level", 0),
+            speed_multiplier=getattr(state, "speed_multiplier", 1.0),
+            gluttony_level=getattr(state, "gluttony_level", 0),
+        )
 
         # Update Sand grains
         px, py = self.player.x, self.player.y
@@ -476,11 +609,12 @@ class EntityManager:
                     self.bypassed_sand_pool += 1
                 continue
 
-            # Check collection collision with player (1 sand is 1 point!)
+            # Check collection collision with player (1 sand is 1 point! Fat sand is 3 points!)
             sb = sand.get_hitbox()
             if aabb_overlap(px_box[0], px_box[1], px_box[2], px_box[3], sb[0], sb[1], sb[2], sb[3]):
-                state.add_score(base_points=1)
-                self.spawn_particles(sand.x, sand.y, 8, [9, 10], speed_range=(3.0, 7.0), size=3)
+                pts = 3 if getattr(sand, "is_fat", False) else 1
+                state.add_score(base_points=pts)
+                state.player_score_flash_timer = 8
                 continue
 
             remaining_sands.append(sand)
@@ -503,29 +637,8 @@ class EntityManager:
             # Collision test with player
             shb = shard.get_hitbox()
             if aabb_overlap(px_box[0], px_box[1], px_box[2], px_box[3], shb[0], shb[1], shb[2], shb[3]):
-                damaged = state.damage_player()
-                if damaged:
-                    self.spawn_particles(shard.x, shard.y, 14, [6, 7, 8], speed_range=(5.0, 12.0), size=4)
+                state.damage_player()
                 continue
 
             remaining_shards.append(shard)
         self.shards = remaining_shards
-
-        # Update particles
-        self.particles = [p for p in self.particles if p.is_alive]
-        for p in self.particles:
-            p.update()
-
-        # Hourglass sand drip trail particles:
-        # Direction and speed of the falling sand is proportional to how tilted it is
-        tilt = self.player.tilt
-        tilt_mag = abs(tilt)
-        if random.random() < (0.15 + tilt_mag * 1.8):
-            origin_lx = math.sin(tilt) * 18.0
-            ox = self.player.x + origin_lx * math.cos(tilt)
-            oy = self.player.y + origin_lx * math.sin(tilt) + 16.0
-            vx = math.sin(tilt) * 8.0 + random.uniform(-0.4, 0.4)
-            vy = -1.5 - tilt_mag * 3.5 + random.uniform(-0.5, 0.5)
-            self.particles.append(
-                Particle(ox, oy, vx, vy, random.choice([9, 10, 7]), random.randint(8, 16), size=2)
-            )
