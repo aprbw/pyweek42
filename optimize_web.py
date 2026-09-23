@@ -1,13 +1,16 @@
-"""Optimize Pyxel Web HTML for 3:4 aspect-ratio containment on both PC and mobile viewports."""
+"""Optimize Pyxel Web HTML for 3:4 aspect-ratio containment, mobile responsiveness, and zoom prevention."""
 
-for fname in ['grain_of_doubt.html']:
-    with open(fname, 'r') as f:
-        content = f.read()
+for fname in ['grain_of_doubt.html', 'index.html']:
+    try:
+        with open(fname, 'r') as f:
+            content = f.read()
+    except FileNotFoundError:
+        continue
 
     # Disable default virtual gamepad cross so our tailored 2-button touch layout is used
     content = content.replace('gamepad: "enabled"', 'gamepad: "disabled"')
 
-    # Inject mobile/PC viewport, responsive 3:4 aspect-ratio containment styling, and dev/mobile flags
+    # Inject mobile/PC viewport, responsive 3:4 aspect-ratio containment styling, dev/mobile flags, and zoom prevention
     web_head = '''<!doctype html>
 <html lang="en">
 <head>
@@ -44,10 +47,11 @@ for fname in ['grain_of_doubt.html']:
     flex-direction: column !important;
     justify-content: center !important;
     align-items: center !important;
-    touch-action: none;
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    user-select: none;
+    touch-action: none !important;
+    -webkit-touch-callout: none !important;
+    -webkit-user-select: none !important;
+    user-select: none !important;
+    overscroll-behavior: none !important;
     box-sizing: border-box !important;
   }
   div#pyxel-screen {
@@ -66,6 +70,10 @@ for fname in ['grain_of_doubt.html']:
     margin: auto !important;
     overflow: hidden !important;
     touch-action: none !important;
+    -webkit-touch-callout: none !important;
+    -webkit-user-select: none !important;
+    user-select: none !important;
+    overscroll-behavior: none !important;
   }
   canvas#canvas {
     position: absolute !important;
@@ -78,6 +86,10 @@ for fname in ['grain_of_doubt.html']:
     object-fit: contain !important;
     image-rendering: pixelated !important;
     touch-action: none !important;
+    -webkit-touch-callout: none !important;
+    -webkit-user-select: none !important;
+    user-select: none !important;
+    overscroll-behavior: none !important;
   }
 </style>
 </head>
@@ -87,6 +99,47 @@ window.__PYXEL_IS_MOBILE__ = ('ontouchstart' in window) || (navigator.maxTouchPo
 if (window.location.search.toLowerCase().includes('dev')) {
   window.__DEV_MODE__ = true;
 }
+
+// Mobile browser zoom prevention
+// 1. Prevent Safari multi-touch gesture zoom
+document.addEventListener('gesturestart', function(e) { e.preventDefault(); }, { passive: false });
+document.addEventListener('gesturechange', function(e) { e.preventDefault(); }, { passive: false });
+document.addEventListener('gestureend', function(e) { e.preventDefault(); }, { passive: false });
+
+// 2. Prevent multi-touch pinch to zoom
+document.addEventListener('touchstart', function(e) {
+  if (e.touches.length > 1) {
+    e.preventDefault();
+  }
+}, { passive: false });
+
+document.addEventListener('touchmove', function(e) {
+  if (e.touches.length > 1) {
+    e.preventDefault();
+  }
+}, { passive: false });
+
+// 3. Prevent double-tap to zoom
+let lastTouchEnd = 0;
+document.addEventListener('touchend', function(e) {
+  const now = Date.now();
+  if (now - lastTouchEnd <= 300) {
+    e.preventDefault();
+  }
+  lastTouchEnd = now;
+}, { passive: false });
+
+// 4. Prevent desktop / trackpad ctrl-wheel zoom
+document.addEventListener('wheel', function(e) {
+  if (e.ctrlKey) {
+    e.preventDefault();
+  }
+}, { passive: false });
+
+// 5. Prevent double-click zoom
+document.addEventListener('dblclick', function(e) {
+  e.preventDefault();
+}, { passive: false });
 
 function fitScreen() {
   const screenEl = document.getElementById('pyxel-screen');

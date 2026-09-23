@@ -39,6 +39,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Active theme name and controls integrated into the developer debug overlay (`~`).
 - **Dedicated Theme Engine Architecture (`engine/themes.py`)**:
   - Modularized theme definitions and procedural background math into dedicated dataclasses (`Theme`, `SandPalette`, `ShardPalette`, `HourglassPalette`) with infinite horizontal rendering and high 60 FPS performance.
+- **Mobile Browser Zoom Prevention & Touch Hardening**:
+  - Implemented multi-layered defense to completely disable browser zoom gestures on mobile devices while maintaining responsive Pyxel canvas controls:
+    - Viewport metadata configured with `user-scalable=no, maximum-scale=1.0, viewport-fit=cover`.
+    - CSS touch restrictions: `touch-action: none !important`, `overscroll-behavior: none !important`, `-webkit-touch-callout: none !important`, and `-webkit-user-select: none !important`.
+    - Active JavaScript listeners preventing Safari gesture events (`gesturestart`, `gesturechange`, `gestureend`).
+    - Multi-touch pinch zoom prevention for `touchstart` and `touchmove` (`e.touches.length > 1`).
+    - Double-tap zoom debounce suppression window ($\le 300$ms).
+    - Trackpad and Ctrl-wheel zoom prevention (`wheel` with `ctrlKey`).
 
 ---
 

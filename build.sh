@@ -26,7 +26,7 @@ DIR_NAME="grain-of-doubt-0.19.0"
 rm -rf grain-of-doubt-*.zip "$DIR_NAME"
 mkdir -p "$DIR_NAME"
 
-cp -r run_game.py main.py engine tests requirements.txt README.md LICENSE.md build.sh run.sh playtest_bot.py optimize_web.py "$DIR_NAME/"
+cp -r run_game.py main.py engine tests requirements.txt README.md CHANGELOG.md p03.md LICENSE.md build.sh run.sh playtest_bot.py optimize_web.py "$DIR_NAME/"
 find "$DIR_NAME" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 find "$DIR_NAME" -name "*.pyc" -delete 2>/dev/null || true
 find "$DIR_NAME" -name "*.mp4" -delete 2>/dev/null || true

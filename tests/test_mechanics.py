@@ -1007,6 +1007,9 @@ def test_web_containment_math_and_aspect_ratio():
     assert "screenEl.style.setProperty('width', w + 'px', 'important');" in src
     assert "canvasEl.style.setProperty('width', w + 'px', 'important');" in src
     assert "window.__DEV_MODE__ = true;" in src
+    assert "gesturestart" in src
+    assert "user-scalable=no" in src
+    assert "touch-action: none" in src
 
 
 def test_bot_waits_until_last_moment_in_kairos():

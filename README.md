@@ -194,11 +194,57 @@ python3 -m http.server 8000
 # Open http://127.0.0.1:8000 in your browser
 ```
 
+### 7. Mobile Browser Play & Anti-Zoom Architecture
+* **Direct Touch Arcade Controls**: On touch-enabled devices and mobile screens, intuitive semi-transparent `< LEFT` and `RIGHT >` directional pads render along the lower display. Tapping the left or right halves of the screen also provides direct responsive steering.
+* **Pixel-Perfect 3:4 Containment**: Responsive CSS layout preserves the 3:4 portrait aspect ratio without distortion across all phone screens, tablets, and desktop displays.
+* **Strict Browser Zoom Prevention**:
+  * Viewport declaration: `<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">`.
+  * Touch restrictions: `touch-action: none !important`, `overscroll-behavior: none !important`, `-webkit-touch-callout: none !important`, `-webkit-user-select: none !important`.
+  * Multi-touch pinch prevention: Intercepts and cancels multi-finger `touchstart` and `touchmove` events (`e.touches.length > 1`).
+  * Safari gesture prevention: Intercepts and suppresses `gesturestart`, `gesturechange`, and `gestureend` events.
+  * Fast double-tap zoom debounce: Intercepts double taps occurring within 300ms (`touchend`) to prevent mobile Safari/Chrome double-tap zooming.
+  * Desktop trackpad/wheel prevention: Cancels `ctrlKey` trackpad pinch-to-zoom wheel events and double clicks (`dblclick`).
+
 ---
 
 ## 📝 Changelog
 
-> Complete version history for every release from **v0.1.0** through **v0.18.0** is detailed below and in [CHANGELOG.md](CHANGELOG.md).
+> Complete version history for every release from **v0.1.0** through **v0.19.0** is detailed below and in [CHANGELOG.md](CHANGELOG.md).
+
+### v0.19.0 (September 2026)
+* **20 Divergent Aesthetic Themes**:
+  * Introduced 20 completely unique, cohesive aesthetic themes accessible in real time:
+    1. *SkiFree Sandfall*: Golden rushing braided dunes, amber shadows, sunlit crests, and spray motes.
+    2. *Cosmic Chronometer*: Deep midnight space, concentric planetary orbits, astrolabe celestial ticks.
+    3. *Abyssal Hourglass*: Pitch black void, bioluminescent indigo trails, and crystalline glints.
+    4. *Shattered Mirror Chasm*: Iridescent violet prism corridors, silver quartz dust, and fractured facets.
+    5. *Magma Caldera*: Volcanic obsidian crags, molten basalt flumes, glowing embers, and fiery core.
+    6. *Cartographer's Scroll*: Aged sepia parchment, nautical rhumb lines, and compass bearings.
+    7. *Bioluminescent Trench*: Abyssal ocean floor with undulating kelp fronds and cyan plankton.
+    8. *Copper & Verdigris*: Oxidized green patinas, hammered bronze gears, and industrial copper rivets.
+    9. *Solar Flare*: Blinding orange and yellow coronal mass ejections and solar prominence arches.
+    10. *Monochrome Blueprint*: Navy architectural technical blueprint with white drafting grid lines and measurement callouts.
+    11. *Twilight Mirage*: Dusty magenta dunes, fading sunset horizon, and purple dusk wind streaks.
+    12. *Glacial Crevasse*: Sub-zero ice shelf, vertical fissure crevasses, and permafrost ice needles.
+    13. *Retro Terminal Matrix*: Monochrome green CRT phosphor terminal, falling digital glyph matrix rain, and scanlines.
+    14. *Haunted Mausoleum*: Ancient stone crypt masonry, ectoplasmic spirit orbs, and gothic arches.
+    15. *Autumn Windstorm*: Swirling russet leaves, wind vortices, and rustic bronze hourglass.
+    16. *Neon Noir Megacity*: Rain-slicked cyber metropolis, neon signage, and vertical skyscraper silhouettes.
+    17. *Liminal Vaporwave*: Dreamlike pink and periwinkle wireframe grid with neon aesthetic.
+    18. *Chalkboard Theory*: Dark slate academic chalkboard with sketched physical equations and calculus integrals.
+    19. *Blood Moon Eclipse*: Crimson lunar halo, eclipse corona rays, and dark sanguine dunes.
+    20. *Zen Ink Wash (Sumi-e)*: Minimalist Japanese parchment, black ink wash brush strokes, and red artisan seal.
+* **Harmonious Entity & Palette System**:
+  * Each theme defines bespoke palettes for sand grains (body, outline, center glint, drop shadow, fat grain styling), glass shards (translucent facet, outline, specular glint, drop shadow, fat shard styling), and player hourglass (caps, cap highlights, rivets, glass walls, waist neck, and dual-tone bulb sands).
+* **Real-Time Theme Switching in Dev Mode**:
+  * Comma (`,`) cycles to the previous theme.
+  * Period (`.`) cycles to the next theme.
+  * Prominent on-screen banner: `THEME [XX/20]: <NAME> ([,] PREV THEME  [.] NEXT THEME)` displays cleanly below the HUD without overlap upon switching.
+  * Active theme name and controls integrated into the developer debug overlay (`~`).
+* **Dedicated Theme Engine Architecture (`engine/themes.py`)**:
+  * Modularized theme definitions and procedural background math into dedicated dataclasses (`Theme`, `SandPalette`, `ShardPalette`, `HourglassPalette`) with infinite horizontal rendering and high 60 FPS performance.
+* **Mobile Browser Hardening & Zoom Prevention**:
+  * Multi-layer defense against unwanted mobile zooming (pinch-to-zoom, Safari gesturestart, double-tap zoom debounce, and CSS touch-action rules).
 
 ### v0.18.0 (September 2026)
 * **Complete Visual Decluttering (Zero Particles):**
