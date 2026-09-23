@@ -412,6 +412,11 @@ def test_video_recorder_unique_filename():
         res3 = VideoRecorder._resolve_unique_filename(base)
         assert res3 == os.path.join(tmpdir, "test_002.mp4")
 
+    # Verify bare filename defaults to recordings/ and directory exists
+    rec = VideoRecorder("bare_test.mp4")
+    assert rec.output_path == os.path.join("recordings", "bare_test.mp4")
+    assert os.path.isdir("recordings")
+
 
 def test_video_recorder_produces_colored_frames():
     """Verify video frames are encoded with actual colors (not pitch black)."""

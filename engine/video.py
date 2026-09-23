@@ -10,8 +10,17 @@ import subprocess
 from typing import Optional
 
 
+DEFAULT_RECORDINGS_DIR = "recordings"
+
+
 class VideoRecorder:
-    def __init__(self, output_path: str = "borrowed_time_bot.mp4", width: int = 600, height: int = 800, fps: int = 30):
+    def __init__(self, output_path: str = os.path.join("recordings", "borrowed_time_bot.mp4"), width: int = 600, height: int = 800, fps: int = 30):
+        # Automatically route bare filenames to recordings/
+        if not os.path.dirname(output_path):
+            output_path = os.path.join(DEFAULT_RECORDINGS_DIR, output_path)
+        out_dir = os.path.dirname(output_path)
+        if out_dir:
+            os.makedirs(out_dir, exist_ok=True)
         self.base_output_path = output_path
         self.output_path = output_path
         self.width = width
@@ -59,6 +68,11 @@ class VideoRecorder:
             return False
 
         target_base = filename or self.base_output_path
+        if not os.path.dirname(target_base):
+            target_base = os.path.join(DEFAULT_RECORDINGS_DIR, target_base)
+        out_dir = os.path.dirname(target_base)
+        if out_dir:
+            os.makedirs(out_dir, exist_ok=True)
         self.output_path = self._resolve_unique_filename(target_base)
 
         cmd = [

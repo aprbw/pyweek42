@@ -4,4 +4,5 @@ __pycache__/
 .pytest_cache/
 *.gdoc
 *.mp4
+recordings/
 .DS_Store

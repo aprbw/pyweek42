@@ -6,6 +6,7 @@ A 2D Retro Arcade Falling Hourglass Endless Runner built with Pyxel.
 Controls: A / D or Left / Right Arrows only.
 """
 import math
+import os
 import random
 import sys
 from typing import Optional, List, Tuple
@@ -205,7 +206,7 @@ class GrainOfDoubtApp:
         headless: bool = False,
         bot_mode: bool = False,
         record_video: bool = False,
-        video_filename: str = "borrowed_time_bot.mp4",
+        video_filename: str = os.path.join("recordings", "borrowed_time_bot.mp4"),
         mobile_mode: bool = False,
         dev_mode: bool = False,
     ):
@@ -1431,7 +1432,7 @@ def main():
     video_flag = ("--video" in sys.argv or "--record" in sys.argv or "--export-video" in sys.argv)
     mobile_flag = "--mobile" in sys.argv
     dev_flag = ("--dev" in sys.argv or "-d" in sys.argv)
-    video_file = "borrowed_time_bot.mp4"
+    video_file = os.path.join("recordings", "borrowed_time_bot.mp4")
     for i, arg in enumerate(sys.argv):
         if arg in ["--video", "--record", "--export-video"] and i + 1 < len(sys.argv) and not sys.argv[i + 1].startswith("-"):
             video_file = sys.argv[i + 1]
