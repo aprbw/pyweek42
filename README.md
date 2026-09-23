@@ -172,11 +172,18 @@ python3 -m http.server 8000
 * **Complete Visual Decluttering (Zero Particles):**
   * Removed all noisy particle popups (sand sparks, explosion debris, hourglass trail drips). Players enjoy crystal-clear visibility of all incoming grains and shards.
   * Internal scoring feedback: collecting sand grains now causes the hourglass bulbs and waist neck to flash in radiant gold/amber glints directly on the player sprite.
-* **Atmospheric Sand Dunes & Broken Glass Background:**
-  * Implemented a rich, non-particle 3-layer upward parallax background evoking a deep descent through a yellow-bluish foggy desert chasm:
-    * *Far Layer (0.28x)*: Distant shattered glass crystalline fracture web in misty slate-blue (`13`/`1`).
-    * *Mid Layer (0.60x)*: Rolling sand dune ridges with pale sandy peach (`15`) and foggy sky-blue (`6`) crests and amber shadows (`4`), scrolling continuously upwards.
-    * *Near Layer (1.05x)*: Fine pale sand silt and wind-blown atmospheric sand drift noise (`15`, `6`, `13`) rushing upward with terminal descent velocity.
+* **Full Daylight Desert Background (SkiFree Style):**
+  * Transformed the canvas into a sunlit desert slope inspired by SkiFree.
+  * Base terrain rendered in warm pale sandy cream (`15` / `#FFCCAA`) with procedural terrain features scrolling continuously upward:
+    * *Sand Dune Moguls*: Crescent dune bumps with sunlit warm white rims (`7`) and amber-brown slope shadows (`4`/`9`).
+    * *Wind Ripple Ribs*: Subtle parallel ribbed lines (`9`) carved across the sand by desert gusts.
+    * *Desert Sandstones & Pebbles*: Small dark brown stones (`4`) with sun glints (`7`) and cast drop shadows.
+    * *Fine Sand Grain Stipple*: Granular sand texture motes giving authentic desert grit.
+  * When Greed triggers ("Borrowed Time"), the sunlit daylight desert shifts into a dramatic blood-sun eclipse / crimson desert twilight (`2`/`4`).
+* **High-Contrast Entity & Shadow Rendering:**
+  * *Sand Grains*: Cast warm drop shadows on the sand and feature rich amber-brown outlines (`4`) around sparkling golden bodies (`10`/`9`) and white facet glints (`7`).
+  * *Glass Shards*: Cast distinct drop shadows on the slope (`4`) and have razor-sharp black perimeter outlines (`0`) around translucent icy cyan facets (`6`) with specular glints (`7`).
+  * *Player Hourglass*: Casts an oval drop shadow onto the sand slope beneath it, physically anchoring the player to the desert.
 * **Gluttony Bent Frame UI:**
   * In the Kairos circuit breaker modal, the card frame borders now visibly bend and bulge outward by 22 pixels around the oversized `GLUTTONY` title, making its massive width look completely intentional, humorous, and thematic.
 * **Hourglass Player Silky Gliding Physics:**

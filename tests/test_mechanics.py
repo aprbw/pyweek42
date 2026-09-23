@@ -1690,6 +1690,43 @@ def test_all_game_states_draw_without_render_errors():
         app.state.current_state = state
         app.draw()
 
+    # Also verify with Greed active (blood-dune twilight)
+    app.state.greed_active = True
+    app.state.current_state = GameState.CHRONOS
+    app.draw()
+
+
+def test_skifree_desert_terrain_and_daylight_contrast():
+    """Verify procedural SkiFree desert terrain renders correctly across all conditions:
+    normal daylight, imminent Kairos urgency flash, and Greed blood-desert mode.
+    """
+    import pyxel
+    from main import GrainOfDoubtApp
+
+    try:
+        pyxel.init(600, 800, headless=True)
+    except BaseException:
+        pass
+
+    app = GrainOfDoubtApp(headless=True)
+    app.start_new_game()
+
+    # 1. Normal daylight desert
+    app.draw_skifree_desert_terrain(cam_x=0, prog=0.2)
+    app.draw_skifree_desert_terrain(cam_x=450, prog=0.5)
+
+    # 2. Imminent Kairos urgency glint (prog > 0.85)
+    app.draw_skifree_desert_terrain(cam_x=200, prog=0.92)
+
+    # 3. Greed active (blood-dune twilight)
+    app.state.greed_active = True
+    app.draw_skifree_desert_terrain(cam_x=300, prog=0.1)
+
+    # 4. Backward-compatible aliases
+    app.draw_atmospheric_dunes_and_glass_background(cam_x=100, prog=0.0)
+    app.draw_celestial_depth_astrolabe(cam_x=100, prog=0.0)
+
+
 
 
 

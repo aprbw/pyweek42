@@ -11,10 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Complete Visual Decluttering (Zero Particles)**: Removed all screen-space particle clutter, including sand collection sparks, hazard explosion bursts, and hourglass drip trails, ensuring players maintain unobstructed focus on essential sand grains and lethal glass shards.
 - **Hourglass Interior Scoring Feedback**: Replaced distracting particle popups with localized sprite feedback: upon collecting sand grains, the hourglass bulbs and waist neck flash in radiant gold/amber glints (`player_score_flash_timer = 8`).
-- **Atmospheric Sand Dunes & Broken Glass Background**: Implemented a rich, non-particle 3-layer upward parallax background evoking a deep descent through a yellow-bluish foggy desert chasm:
-  - *Far Layer (0.28x)*: Distant shattered glass crystalline fracture web in misty slate-blue (`13`/`1`).
-  - *Mid Layer (0.60x)*: Rolling sand dune ridges with pale sandy peach (`15`) and foggy sky-blue (`6`) crests and amber shadows (`4`), scrolling continuously upwards.
-  - *Near Layer (1.05x)*: Fine pale sand silt and wind-blown atmospheric sand drift noise (`15`, `6`, `13`) rushing upward with terminal descent velocity.
+- **Full Daylight Desert Background (SkiFree Style)**: Transformed the visual canvas into a sunlit desert slope inspired by SkiFree:
+  - Base terrain rendered in warm pale sandy cream (`15` / `#FFCCAA`) with procedural terrain features scrolling continuously upward:
+    - *Sand Dune Moguls*: Crescent dune bumps with sunlit warm white rims (`7`) and amber-brown slope shadows (`4`/`9`).
+    - *Wind Ripple Ribs*: Subtle parallel ribbed lines (`9`) carved across the sand by desert gusts.
+    - *Desert Sandstones & Pebbles*: Small dark brown stones (`4`) with sun glints (`7`) and cast drop shadows.
+    - *Fine Sand Grain Stipple*: Granular sand texture motes giving authentic desert grit.
+  - When Greed triggers ("Borrowed Time"), the sunlit daylight desert shifts into a dramatic blood-sun eclipse / crimson desert twilight (`2`/`4`).
+- **High-Contrast Entity & Shadow Rendering**:
+  - *Sand Grains*: Cast warm drop shadows on the sand and feature rich amber-brown outlines (`4`) around sparkling golden bodies (`10`/`9`) and white facet glints (`7`).
+  - *Glass Shards*: Cast distinct drop shadows on the slope (`4`) and have razor-sharp black perimeter outlines (`0`) around translucent icy cyan facets (`6`) with specular glints (`7`).
+  - *Player Hourglass*: Casts an oval drop shadow onto the sand slope beneath it, physically anchoring the player to the desert.
 - **Gluttony Bent Frame UI**: In the Kairos modal, the card frame borders now visibly bend and bulge outward by 22 pixels around the oversized `GLUTTONY` title, making its massive width look completely intentional, humorous, and thematic.
 - **Hourglass Player Silky Gliding Physics**: Rebalanced air friction damping from aggressive `0.85` down to a gentle `0.94` (`air_friction = 0.06`, `base_accel = 2.4`), allowing the player hourglass to glide smoothly and preserve momentum naturally when controls are released.
 - **Obtuse Glass Shard Geometry**: Shards now procedurally generate as obtuse triangles (one angle $> 90^\circ$, verified by negative vector dot product $< -8.0$) as well as acute/scalene triangles, while maintaining strict exclusion of right-angled shapes.

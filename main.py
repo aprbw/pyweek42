@@ -553,36 +553,44 @@ class GrainOfDoubtApp:
             oy = random.randint(-int(self.state.shake_intensity), int(self.state.shake_intensity))
         pyxel.camera(cam_x + ox, oy)
 
-        # Clear background void (Color 0: Black, or ominous cosmic blood-night if Greed is active)
+        # Clear background void (Color 15: Warm daylight sand, or blood-red twilight if Greed is active)
         if self.state.greed_active:
             # Color 2 is dark purple/crimson void; subtle pulsing gives borrowed time atmosphere
-            bg_col = 2 if (pyxel.frame_count // 18) % 2 == 0 else 0
+            bg_col = 2 if (pyxel.frame_count // 18) % 2 == 0 else 4
             pyxel.cls(bg_col)
         else:
-            pyxel.cls(0)
+            pyxel.cls(15)
 
         # Compute Chronos progress towards Kairos (0.0 to 1.0)
         prog = 0.0
         if self.state.current_state == GameState.CHRONOS:
             prog = self.state.chronos_timer / float(self.state.CHRONOS_FRAMES)
 
-        # Draw clean, non-particle Celestial Depth Astrolabe & Spacetime Isobars
-        self.draw_celestial_depth_astrolabe(cam_x, prog)
+        # Draw procedural SkiFree-style sand dune moguls, wind ripples, and pebbles
+        self.draw_skifree_desert_terrain(cam_x, prog)
 
         if self.state.current_state == GameState.TITLE:
             pyxel.camera(0, 0)
             self.draw_title_screen()
             return
 
-        # Draw Sand grains in world coordinates
+        # Draw Sand grains in world coordinates with high daylight contrast (drop shadow + amber outline)
         for sand in self.entities.sands:
             c = 10 if (pyxel.frame_count // 3 + int(sand.shimmer_phase * 4)) % 2 == 0 else 9
             if getattr(sand, "is_fat", False):
+                # Cast warm shadow on sand
+                pyxel.rect(int(sand.x - 11), int(sand.y - 11), 26, 26, 4)
+                # Golden chunk body
                 pyxel.rect(int(sand.x - 13), int(sand.y - 13), 26, 26, c)
-                pyxel.rectb(int(sand.x - 13), int(sand.y - 13), 26, 26, 7)
+                pyxel.rectb(int(sand.x - 13), int(sand.y - 13), 26, 26, 4)
+                pyxel.rectb(int(sand.x - 12), int(sand.y - 12), 24, 24, 7)
                 pyxel.rect(int(sand.x - 5), int(sand.y - 5), 10, 10, 7)
             else:
+                # Cast warm shadow on sand
+                pyxel.rect(int(sand.x - 4), int(sand.y - 4), 10, 10, 4)
+                # Golden grain body
                 pyxel.rect(int(sand.x - 5), int(sand.y - 5), 10, 10, c)
+                pyxel.rectb(int(sand.x - 5), int(sand.y - 5), 10, 10, 4)
                 pyxel.rect(int(sand.x - 2), int(sand.y - 2), 4, 4, 7)  # Center glint
 
         # Draw Glass shards in world coordinates
@@ -630,104 +638,126 @@ class GrainOfDoubtApp:
         # Capture video frame for MP4 export
         self.video_recorder.record_frame(pyxel)
 
-    def draw_atmospheric_dunes_and_glass_background(self, cam_x: int, prog: float = 0.0):
-        """Draw atmospheric pale yellow-bluish sand dunes and distant shattered glass background.
-        Multi-layer upward parallax motion creates a visceral sense of falling down at terminal velocity:
-        1. Far Layer (0.28x): Distant shattered glass web in foggy slate-blue (13 / 1).
-        2. Mid Layer (0.60x): Rolling pale sand dune ridges (15 pale sand, 6 sky fog, 4 amber shadow).
-        3. Near Layer (1.05x): Fine pale sand silt / wind-blown atmospheric sand drift noise (15, 6, 13).
+    def draw_skifree_desert_terrain(self, cam_x: int, prog: float = 0.0):
+        """Draw procedural Full Daylight Desert slope inspired by SkiFree.
+        Generates deterministic sand dune moguls, wind ripples, desert pebbles, and fine sand stipple.
+        All terrain features are anchored in world coordinates and scroll continuously upward with descent.
         """
-        if self.state.greed_active:
-            col_glass = 2       # Dark crimson/purple fracture
-            col_dune_a = 4      # Dark brown sand
-            col_dune_b = 2      # Dark purple fog
-            col_dune_shadow = 0 # Pitch shadow
-            col_sand_noise = 14 # Pale pink sand drift
-        elif prog < 0.60:
-            col_glass = 13      # Misty slate-blue cracked glass
-            col_dune_a = 15     # Pale sandy peach (yellow in distant fog)
-            col_dune_b = 6      # Pale sky-blue fog
-            col_dune_shadow = 4 # Amber-brown shadow
-            col_sand_noise = 15 # Fine pale sand
-        elif prog < 0.85:
-            col_glass = 6
-            col_dune_a = 15
-            col_dune_b = 12     # Sky blue
-            col_dune_shadow = 5
-            col_sand_noise = 6
+        dist = int(self.state.distance)
+        is_greed = self.state.greed_active
+
+        # Palette configuration for daylight vs blood-sun Greed
+        if is_greed:
+            col_crest = 8            # Blood red crest
+            col_shadow = 0           # Black shadow
+            col_shadow_deep = 0
+            col_ripple = 8           # Crimson wind ripple
+            col_rock = 0             # Black stone
+            col_rock_hl = 8          # Red glint
+            col_grain_a = 8          # Red grain mote
+            col_grain_b = 14         # Pink grain mote
+        elif prog > 0.85:
+            # Imminent Kairos urgency glint
+            flash = (pyxel.frame_count // 3) % 2 == 0
+            col_crest = 10 if flash else 7
+            col_shadow = 9
+            col_shadow_deep = 4
+            col_ripple = 10 if flash else 9
+            col_rock = 4
+            col_rock_hl = 7
+            col_grain_a = 10 if flash else 7
+            col_grain_b = 9
         else:
-            flash = (pyxel.frame_count // 4) % 2 == 0
-            col_glass = 7 if flash else 6
-            col_dune_a = 10 if flash else 15
-            col_dune_b = 7 if flash else 6
-            col_dune_shadow = 9 if flash else 4
-            col_sand_noise = 7
+            col_crest = 7            # Sunlit warm white ridge highlight
+            col_shadow = 9           # Warm orange/tan slope shadow
+            col_shadow_deep = 4      # Rich amber-brown base shadow
+            col_ripple = 9           # Subtle warm wind ripple
+            col_rock = 4             # Desert sandstone pebble
+            col_rock_hl = 7          # Sunlight glint on pebble
+            col_grain_a = 7          # Fine sand sun spark
+            col_grain_b = 9          # Fine sand golden grit
 
-        dist = self.state.distance
+        GRID_W = 65
+        GRID_H = 65
 
-        # 1. FAR LAYER: Distant Broken Glass Crystalline Web (Parallax ~0.28x scrolling UP)
-        crack_h = 420
-        crack_w = 300
-        y_crack_offset = int(dist * 0.28) % crack_h
-        start_cx = int(cam_x // crack_w) * crack_w - crack_w
+        # Bounding box of cells currently visible on screen
+        min_cell_x = int((cam_x - 40) // GRID_W)
+        max_cell_x = int((cam_x + self.SCREEN_WIDTH + 40) // GRID_W) + 1
 
-        for cx in (start_cx, start_cx + crack_w, start_cx + crack_w * 2, start_cx + crack_w * 3):
-            for base_cy in range(-crack_h, self.SCREEN_HEIGHT + crack_h, crack_h):
-                cy = base_cy - y_crack_offset
-                if -180 <= cy <= self.SCREEN_HEIGHT + 180:
-                    pyxel.line(cx, cy, cx + 180, cy - 80, col_glass)
-                    pyxel.line(cx, cy, cx - 120, cy - 140, col_glass)
-                    pyxel.line(cx, cy, cx + 90, cy + 160, col_glass)
-                    pyxel.line(cx + 180, cy - 80, cx + 90, cy + 160, col_glass)
-                    pyxel.line(cx - 120, cy - 140, cx - 180, cy + 50, col_glass)
-                    pyxel.line(cx - 180, cy + 50, cx, cy, col_glass)
+        min_cell_y = int((dist - 40) // GRID_H)
+        max_cell_y = int((dist + self.SCREEN_HEIGHT + 40) // GRID_H) + 1
 
-        # 2. MID LAYER: Rolling Pale Sand Dunes (Parallax ~0.60x scrolling UP)
-        dune_spacing = 180
-        y_dune_offset = int(dist * 0.60) % dune_spacing
+        for cell_y in range(min_cell_y, max_cell_y):
+            # Screen Y coordinate of the cell top
+            base_sy = cell_y * GRID_H - dist
+            for cell_x in range(min_cell_x, max_cell_x):
+                # World X coordinate of the cell left
+                base_wx = cell_x * GRID_W
 
-        for base_y in range(-dune_spacing, self.SCREEN_HEIGHT + dune_spacing, dune_spacing):
-            y = base_y - y_dune_offset
-            crest_col = col_dune_a if (base_y // dune_spacing) % 2 == 0 else col_dune_b
-            prev_x = cam_x
-            prev_y = y + int(24 * math.sin((cam_x + base_y) * 0.009) + 12 * math.cos(cam_x * 0.022))
-            for x in range(cam_x + 6, cam_x + self.SCREEN_WIDTH + 6, 6):
-                cur_y = y + int(24 * math.sin((x + base_y) * 0.009) + 12 * math.cos(x * 0.022))
-                if -25 <= cur_y <= self.SCREEN_HEIGHT + 25:
-                    pyxel.line(prev_x, prev_y, x, cur_y, crest_col)
-                    # Subtle vertical shadow hatching below dune crests for depth
-                    if x % 12 == 0:
-                        pyxel.line(x, cur_y + 1, x, cur_y + 6, col_dune_shadow)
-                prev_x = x
-                prev_y = cur_y
+                # Deterministic spatial hash for this cell
+                h = ((cell_x * 374761393) ^ (cell_y * 668265263)) & 0xFFFFFF
 
-        # 3. NEAR LAYER: Fine Pale Sand Silt & Wind Mist Noise (Parallax ~1.05x scrolling UP)
-        sand_specks = [
-            (35, 120, 2, 1.05, col_sand_noise), (78, 450, 3, 0.98, col_dune_b), (115, 680, 1, 1.12, col_sand_noise),
-            (160, 220, 3, 1.02, col_glass), (205, 590, 2, 1.15, col_dune_b), (245, 80, 4, 1.08, col_sand_noise),
-            (290, 340, 2, 0.95, col_dune_b), (330, 710, 3, 1.20, col_sand_noise), (375, 190, 1, 1.04, col_glass),
-            (420, 510, 3, 1.10, col_dune_b), (460, 290, 2, 0.97, col_sand_noise), (505, 640, 4, 1.18, col_sand_noise),
-            (545, 150, 1, 1.03, col_dune_b), (585, 420, 3, 1.14, col_sand_noise),
-            (50, 750, 2, 1.06, col_dune_b), (140, 390, 3, 0.96, col_sand_noise), (225, 160, 2, 1.16, col_sand_noise),
-            (315, 530, 3, 1.01, col_dune_b), (400, 780, 2, 1.22, col_sand_noise), (485, 80, 3, 1.07, col_glass),
-            (90, 260, 2, 1.00, col_sand_noise), (180, 620, 3, 1.13, col_dune_b), (270, 480, 2, 1.07, col_sand_noise),
-            (360, 130, 4, 1.19, col_sand_noise), (440, 720, 2, 0.99, col_dune_b), (520, 310, 3, 1.08, col_sand_noise),
-            (570, 560, 1, 1.04, col_glass), (20, 430, 3, 1.11, col_sand_noise)
-        ]
-        for col_x, init_y, length, spd, col in sand_specks:
-            sx = cam_x + col_x
-            sy = (init_y - int(dist * spd)) % 820 - 10
-            pyxel.line(sx, sy, sx, sy + length, col)
+                # Offset within cell
+                ox = (h % 35) + 15
+                oy = ((h >> 6) % 35) + 15
+                fx = base_wx + ox
+                fy = base_sy + oy
+
+                if fy < -25 or fy > self.SCREEN_HEIGHT + 25:
+                    continue
+
+                ftype = (h >> 12) % 100
+
+                if ftype < 35:
+                    # 1. SkiFree-style Sand Mogul (Crescent dune bump with sunlit rim and shadow hollow)
+                    pyxel.line(fx - 10, fy, fx - 3, fy - 2, col_crest)
+                    pyxel.line(fx - 3, fy - 2, fx + 3, fy - 2, col_crest)
+                    pyxel.line(fx + 3, fy - 2, fx + 10, fy, col_crest)
+                    pyxel.line(fx - 8, fy + 1, fx + 8, fy + 1, col_shadow)
+                    pyxel.line(fx - 4, fy + 2, fx + 4, fy + 2, col_shadow_deep)
+                elif ftype < 55:
+                    # 2. Wind Ripple Ribs (horizontal sand ripples carved by desert gusts)
+                    pyxel.line(fx - 9, fy, fx + 7, fy, col_ripple)
+                    pyxel.line(fx - 13, fy + 3, fx + 5, fy + 3, col_ripple)
+                    pyxel.line(fx - 6, fy + 6, fx + 11, fy + 6, col_ripple)
+                elif ftype < 70:
+                    # 3. Desert Sandstone Pebble (little rock on the slope with drop shadow)
+                    pyxel.rect(fx, fy, 4, 3, col_rock)
+                    pyxel.pset(fx + 1, fy, col_rock_hl)
+                    pyxel.line(fx, fy + 3, fx + 3, fy + 3, col_shadow_deep)
+                elif ftype < 90:
+                    # 4. Fine Sand Grain Stipple (granularity so desert slope has grit and texture)
+                    pyxel.pset(fx, fy, col_grain_a)
+                    pyxel.pset(fx + 7, fy + 2, col_grain_b)
+                    pyxel.pset(fx - 5, fy + 5, col_grain_a)
+                    pyxel.pset(fx + 3, fy + 8, col_grain_b)
+                else:
+                    # 5. Wide Barchan Dune Ridge (sweeping dune crest across the slope)
+                    pyxel.line(fx - 22, fy + 2, fx - 7, fy - 2, col_crest)
+                    pyxel.line(fx - 7, fy - 2, fx + 7, fy - 2, col_crest)
+                    pyxel.line(fx + 7, fy - 2, fx + 22, fy + 2, col_crest)
+                    pyxel.line(fx - 18, fy + 3, fx + 18, fy + 3, col_shadow)
+                    pyxel.line(fx - 10, fy + 4, fx + 10, fy + 4, col_shadow_deep)
+
+    def draw_atmospheric_dunes_and_glass_background(self, cam_x: int, prog: float = 0.0):
+        """Backward-compatible alias for draw_skifree_desert_terrain."""
+        self.draw_skifree_desert_terrain(cam_x, prog)
 
     def draw_celestial_depth_astrolabe(self, cam_x: int, prog: float = 0.0):
-        """Backward-compatible alias for draw_atmospheric_dunes_and_glass_background."""
-        self.draw_atmospheric_dunes_and_glass_background(cam_x, prog)
+        """Backward-compatible alias for draw_skifree_desert_terrain."""
+        self.draw_skifree_desert_terrain(cam_x, prog)
 
     def draw_player_hourglass(self):
         """Draw horizontal hourglass sprite (60x40) that tilts dynamically with control velocity."""
         player = self.entities.player
         px = player.x
         py = player.y
+
+        # Cast drop shadow on the sand slope below the hourglass
+        shadow_y = int(py + 16)
+        pyxel.line(int(px - 18), shadow_y, int(px + 18), shadow_y, 4)
+        pyxel.line(int(px - 22), shadow_y + 1, int(px + 22), shadow_y + 1, 4)
+        pyxel.line(int(px - 18), shadow_y + 2, int(px + 18), shadow_y + 2, 4)
 
         # Invulnerability flash
         if self.state.invulnerable_timer > 0 and (self.state.invulnerable_timer // 3) % 2 == 1:
@@ -854,16 +884,26 @@ class GrainOfDoubtApp:
         x1, y1 = rot_pts[1]
         x2, y2 = rot_pts[2]
         is_fat = getattr(shard, "is_fat", False)
+
+        # Cast drop shadow on the daylight sand slope
+        pyxel.tri(x0 + 3, y0 + 4, x1 + 3, y1 + 4, x2 + 3, y2 + 4, 4)
+
         if is_fat:
             pyxel.tri(x0, y0, x1, y1, x2, y2, 8)
-            pyxel.line(x0, y0, x1, y1, 7)
-            pyxel.line(x1, y1, x2, y2, 8)
-            pyxel.line(x2, y2, x0, y0, 7)
-        else:
-            pyxel.tri(x0, y0, x1, y1, x2, y2, 7)
-            pyxel.line(x0, y0, x1, y1, 6)
+            pyxel.line(x0, y0, x1, y1, 0)
             pyxel.line(x1, y1, x2, y2, 0)
-            pyxel.line(x2, y2, x0, y0, 6)
+            pyxel.line(x2, y2, x0, y0, 0)
+            pyxel.line(x0, y0, (x1 + x2) // 2, (y1 + y2) // 2, 7)
+        else:
+            # Pale icy crystalline facet
+            pyxel.tri(x0, y0, x1, y1, x2, y2, 6)
+            # Crisp black razor perimeter outline
+            pyxel.line(x0, y0, x1, y1, 0)
+            pyxel.line(x1, y1, x2, y2, 0)
+            pyxel.line(x2, y2, x0, y0, 0)
+            # Specular glint along leading edge
+            if (pyxel.frame_count // 3) % 2 == 0:
+                pyxel.line(x0, y0, x1, y1, 7)
 
     def draw_hud(self):
         # Universal Dither Alpha on HUD containers
@@ -1202,18 +1242,23 @@ class GrainOfDoubtApp:
         draw_text_scaled(70, 554, txt, 10, scale=2)
 
     def draw_title_screen(self):
-        # Pulsing logo centered
+        # Pulsing logo centered with dark drop shadow for high contrast on daylight sand
+        draw_text_scaled(190, 72, "GRAIN OF DOUBT", 4, scale=4)
         draw_text_scaled(188, 70, "GRAIN OF DOUBT", 10, scale=4)
+
+        draw_text_scaled(162, 127, "PYWEEK 42 : BORROWED TIME", 4, scale=2)
         draw_text_scaled(160, 125, "PYWEEK 42 : BORROWED TIME", 9, scale=2)
+
+        draw_text_scaled(238, 157, "BY ARIAN PRABOWO", 4, scale=2)
         draw_text_scaled(236, 155, "BY ARIAN PRABOWO", 7, scale=2)
 
         if self.dev_mode:
-            draw_text_scaled(216, 178, f"VERSION: {self.VERSION} [DEV MODE]", 11, scale=2)
+            draw_text_scaled(216, 178, f"VERSION: {self.VERSION} [DEV MODE]", 3, scale=2)
 
-        # Subtitles centered
-        draw_text_scaled(110, 205, "FALL DOWN THE COSMIC HOURGLASS", 7, scale=2)
-        draw_text_scaled(110, 232, "COLLECT GOLDEN SAND TO SURVIVE", 6, scale=2)
-        draw_text_scaled(95, 259, "DODGE LETHAL FALLING GLASS SHARDS", 6, scale=2)
+        # Subtitles centered in rich indigo & red for crisp daylight contrast
+        draw_text_scaled(110, 205, "FALL DOWN THE DESERT SLOPE", 1, scale=2)
+        draw_text_scaled(110, 232, "COLLECT GOLDEN SAND TO SURVIVE", 4, scale=2)
+        draw_text_scaled(95, 259, "DODGE LETHAL FALLING GLASS SHARDS", 8, scale=2)
 
         # Controls box
         pyxel.rect(40, 300, 520, 335, 1)
@@ -1237,14 +1282,15 @@ class GrainOfDoubtApp:
         # Start prompt
         blink = (pyxel.frame_count // 12) % 2 == 0
         if blink:
-            draw_text_scaled(60, 652, "PRESS ARROWS OR TOUCH BUTTONS TO START", 7, scale=2)
+            draw_text_scaled(62, 654, "PRESS ARROWS OR TOUCH BUTTONS TO START", 4, scale=2)
+            draw_text_scaled(60, 652, "PRESS ARROWS OR TOUCH BUTTONS TO START", 10, scale=2)
 
         # Draw the 2 mobile buttons at bottom of title screen (mobile only)
         if self.is_mobile:
             self.draw_touch_buttons()
 
         if self.dev_mode:
-            draw_text_scaled(self.SCREEN_WIDTH - 140, self.SCREEN_HEIGHT - 20, f"[DEV] {self.VERSION}", 11, scale=2)
+            draw_text_scaled(self.SCREEN_WIDTH - 140, self.SCREEN_HEIGHT - 20, f"[DEV] {self.VERSION}", 3, scale=2)
 
     def draw_game_over_screen(self):
         # Dark overlay box with dither alpha
