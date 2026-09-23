@@ -1666,6 +1666,25 @@ def test_envy_recalibrated_starting_point():
     assert abs(inner_1 - 409.6) < 1e-3
 
 
+def test_all_game_states_draw_without_render_errors():
+    """Verify that draw() completes successfully across all game states:
+    CHRONOS, KAIROS, GAMEOVER, and TITLE (catches any pyxel drawing function argument errors).
+    """
+    import pyxel
+    from main import GrainOfDoubtApp
+    from engine.state import GameState
+
+    try:
+        pyxel.init(600, 800, headless=True)
+    except BaseException:
+        pass  # Already initialized in previous tests
+
+    app = GrainOfDoubtApp(headless=True)
+    for state in [GameState.CHRONOS, GameState.KAIROS, GameState.GAMEOVER, GameState.TITLE]:
+        app.state.current_state = state
+        app.draw()
+
+
 
 
 

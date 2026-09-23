@@ -668,7 +668,7 @@ class GrainOfDoubtApp:
             pyxel.circb(cx, cy, 260, col_geo)
             pyxel.circb(cx, cy, 380, col_geo)
             pyxel.line(cx - 390, cy, cx + 390, cy, col_geo)
-            pyxel.line(cx, cy - 390, cx, cy + 390, cy, col_geo)
+            pyxel.line(cx, cy - 390, cx, cy + 390, col_geo)
             pyxel.line(cx - 180, cy - 180, cx + 180, cy + 180, col_geo)
             pyxel.line(cx - 180, cy + 180, cx + 180, cy - 180, col_geo)
 
