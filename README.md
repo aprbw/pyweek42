@@ -35,17 +35,19 @@ Steer left or right to avoid razor-sharp falling glass shards while collecting g
 | Touch `< LEFT` / `RIGHT >` | Mobile Touch Steering | Semi-transparent on-screen buttons (visible on mobile only) or bottom screen tap |
 | `Left` / `Right` or Tap Card | Select Faustian Bargain | Steer left or right during Kairos to choose between the 2 bargain cards within 2.0s (requires fresh press after release) |
 | `Space` / `Enter` or Tap Screen | Start / Restart | Start game or restart after a 2.0s post-mortem lockout (debounced) |
-| `~` / `` ` `` (Backtick) | Dev Mode Overlay | Toggle developer telemetry overlay (hidden on title screen unless active) |
+| `X` | Return to Menu / Quit | In gameplay: return to Title Menu. On Title Menu: quit game (no-op in browser) |
+| `~` / `` ` `` (Backtick) | Toggle Dev Mode | On-screen debug HUD, live telemetry, and shortcut cheats |
+| `I` (in Dev Mode) | Toggle God Mode | Invulnerability toggle (immune to razor shards and void collision) |
+| `B` (in Dev Mode) | Toggle GOFAI Bot | Autonomous kinematic AI playtesting agent (80% speed handicap, 20% bottom blind zone) |
+| `V` (in Dev Mode) | Toggle MP4 Recording | Lossless FFmpeg background canvas video recorder |
 | `1` - `7` (in Dev Mode) | Add Faustian Pact | Instant-apply sin pact level (1:Pride, 2:Greed, 3:Lust, 4:Envy, 5:Gluttony, 6:Wrath, 7:Sloth) |
 | `Q`, `W`, `E`, `R`, `T`, `Y`, `U` (in Dev Mode) | Reduce Faustian Pact | Decrement corresponding sin pact level (Q:Pride, W:Greed, E:Lust, R:Envy, T:Gluttony, Y:Wrath, U:Sloth) |
-| `I` (in Dev Mode) | Toggle God Mode | Toggle complete invulnerability against all hazard damage |
-| `B` (in Dev Mode) | Playtest Bot | Toggle autonomous GOFAI kinematic playtesting bot (dev mode only) |
-| `V` (in Dev Mode) | Video Recording | Toggle MP4 video capture to disk (dev mode only) |
-| `X` | Quit / Menu | On Title screen: Quit game. During gameplay: return to Title menu |
 
 ---
 
-## 📜 The Seven Deadly Sins (Faustian Bargains & Exact Parameters)
+## 📜 Seven Deadly Faustian Bargains
+
+Every 10.0 seconds ($300$ frames), normal time flow stops and **Kairos** strikes. The player is presented with **two randomly chosen Faustian Bargains** in Catholic Gregorian canonical order. You have exactly 2.0 seconds ($60$ frames) to choose one, or your hourglass shatters instantly.
 
 *Exact mathematical values ($k \ge 0$ is the repeat pact count):*
 
@@ -60,7 +62,7 @@ Steer left or right to avoid razor-sharp falling glass shards while collecting g
    * *Boon:* Sand magnetic attraction permanently pulls golden sands within radius toward hourglass ($180.0$px on 1st pact, $+60.0$px on subsequent pacts).
    * *Curse:* Hazard magnetic attraction permanently pulls razor glass shards within radius toward hourglass ($180.0$px on 1st pact, $+60.0$px on subsequent pacts).
 4. **Envy:**
-   * *Boon:* Instantly reaps all golden sand grains currently visible on the screen, immediately awarding their score and triggering radiant particle bursts.
+   * *Boon:* Activates **Mega Lust** for 2.0 seconds (60 frames), very strongly attracting all golden sand grains within $2\times$ the current vignette pixel radius ($2 \times R_{\text{vignette}}$, $1920$px on Pact 1) toward the hourglass.
    * *Curse:* Inflicts **Vignette Vision**, a multi-circle concentric mask with 5 graduated dither transparency tiers between an inner clear core and outer void boundary.
      * **Outermost circle** (zero vision beyond): $1200 \times 0.8^k$ px — Pact 1 → $960$px, Pact 2 → $768$px, Pact 3 → $614$px, Pact 4 → $491$px, Pact 5 → $393$px.
      * **Innermost circle** (full clear vision): $1000 \times 0.8^{k+1}$ px — Pact 1 → $640$px, Pact 2 → $512$px, Pact 3 → $410$px, Pact 4 → $328$px, Pact 5 → $262$px.
@@ -154,6 +156,16 @@ python3 -m http.server 8000
 ---
 
 ## 📝 Changelog
+
+### v0.12.0 (September 2026)
+* **Score Formatting with Space Separator:**
+  * Removed all leading zeros across HUD and Game Over screen; scores and statistics now format cleanly using a single space thousands separator (e.g. `SCORE: 1 234`, `0`).
+* **Envy Mega Lust Boon:**
+  * Reworked Envy into temporary Mega Lust: for 2.0 seconds (60 frames), all sand grains within $2\times$ the current vignette pixel radius ($1920$px at Pact 1) are strongly drawn into the hourglass.
+* **Hourglass Sand Physics & Tilt Proportionality:**
+  * Direction and speed of falling sand (both internal neck flow, dynamic bulb sand redistribution, and external dripping sand cascade) are directly proportional to the hourglass tilt angle.
+* **GOFAI Bot Envy Handicap:**
+  * The autonomous bot's perception is strictly constrained by Envy's circular vignette boundary, rendering hazards and grains beyond the vignette radius invisible to AI trajectory planning.
 
 ### v0.11.0 (September 2026)
 * **Difficulty Rebalance: Halved Base Spawn Rate:**

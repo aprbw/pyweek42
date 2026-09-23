@@ -196,7 +196,7 @@ def is_dev_environment() -> bool:
 
 
 class GrainOfDoubtApp:
-    VERSION: str = "v0.11.0"
+    VERSION: str = "v0.12.0"
     SCREEN_WIDTH: int = 600
     SCREEN_HEIGHT: int = 800
 
@@ -749,28 +749,48 @@ class GrainOfDoubtApp:
         pyxel.line(*rot(-4, -5), *rot(4, -5), 7)
         pyxel.line(*rot(-4, 5), *rot(4, 5), 7)
 
-        # 6. Left Bulb Sand
+        # 6. Bulb Sand Levels (dynamically shifting with tilt)
+        tilt_ratio = max(-1.0, min(1.0, tilt / 0.38)) if abs(tilt) > 0.01 else 0.0
+        # When tilted right (tilt > 0): left bulb drains (scale < 1.0), right bulb fills (scale > 1.0)
+        # When tilted left (tilt < 0): right bulb drains (scale < 1.0), left bulb fills (scale > 1.0)
+        l_scale = max(0.20, min(1.45, 1.0 - tilt_ratio * 0.50))
+        r_scale = max(0.20, min(1.45, 1.0 + tilt_ratio * 0.50))
+
+        # Left Bulb Sand
         for dx in range(-21, -4, 2):
-            half_h = int(13 * (abs(dx) / 24.0))
+            half_h = int(13 * (abs(dx) / 24.0) * l_scale)
             if half_h > 1:
                 col = 10 if (dx % 4 == 0) else 9
                 p_top = rot(dx, -half_h + 1)
                 p_bot = rot(dx, half_h - 1)
                 pyxel.line(p_top[0], p_top[1], p_bot[0], p_bot[1], col)
 
-        # 7. Right Bulb Sand
+        # Right Bulb Sand
         for dx in range(5, 22, 2):
-            half_h = int(13 * (abs(dx) / 24.0))
+            half_h = int(13 * (abs(dx) / 24.0) * r_scale)
             if half_h > 1:
                 col = 10 if (dx % 4 == 0) else 9
                 p_top = rot(dx, -half_h + 1)
                 p_bot = rot(dx, half_h - 1)
                 pyxel.line(p_top[0], p_top[1], p_bot[0], p_bot[1], col)
 
-        # 8. Animated Sand Flow across waist
-        stream_x = ((player.sand_drain_phase % 1.0) - 0.5) * 6.0
-        sp = rot(stream_x, 0)
-        pyxel.rect(sp[0] - 1, sp[1] - 1, 3, 3, 10)
+        # 8. Animated Sand Flow across waist:
+        # Direction and speed of sand falling across the neck is proportional to how tilted it is
+        if abs(tilt) > 0.02:
+            # Direction: flows from higher bulb toward lower bulb
+            flow_sign = 1.0 if tilt > 0 else -1.0
+            for i in range(3):
+                # Phase advances with player.sand_drain_phase (speed proportional to tilt)
+                frac = (player.sand_drain_phase * flow_sign + i * 0.33) % 1.0
+                stream_lx = (-5.0 + frac * 10.0) * flow_sign
+                stream_ly = math.sin((player.sand_drain_phase + i) * 3.14) * 1.5
+                sp = rot(stream_lx, stream_ly)
+                col = 10 if i == 0 else 9
+                pyxel.rect(sp[0] - 1, sp[1] - 1, 2, 2, col)
+        else:
+            # Level: sand rests quietly at the waist neck without flowing
+            sp = rot(0, 0)
+            pyxel.rect(sp[0] - 1, sp[1] - 1, 2, 2, 9)
 
         # 9. Specular Reflections
         pyxel.line(*rot(-18, -10), *rot(-8, -5), 7)
@@ -847,7 +867,8 @@ class GrainOfDoubtApp:
             pyxel.dither(1.0)
         pyxel.rectb(self.SCREEN_WIDTH - 250, 8, 240, 30, 1)
 
-        score_str = f"SCORE: {self.state.score:06d}"
+        score_fmt = f"{self.state.score:,}".replace(",", " ")
+        score_str = f"SCORE: {score_fmt}"
         draw_text_scaled(self.SCREEN_WIDTH - 240, 14, score_str, 10, scale=2)
 
         # Multiplier (inside score container at right)
@@ -897,6 +918,15 @@ class GrainOfDoubtApp:
             pyxel.rect(10, badge_y, 100, 20, 0)
             pyxel.rectb(10, badge_y, 100, 20, 10)
             draw_text_scaled(15, badge_y + 4, "[GODMODE]", 10, scale=2)
+            badge_y += 24
+
+        # Envy Mega Lust Badge
+        if self.state.envy_mega_lust_active:
+            lust_secs = (self.state.envy_mega_lust_timer + 29) // 30
+            flash = (pyxel.frame_count // 4) % 2 == 0
+            pyxel.rect(10, badge_y, 100, 20, 0)
+            pyxel.rectb(10, badge_y, 100, 20, 10 if flash else 9)
+            draw_text_scaled(15, badge_y + 4, f"MEGA LUST {lust_secs}s", 10 if flash else 7, scale=2)
             badge_y += 24
 
         # Greed Borrowed Time Warning Indicator
@@ -987,8 +1017,11 @@ class GrainOfDoubtApp:
                 draw_text_scaled(cx + 16, col_y + 144, "Sand Clusters", 7, scale=2)
                 draw_text_scaled(cx + 16, col_y + 168, f"{group_name} (+{k+1} grains)", 11, scale=2)
             elif sin == SinType.ENVY:
-                draw_text_scaled(cx + 16, col_y + 144, "Reap Screen Sand", 7, scale=2)
-                draw_text_scaled(cx + 16, col_y + 168, "All Visible Sands", 11, scale=2)
+                next_k = k + 1
+                outer_preview = int(1200.0 * (0.8 ** next_k))
+                mega_r = outer_preview * 2
+                draw_text_scaled(cx + 16, col_y + 144, "Mega Lust (2.0s)", 7, scale=2)
+                draw_text_scaled(cx + 16, col_y + 168, f"Pull {mega_r}px Radius", 11, scale=2)
             elif sin == SinType.GREED:
                 draw_text_scaled(cx + 16, col_y + 144, "Score Multiplier", 7, scale=2)
                 draw_text_scaled(cx + 16, col_y + 168, "x110% per sand", 11, scale=2)
@@ -1137,10 +1170,14 @@ class GrainOfDoubtApp:
 
         time_survived = self.state.total_frames / 30.0
         draw_text_scaled(80, 190, f"TIME SURVIVED : {time_survived:6.1f} SECONDS", 10, scale=2)
-        draw_text_scaled(80, 218, f"FINAL SCORE   : {self.state.score:6d}", 10, scale=2)
-        draw_text_scaled(80, 246, f"SAND REAPED   : {self.state.total_sand_collected:6d}", 9, scale=2)
-        draw_text_scaled(80, 274, f"SHARDS EVADED : {self.state.total_shards_dodged:6d}", 6, scale=2)
-        draw_text_scaled(80, 302, f"PACTS SEALED  : {len(self.bargains.history):6d}", 8, scale=2)
+        score_fmt = f"{self.state.score:,}".replace(",", " ")
+        sand_fmt = f"{self.state.total_sand_collected:,}".replace(",", " ")
+        shards_fmt = f"{self.state.total_shards_dodged:,}".replace(",", " ")
+        pacts_fmt = f"{len(self.bargains.history):,}".replace(",", " ")
+        draw_text_scaled(80, 218, f"FINAL SCORE   : {score_fmt}", 10, scale=2)
+        draw_text_scaled(80, 246, f"SAND REAPED   : {sand_fmt}", 9, scale=2)
+        draw_text_scaled(80, 274, f"SHARDS EVADED : {shards_fmt}", 6, scale=2)
+        draw_text_scaled(80, 302, f"PACTS SEALED  : {pacts_fmt}", 8, scale=2)
 
         # Draw all 7 canonical sins vertically without 'k=' or 'canonical order'
         draw_text_scaled(80, 332, "PACTS SEALED SUMMARY:", 9, scale=2)

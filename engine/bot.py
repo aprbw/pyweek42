@@ -46,15 +46,37 @@ class PlayTestingBot:
         """Returns maximum y coordinate visible to the bot."""
         return screen_h * (1.0 - self.config.bottom_blind_ratio)
 
-    def filter_visible_shards(self, shards: List[GlassShard], screen_h: int = 800) -> List[GlassShard]:
-        """Handicap: Shards in bottom 20% (y > threshold) are invisible."""
+    def filter_visible_shards(
+        self,
+        shards: List[GlassShard],
+        screen_h: int = 800,
+        player_x: Optional[float] = None,
+        player_y: Optional[float] = None,
+        vignette_radius: Optional[float] = None,
+    ) -> List[GlassShard]:
+        """Handicap: Shards in bottom 20% (y > threshold) are invisible.
+        Envy Handicap: Shards outside circular vignette vision radius are completely invisible."""
         threshold = self.get_vision_threshold_y(screen_h)
-        return [s for s in shards if s.alive and s.y <= threshold]
+        filtered = [s for s in shards if s.alive and s.y <= threshold]
+        if vignette_radius is not None and vignette_radius < 950.0 and player_x is not None and player_y is not None:
+            filtered = [s for s in filtered if math.hypot(s.x - player_x, s.y - player_y) <= vignette_radius]
+        return filtered
 
-    def filter_visible_sands(self, sands: List[SandGrain], screen_h: int = 800) -> List[SandGrain]:
-        """Handicap: Sands in bottom 20% (y > threshold) are invisible."""
+    def filter_visible_sands(
+        self,
+        sands: List[SandGrain],
+        screen_h: int = 800,
+        player_x: Optional[float] = None,
+        player_y: Optional[float] = None,
+        vignette_radius: Optional[float] = None,
+    ) -> List[SandGrain]:
+        """Handicap: Sands in bottom 20% (y > threshold) are invisible.
+        Envy Handicap: Sands outside circular vignette vision radius are completely invisible."""
         threshold = self.get_vision_threshold_y(screen_h)
-        return [s for s in sands if s.alive and s.y <= threshold]
+        filtered = [s for s in sands if s.alive and s.y <= threshold]
+        if vignette_radius is not None and vignette_radius < 950.0 and player_x is not None and player_y is not None:
+            filtered = [s for s in filtered if math.hypot(s.x - player_x, s.y - player_y) <= vignette_radius]
+        return filtered
 
     def evaluate_trajectory(
         self,
@@ -140,9 +162,21 @@ class PlayTestingBot:
         self.frame_counter += 1
         player = entities.player
 
-        # Filter entities by vision handicap (bottom 20% invisible)
-        visible_shards = self.filter_visible_shards(entities.shards, entities.screen_h)
-        visible_sands = self.filter_visible_sands(entities.sands, entities.screen_h)
+        # Filter entities by vision handicap (bottom 20% invisible) and Envy vignette radius
+        visible_shards = self.filter_visible_shards(
+            entities.shards,
+            entities.screen_h,
+            player_x=player.x,
+            player_y=player.y,
+            vignette_radius=state.vignette_radius,
+        )
+        visible_sands = self.filter_visible_sands(
+            entities.sands,
+            entities.screen_h,
+            player_x=player.x,
+            player_y=player.y,
+            vignette_radius=state.vignette_radius,
+        )
 
         # GOFAI Trajectory Search
         # Evaluate 9 distinct 2-stage macro-actions over horizon (24 frames)

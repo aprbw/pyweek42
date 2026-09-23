@@ -53,6 +53,11 @@ class HourglassPlayer:
         self.max_x: float = screen_w - 45.0
         self.sand_drain_phase: float = 0.0
 
+    @property
+    def tilt(self) -> float:
+        """Tilt angle in radians based on horizontal velocity (clamped to +/- 22 degrees)."""
+        return max(-0.38, min(0.38, self.vx * 0.038))
+
     def reset(self):
         self.x = self.screen_w / 2.0
         self.y = self.base_y
@@ -74,8 +79,8 @@ class HourglassPlayer:
         # Steady vertical reference frame
         self.y = self.base_y
 
-        # Animate sand draining
-        self.sand_drain_phase += 0.15
+        # Animate sand draining: direction & speed proportional to how tilted it is
+        self.sand_drain_phase += self.tilt * 0.45
 
     def get_hitbox(self) -> Tuple[float, float, float, float]:
         """Returns (center_x, center_y, width, height)"""
@@ -99,20 +104,27 @@ class SandGrain:
         self.lateral_drift = lateral_drift if lateral_drift is not None else random.uniform(-0.4, 0.4)
 
     def update(self, scroll_speed: float, player_x: float, player_y: float,
-               repel_radius: float = 0.0, attract_radius: float = 0.0):
+               repel_radius: float = 0.0, attract_radius: float = 0.0,
+               mega_attract_radius: float = 0.0):
         self.y -= scroll_speed * self.speed_variance
         self.shimmer_phase += 0.2
 
         # Small x-axis motion (gentle drift + oscillation - infinite arena)
         self.x += self.lateral_drift + math.sin(self.shimmer_phase * 0.4) * 0.4
 
-        # Physics fields (Envy Repel / Lust Attract)
+        # Physics fields (Envy Mega Lust / Lust Attract / Envy Repel)
         dx = self.x - player_x
         dy = self.y - player_y
         dist_sq = dx * dx + dy * dy
         dist = math.sqrt(dist_sq) if dist_sq > 0 else 0.001
 
-        if attract_radius > 0 and dist < attract_radius:
+        if mega_attract_radius > 0 and dist < mega_attract_radius:
+            # Envy Boon: Temporary Mega Lust strongly attracts all grains within 2x vignette radius
+            pull = max(18.0, 32.0 * (1.0 - dist / mega_attract_radius))
+            self.x -= (dx / dist) * pull
+            self.y -= (dy / dist) * pull
+
+        elif attract_radius > 0 and dist < attract_radius:
             # Lust Boon: Magnet pull toward player
             pull = 8.5 * (1.0 - dist / attract_radius)
             self.x -= (dx / dist) * pull
@@ -320,6 +332,7 @@ class EntityManager:
                 player_y=py,
                 repel_radius=state.envy_repel_radius,
                 attract_radius=state.lust_attract_radius,
+                mega_attract_radius=state.envy_mega_lust_radius,
             )
             if not sand.alive:
                 if sand.bypassed:
@@ -366,9 +379,16 @@ class EntityManager:
         for p in self.particles:
             p.update()
 
-        # Hourglass sand drip trail particles
-        if random.random() < 0.40:
+        # Hourglass sand drip trail particles:
+        # Direction and speed of the falling sand is proportional to how tilted it is
+        tilt = self.player.tilt
+        tilt_mag = abs(tilt)
+        if random.random() < (0.15 + tilt_mag * 1.8):
+            origin_lx = math.sin(tilt) * 18.0
+            ox = self.player.x + origin_lx * math.cos(tilt)
+            oy = self.player.y + origin_lx * math.sin(tilt) + 16.0
+            vx = math.sin(tilt) * 8.0 + random.uniform(-0.4, 0.4)
+            vy = -1.5 - tilt_mag * 3.5 + random.uniform(-0.5, 0.5)
             self.particles.append(
-                Particle(self.player.x + random.uniform(-4, 4), self.player.y + 20,
-                         random.uniform(-0.6, 0.6), random.uniform(-2.0, -0.8), 10, 10, size=2)
+                Particle(ox, oy, vx, vy, random.choice([9, 10, 7]), random.randint(8, 16), size=2)
             )

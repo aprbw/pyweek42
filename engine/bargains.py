@@ -75,11 +75,11 @@ BARGAIN_REGISTRY: Dict[SinType, BargainDefinition] = {
         sin=SinType.ENVY,
         name="Envy",
         latin_name="Invidia",
-        boon_name="Reap Screen Sands",
+        boon_name="Mega Lust (2s)",
         curse_name="Vignette Vision",
-        boon_base=1.0,
-        curse_base=260.0,
-        boon_unit="screen",
+        boon_base=1920.0,
+        curse_base=960.0,
+        boon_unit="px pull radius",
         curse_unit="px radius",
     ),
     SinType.GLUTTONY: BargainDefinition(
@@ -187,13 +187,6 @@ class BargainManager:
             }
 
         elif sin == SinType.ENVY:
-            # Boon: Reap all sands currently visible on screen
-            collected = 0
-            if entities_manager:
-                cam_x = entities_manager.player.x - entities_manager.screen_w / 2.0
-                collected = entities_manager.collect_all_screen_sands(cam_x)
-                for _ in range(collected):
-                    state.add_score(1)
             # Curse: Vignette Vision (dual-radius)
             state.envy_level += 1
             k = state.envy_level
@@ -201,9 +194,13 @@ class BargainManager:
             inner_r = round(1000.0 * (0.80 ** (k + 1)), 4)
             state.vignette_radius = max(state.min_vignette_radius, outer_r)
             state.vignette_inner_radius = max(state.min_vignette_radius * 0.6, inner_r)
+
+            # Boon: Temporary Mega Lust for 2.0s (60 frames) attracting all grains within 2x vignette radius
+            state.envy_mega_lust_timer = 60
+            mega_r = 2.0 * state.vignette_radius
             summary = {
                 "sin": defn.name,
-                "boon": f"Reap Screen Sands: +{collected} collected",
+                "boon": f"Mega Lust: 2.0s pull ({mega_r:.0f}px radius)",
                 "curse": f"Vignette: outer={state.vignette_radius:.0f}px inner={state.vignette_inner_radius:.0f}px",
             }
 
@@ -300,6 +297,7 @@ class BargainManager:
             if state.envy_level == 0:
                 state.vignette_radius = state.base_vignette_radius
                 state.vignette_inner_radius = 900.0
+                state.envy_mega_lust_timer = 0
             else:
                 k = state.envy_level
                 outer_r = round(1200.0 * (0.80 ** k), 4)

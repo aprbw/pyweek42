@@ -65,6 +65,7 @@ class StateManager:
 
         # Envy & Lust modifiers
         self.envy_repel_radius: float = 0.0
+        self.envy_mega_lust_timer: int = 0
         self.lust_attract_timer: int = 0
         self.lust_attract_radius: float = 0.0
         self.lust_hazard_attract_radius: float = 0.0
@@ -102,6 +103,16 @@ class StateManager:
             self.sloth_freeze_timer = 0
         else:
             self.sloth_freeze_timer = int((1.0 - val) * self.SLOTH_FREEZE_FRAMES)
+
+    @property
+    def envy_mega_lust_active(self) -> bool:
+        return self.envy_mega_lust_timer > 0
+
+    @property
+    def envy_mega_lust_radius(self) -> float:
+        if self.envy_mega_lust_timer > 0:
+            return 2.0 * self.vignette_radius
+        return 0.0
 
     def start_game(self):
         self.reset()
@@ -178,6 +189,10 @@ class StateManager:
             self.wrath_zero_yield_timer -= 1
 
         # Lust attraction is permanent for both sand and hazards (no timer decay)
+
+        # Envy temporary Mega Lust timer (2.0s = 60 frames)
+        if self.envy_mega_lust_timer > 0:
+            self.envy_mega_lust_timer -= 1
 
         # Sloth hazard freeze timer
         if self.sloth_freeze_timer > 0:

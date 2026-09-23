@@ -280,29 +280,46 @@ def test_envy_and_lust_mechanics():
     entities = EntityManager(600, 800)
     entities.player.x = 300.0
 
-    # Add 2 on-screen sands and 1 far off-screen sand
+    # Add 2 on-screen sands and 1 far sand (outside 1920px mega lust radius, but inside 3500px arena bounds)
+    far_sand = SandGrain(2500.0, 400.0)
     entities.sands = [
         SandGrain(300.0, 400.0),
         SandGrain(320.0, 450.0),
-        SandGrain(10000.0, 400.0),
+        far_sand,
     ]
 
     bargains = BargainManager()
     assert state.vignette_radius == 1000.0
     initial_score = state.score
 
-    # Envy reaps all on-screen sands immediately (boon) and applies vignette vision (curse)
+    # Envy activates 2.0s (60 frames) Mega Lust (boon) and applies vignette vision (curse)
     bargains.apply_bargain(SinType.ENVY, state, entities)
-    assert len(entities.sands) == 1
-    assert entities.sands[0].x == 10000.0
-    assert state.score >= initial_score + 2
+    assert state.envy_mega_lust_active is True
+    assert state.envy_mega_lust_timer == 60
+    assert state.envy_mega_lust_radius == 1920.0  # 2x outer vignette radius (960.0 * 2)
     assert state.vignette_radius == 960.0  # Vignette Vision outer radius (1200 * 0.8^1)
     assert state.vignette_inner_radius == 640.0  # Vignette Vision inner radius (1000 * 0.8^2)
+
+    # Grains within 2x vignette radius get attracted strongly when updated
+    entities.update(state)
+    # The on-screen sands (distance ~ 100-150px from player at 300, 320) moved towards player
+    assert entities.sands[0].y < 400.0  # pulled upward toward player.y (320)
+    assert entities.sands[1].y < 450.0  # pulled upward toward player.y (320)
+    # Grains beyond 1920.0 (like 2500.0) are NOT mega-attracted (only minor drift < 2.0px)
+    assert far_sand.alive is True
+    assert abs(far_sand.x - 2500.0) < 2.0
+
+    # Updating 60 frames expires Mega Lust
+    for _ in range(60):
+        state.update_timers()
+    assert state.envy_mega_lust_timer == 0
+    assert state.envy_mega_lust_active is False
 
     # Lust activates sand and hazard magnetic fields
     bargains.apply_bargain(SinType.LUST, state, entities)
     assert state.lust_attract_radius > 0.0
     assert state.lust_hazard_attract_radius > 0.0
+
 
 
 def test_audio_manager_safe_without_pyxel():
@@ -1053,5 +1070,83 @@ def test_pact_menu_top_right_numbered_format():
     finally:
         main.draw_text_scaled = orig_draw
 
+def test_score_formatting_space_separator_no_leading_zeros():
+    """Verify score display has no leading zeros and uses space as thousands separator."""
+    import main
+    from main import GrainOfDoubtApp
 
+    app = GrainOfDoubtApp(headless=True)
+    app.start_new_game()
+
+    test_scores = [0, 999, 1000, 12345, 1234567]
+    expected = ["0", "999", "1 000", "12 345", "1 234 567"]
+
+    for sc, exp in zip(test_scores, expected):
+        app.state.score = sc
+        calls = []
+        orig_draw = main.draw_text_scaled
+        try:
+            main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2: calls.append(s)
+            app.draw_hud()
+            # Must find "SCORE: <exp>" exactly
+            assert f"SCORE: {exp}" in calls, f"Expected 'SCORE: {exp}' in HUD calls, got {calls}"
+            # Ensure no leading zeros like "000123"
+            assert not any(c.startswith("SCORE: 0") and c != "SCORE: 0" for c in calls)
+        finally:
+            main.draw_text_scaled = orig_draw
+
+
+def test_bot_affected_by_envy_vignette_vision():
+    """Verify bot filters out entities outside vignette radius when Envy is active."""
+    from engine.bot import PlayTestingBot
+    from engine.entities import GlassShard, SandGrain
+
+    bot = PlayTestingBot()
+    player_x = 300.0
+    player_y = 700.0
+    vignette_radius = 500.0
+
+    # Shard inside vignette (dist = 100) vs shard outside (dist = 600)
+    inside_shard = GlassShard(300.0, 600.0)
+    outside_shard = GlassShard(300.0, 100.0)
+    shards = [inside_shard, outside_shard]
+
+    filtered_shards = bot.filter_visible_shards(shards, screen_h=800, player_x=player_x, player_y=player_y, vignette_radius=vignette_radius)
+    assert inside_shard in filtered_shards
+    assert outside_shard not in filtered_shards
+
+    # Sand inside vignette vs outside (inside threshold y <= 640 and within 500px radius of (300, 700))
+    inside_sand = SandGrain(350.0, 550.0)
+    outside_sand = SandGrain(300.0, 100.0)
+    sands = [inside_sand, outside_sand]
+
+    filtered_sands = bot.filter_visible_sands(sands, screen_h=800, player_x=player_x, player_y=player_y, vignette_radius=vignette_radius)
+    assert inside_sand in filtered_sands
+    assert outside_sand not in filtered_sands
+
+
+def test_hourglass_sand_falling_proportional_to_tilt():
+    """Verify hourglass sand drain direction and particle physics are proportional to tilt."""
+    from engine.entities import HourglassPlayer
+
+    player = HourglassPlayer(600, 800)
+
+    # Idle (vx = 0) -> tilt = 0
+    assert player.tilt == 0.0
+    initial_phase = player.sand_drain_phase
+    player.apply_input(False, False)
+    assert player.sand_drain_phase == initial_phase
+
+    # Moving right (vx > 0) -> tilt > 0, sand drain phase increases positively
+    player.vx = 8.0
+    assert player.tilt > 0.0
+    player.apply_input(False, False)
+    assert player.sand_drain_phase > initial_phase
+
+    # Moving left (vx < 0) -> tilt < 0, sand drain phase decreases
+    player.vx = -8.0
+    assert player.tilt < 0.0
+    phase_before_left = player.sand_drain_phase
+    player.apply_input(False, False)
+    assert player.sand_drain_phase < phase_before_left
 
