@@ -9,9 +9,13 @@ echo "1. Running unit test suite..."
 echo "2. Cleaning old bundle files..."
 rm -f *.pyxapp *.html tests/*.mp4 *.mp4
 
-echo "3. Packaging pyxapp..."
+echo "3. Packaging pyxapp (stashing recordings during package)..."
+mkdir -p .tmp_recordings
+mv recordings/*.mp4 .tmp_recordings/ 2>/dev/null || true
 .venv/bin/pyxel package . main.py
 mv *.pyxapp grain_of_doubt.pyxapp
+mv .tmp_recordings/*.mp4 recordings/ 2>/dev/null || true
+rmdir .tmp_recordings 2>/dev/null || true
 
 echo "4. Exporting WebAssembly HTML..."
 .venv/bin/pyxel app2html grain_of_doubt.pyxapp

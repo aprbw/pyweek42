@@ -53,7 +53,13 @@ class VideoRecorder:
         if not os.path.exists(base_path):
             return base_path
         name, ext = os.path.splitext(base_path)
-        idx = 1
+        import re
+        match = re.search(r"^(.*)_(\d{3,})$", name)
+        if match:
+            name = match.group(1)
+            idx = int(match.group(2)) + 1
+        else:
+            idx = 1
         while True:
             candidate = f"{name}_{idx:03d}{ext}"
             if not os.path.exists(candidate):

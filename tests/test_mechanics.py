@@ -412,6 +412,13 @@ def test_video_recorder_unique_filename():
         res3 = VideoRecorder._resolve_unique_filename(base)
         assert res3 == os.path.join(tmpdir, "test_002.mp4")
 
+        with open(res3, "w") as f:
+            f.write("dummy3")
+
+        # Calling with an already suffixed path test_002.mp4 cleanly advances to test_003.mp4
+        res4 = VideoRecorder._resolve_unique_filename(res3)
+        assert res4 == os.path.join(tmpdir, "test_003.mp4")
+
     # Verify bare filename defaults to recordings/ and directory exists
     rec = VideoRecorder("bare_test.mp4")
     assert rec.output_path == os.path.join("recordings", "bare_test.mp4")
