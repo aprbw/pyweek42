@@ -172,14 +172,12 @@ python3 -m http.server 8000
 * **Complete Visual Decluttering (Zero Particles):**
   * Removed all noisy particle popups (sand sparks, explosion debris, hourglass trail drips). Players enjoy crystal-clear visibility of all incoming grains and shards.
   * Internal scoring feedback: collecting sand grains now causes the hourglass bulbs and waist neck to flash in radiant gold/amber glints directly on the player sprite.
-* **Full Daylight Desert Background (SkiFree Style):**
-  * Transformed the canvas into a sunlit desert slope inspired by SkiFree.
-  * Base terrain rendered in warm pale sandy cream (`15` / `#FFCCAA`) with procedural terrain features scrolling continuously upward:
-    * *Sand Dune Moguls*: Crescent dune bumps with sunlit warm white rims (`7`) and amber-brown slope shadows (`4`/`9`).
-    * *Wind Ripple Ribs*: Subtle parallel ribbed lines (`9`) carved across the sand by desert gusts.
-    * *Desert Sandstones & Pebbles*: Small dark brown stones (`4`) with sun glints (`7`) and cast drop shadows.
-    * *Fine Sand Grain Stipple*: Granular sand texture motes giving authentic desert grit.
-  * When Greed triggers ("Borrowed Time"), the sunlit daylight desert shifts into a dramatic blood-sun eclipse / crimson desert twilight (`2`/`4`).
+* **Braided Sandfall / Landslide Terrain (Fluid Sand River):**
+  * Transformed the canvas into a fluid, rushing golden sand river combining braided sandbars, cascading chutes, velocity shearing flumes, and churning granular froth.
+  * *Cascading Flumes & Streamlines*: Striated vertical flow lines streaming through channels with distinct speed multipliers (1.18x to 1.50x), creating genuine fluid velocity shearing and the visceral sensation of an active landslide pouring downhill.
+  * *Braided Sandbar Banks & Weaving Channels*: Sinuous, undulating sandbar ridges with sunlit white rims (`7`) and amber slope shadows (`9`/`4`), breached by deep channel chutes where sand rushes through.
+  * *Granular Froth & Shoal Pebbles*: Procedural spray motes (`10`/`7`) dancing at chute breaches, miniature sand ripple arcs, and sandstone pebbles on calm shoals.
+  * *Greed Blood-River Mode*: When Greed triggers ("Borrowed Time"), the golden river transforms into a subterranean torrent of blood and magma (`2`/`4` base, `8` crimson flumes, `14` pink foam).
 * **High-Contrast Entity & Shadow Rendering:**
   * *Sand Grains*: Cast warm drop shadows on the sand and feature rich amber-brown outlines (`4`) around sparkling golden bodies (`10`/`9`) and white facet glints (`7`).
   * *Glass Shards*: Cast distinct drop shadows on the slope (`4`) and have razor-sharp black perimeter outlines (`0`) around translucent icy cyan facets (`6`) with specular glints (`7`).

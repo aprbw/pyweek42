@@ -639,10 +639,10 @@ class GrainOfDoubtApp:
         # Capture video frame for MP4 export
         self.video_recorder.record_frame(pyxel)
 
-    def draw_skifree_desert_terrain(self, cam_x: int, prog: float = 0.0):
-        """Draw procedural Full Daylight Desert slope inspired by SkiFree.
-        Generates deterministic sand dune moguls, wind ripples, desert pebbles, and fine sand stipple.
-        All terrain features are anchored in world coordinates and scroll continuously upward with descent.
+    def draw_braided_sandfall_terrain(self, cam_x: int, prog: float = 0.0):
+        """Draw dynamic Braided Sandfall / Landslide terrain:
+        A fluid, rushing yellow sand river combining braided sandbars, cascading chutes,
+        velocity shearing flumes, and churning granular froth across an infinite horizontal expanse.
         """
         dist = int(self.state.distance)
         is_greed = self.state.greed_active
@@ -650,103 +650,129 @@ class GrainOfDoubtApp:
         # Palette configuration for daylight vs blood-sun Greed
         if is_greed:
             col_crest = 8            # Blood red crest
-            col_shadow = 0           # Black shadow
+            col_shadow = 0           # Pitch black shadow
             col_shadow_deep = 0
-            col_ripple = 8           # Crimson wind ripple
+            col_stream = 8           # Crimson current streak
+            col_froth = 14           # Pale pink froth glint
+            col_spray = 8            # Crimson spray mote
             col_rock = 0             # Black stone
             col_rock_hl = 8          # Red glint
-            col_grain_a = 8          # Red grain mote
-            col_grain_b = 14         # Pink grain mote
         elif prog > 0.85:
             # Imminent Kairos urgency glint
             flash = (pyxel.frame_count // 3) % 2 == 0
             col_crest = 10 if flash else 7
             col_shadow = 9
             col_shadow_deep = 4
-            col_ripple = 10 if flash else 9
+            col_stream = 10 if flash else 9
+            col_froth = 7
+            col_spray = 10
             col_rock = 4
             col_rock_hl = 7
-            col_grain_a = 10 if flash else 7
-            col_grain_b = 9
         else:
-            col_crest = 7            # Sunlit warm white ridge highlight
+            col_crest = 7            # Sunlit warm white ridge crest
             col_shadow = 9           # Warm orange/tan slope shadow
             col_shadow_deep = 4      # Rich amber-brown base shadow
-            col_ripple = 9           # Subtle warm wind ripple
-            col_rock = 4             # Desert sandstone pebble
-            col_rock_hl = 7          # Sunlight glint on pebble
-            col_grain_a = 7          # Fine sand sun spark
-            col_grain_b = 9          # Fine sand golden grit
+            col_stream = 9           # Golden amber current streamline
+            col_froth = 7            # White sunlit sand froth
+            col_spray = 10           # Bright golden spray glint
+            col_rock = 4             # Sandstone pebble
+            col_rock_hl = 7          # Pebble glint
 
-        GRID_W = 65
-        GRID_H = 65
+        # -------------------------------------------------------------
+        # 1. CASCADING FLUMES & STREAMLINES (Velocity-Shearing Sandfall)
+        # -------------------------------------------------------------
+        # Vertical flow columns spaced across the infinite horizontal expanse
+        start_col = int((cam_x - 30) // 22) * 22
+        end_col = cam_x + self.SCREEN_WIDTH + 30
+        cycle_h = 320
 
-        # Bounding box of cells currently visible on screen
-        min_cell_x = int((cam_x - 40) // GRID_W)
-        max_cell_x = int((cam_x + self.SCREEN_WIDTH + 40) // GRID_W) + 1
+        for col_x in range(start_col, end_col, 22):
+            col_hash = (col_x * 73856093) & 0xFFFFFF
+            # Distinct speed multipliers (1.18x to 1.50x) create visible fluid velocity shear
+            spd = 1.18 + 0.32 * ((col_hash % 100) / 100.0)
 
-        min_cell_y = int((dist - 40) // GRID_H)
-        max_cell_y = int((dist + self.SCREEN_HEIGHT + 40) // GRID_H) + 1
+            for offset_y in (0, 110, 220):
+                sy = (offset_y - int(dist * spd)) % cycle_h - 20
+                if -20 <= sy <= self.SCREEN_HEIGHT + 20:
+                    streak_len = 10 + (col_hash % 14)
+                    meander = int(5.0 * math.sin((sy + dist * 0.04) * 0.015 + col_x * 0.03))
+                    fx = col_x + meander
+                    pyxel.line(fx, sy, fx, sy + streak_len, col_stream)
+                    # Occasional white froth glint at the head of the rush
+                    if (col_hash >> 6) % 3 == 0:
+                        pyxel.pset(fx, sy, col_froth)
 
-        for cell_y in range(min_cell_y, max_cell_y):
-            # Screen Y coordinate of the cell top
-            base_sy = cell_y * GRID_H - dist
-            for cell_x in range(min_cell_x, max_cell_x):
-                # World X coordinate of the cell left
-                base_wx = cell_x * GRID_W
+        # -------------------------------------------------------------
+        # 2. BRAIDED SANDBAR BANKS & WEAVING CHANNELS (Braided Sand River)
+        # -------------------------------------------------------------
+        bar_spacing = 140
+        for base_y in range(-bar_spacing, self.SCREEN_HEIGHT + bar_spacing, bar_spacing):
+            y_anchor = base_y - (dist % bar_spacing)
+            prev_x = cam_x - 24
+            prev_y = y_anchor + int(24 * math.sin((prev_x + base_y) * 0.009) + 10 * math.cos(prev_x * 0.021))
 
-                # Deterministic spatial hash for this cell
-                h = ((cell_x * 374761393) ^ (cell_y * 668265263)) & 0xFFFFFF
+            for x in range(cam_x - 18, cam_x + self.SCREEN_WIDTH + 24, 6):
+                cur_y = y_anchor + int(24 * math.sin((x + base_y) * 0.009) + 10 * math.cos(x * 0.021))
+                if -30 <= cur_y <= self.SCREEN_HEIGHT + 30:
+                    # Braided channel mask: breaches allow rushing chutes to carve through
+                    chute_val = math.sin(x * 0.007 + (base_y // bar_spacing) * 1.5)
+                    if chute_val > 0.40:
+                        # Deep channel chute: sand pours through the breach
+                        if x % 18 == 0:
+                            pyxel.pset(x, cur_y, col_froth)
+                            pyxel.pset(x + 2, cur_y + 1, col_stream)
+                    else:
+                        # Exposed sandbar ridge
+                        pyxel.line(prev_x, prev_y, x, cur_y, col_crest)
+                        pyxel.line(prev_x, prev_y + 1, x, cur_y + 1, col_shadow)
+                        if x % 12 == 0:
+                            pyxel.line(x, cur_y + 2, x, cur_y + 5, col_shadow_deep)
+                prev_x = x
+                prev_y = cur_y
 
-                # Offset within cell
-                ox = (h % 35) + 15
-                oy = ((h >> 6) % 35) + 15
-                fx = base_wx + ox
-                fy = base_sy + oy
+        # -------------------------------------------------------------
+        # 3. GRANULAR FROTH & SHOAL PEBBLES (Local Texture & Grit)
+        # -------------------------------------------------------------
+        grid_sz = 80
+        min_gx = int((cam_x - 40) // grid_sz)
+        max_gx = int((cam_x + self.SCREEN_WIDTH + 40) // grid_sz) + 1
+        min_gy = int((dist - 40) // grid_sz)
+        max_gy = int((dist + self.SCREEN_HEIGHT + 40) // grid_sz) + 1
 
-                if fy < -25 or fy > self.SCREEN_HEIGHT + 25:
-                    continue
+        for gy in range(min_gy, max_gy):
+            cell_sy = gy * grid_sz - dist
+            for gx in range(min_gx, max_gx):
+                cell_wx = gx * grid_sz
+                h = ((gx * 374761393) ^ (gy * 668265263)) & 0xFFFFFF
+                fx = cell_wx + (h % 50) + 15
+                fy = cell_sy + ((h >> 6) % 50) + 15
 
-                ftype = (h >> 12) % 100
+                if -15 <= fy <= self.SCREEN_HEIGHT + 15:
+                    mote_type = (h >> 12) % 100
+                    if mote_type < 40:
+                        # Granular spray motes in the wind
+                        pyxel.pset(fx, fy, col_spray)
+                        pyxel.pset(fx + 3, fy + 2, col_froth)
+                    elif mote_type < 70:
+                        # Miniature sand ripple arc
+                        pyxel.line(fx - 4, fy, fx + 4, fy, col_stream)
+                        pyxel.pset(fx, fy + 1, col_shadow_deep)
+                    else:
+                        # Sandstone pebble on the shoal
+                        pyxel.rect(fx, fy, 3, 2, col_rock)
+                        pyxel.pset(fx, fy, col_rock_hl)
 
-                if ftype < 35:
-                    # 1. SkiFree-style Sand Mogul (Crescent dune bump with sunlit rim and shadow hollow)
-                    pyxel.line(fx - 10, fy, fx - 3, fy - 2, col_crest)
-                    pyxel.line(fx - 3, fy - 2, fx + 3, fy - 2, col_crest)
-                    pyxel.line(fx + 3, fy - 2, fx + 10, fy, col_crest)
-                    pyxel.line(fx - 8, fy + 1, fx + 8, fy + 1, col_shadow)
-                    pyxel.line(fx - 4, fy + 2, fx + 4, fy + 2, col_shadow_deep)
-                elif ftype < 55:
-                    # 2. Wind Ripple Ribs (horizontal sand ripples carved by desert gusts)
-                    pyxel.line(fx - 9, fy, fx + 7, fy, col_ripple)
-                    pyxel.line(fx - 13, fy + 3, fx + 5, fy + 3, col_ripple)
-                    pyxel.line(fx - 6, fy + 6, fx + 11, fy + 6, col_ripple)
-                elif ftype < 70:
-                    # 3. Desert Sandstone Pebble (little rock on the slope with drop shadow)
-                    pyxel.rect(fx, fy, 4, 3, col_rock)
-                    pyxel.pset(fx + 1, fy, col_rock_hl)
-                    pyxel.line(fx, fy + 3, fx + 3, fy + 3, col_shadow_deep)
-                elif ftype < 90:
-                    # 4. Fine Sand Grain Stipple (granularity so desert slope has grit and texture)
-                    pyxel.pset(fx, fy, col_grain_a)
-                    pyxel.pset(fx + 7, fy + 2, col_grain_b)
-                    pyxel.pset(fx - 5, fy + 5, col_grain_a)
-                    pyxel.pset(fx + 3, fy + 8, col_grain_b)
-                else:
-                    # 5. Wide Barchan Dune Ridge (sweeping dune crest across the slope)
-                    pyxel.line(fx - 22, fy + 2, fx - 7, fy - 2, col_crest)
-                    pyxel.line(fx - 7, fy - 2, fx + 7, fy - 2, col_crest)
-                    pyxel.line(fx + 7, fy - 2, fx + 22, fy + 2, col_crest)
-                    pyxel.line(fx - 18, fy + 3, fx + 18, fy + 3, col_shadow)
-                    pyxel.line(fx - 10, fy + 4, fx + 10, fy + 4, col_shadow_deep)
+    def draw_skifree_desert_terrain(self, cam_x: int, prog: float = 0.0):
+        """Draw procedural braided sandfall terrain (maintains backward compatibility)."""
+        self.draw_braided_sandfall_terrain(cam_x, prog)
 
     def draw_atmospheric_dunes_and_glass_background(self, cam_x: int, prog: float = 0.0):
-        """Backward-compatible alias for draw_skifree_desert_terrain."""
-        self.draw_skifree_desert_terrain(cam_x, prog)
+        """Backward-compatible alias for draw_braided_sandfall_terrain."""
+        self.draw_braided_sandfall_terrain(cam_x, prog)
 
     def draw_celestial_depth_astrolabe(self, cam_x: int, prog: float = 0.0):
-        """Backward-compatible alias for draw_skifree_desert_terrain."""
-        self.draw_skifree_desert_terrain(cam_x, prog)
+        """Backward-compatible alias for draw_braided_sandfall_terrain."""
+        self.draw_braided_sandfall_terrain(cam_x, prog)
 
     def draw_player_hourglass(self):
         """Draw horizontal hourglass sprite (60x40) that tilts dynamically with control velocity."""
