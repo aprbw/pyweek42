@@ -1,7 +1,7 @@
 # Grain of Doubt
 
 > **By Arian Prabowo**  
-> **Version:** v0.13.0  
+> **Version:** v0.14.0  
 > **PyWeek 42 Entry ("Borrowed Time")** — September 2026  
 > An endless retro downhill falling-hourglass arcade runner built with the **Pyxel** retro game engine.  
 > **Target Resolution:** $600 \times 800$ pixels ($3:4$ Portrait Aspect Ratio, Infinite Horizontal Arena).
@@ -156,6 +156,13 @@ python3 -m http.server 8000
 ---
 
 ## 📝 Changelog
+
+### v0.14.0 (September 2026)
+* **Kinematic Momentum & Acceleration Physics for Lust & Envy:**
+  * Replaced discrete positional translation with proper second-order Newtonian physics (`acceleration` $\to$ `velocity` $\to$ `position`).
+  * Grains and razor shards accumulate velocity (`vx`, `vy`) under Lust magnetic attraction, Envy Mega Lust pull, and Envy repulsion.
+  * When Envy Mega Lust or Lust ends, entities carry their accumulated velocity forward with momentum and smoothly decelerate through natural viscous damping (`0.94` drag), gliding across the screen instead of abruptly stopping.
+  * GOFAI bot kinematics updated to integrate entity momentum into spacetime danger projection.
 
 ### v0.13.0 (September 2026)
 * **Kairos Card Title Typography Overhaul:**

@@ -196,7 +196,7 @@ def is_dev_environment() -> bool:
 
 
 class GrainOfDoubtApp:
-    VERSION: str = "v0.13.0"
+    VERSION: str = "v0.14.0"
     SCREEN_WIDTH: int = 600
     SCREEN_HEIGHT: int = 800
 

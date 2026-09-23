@@ -112,12 +112,14 @@ class PlayTestingBot:
             cur_vx = (cur_vx + ax) * friction
             cur_x = cur_x + cur_vx
 
-            # Check collision with visible shards at time t (incorporating individual speed variance)
+            # Check collision with visible shards at time t (incorporating individual speed variance and velocity)
             for shard in visible_shards:
                 shard_spd_var = getattr(shard, "speed_variance", 1.0)
                 eff_hazard_spd = scroll_speed * hazard_speed_mod * shard_spd_var
-                sy_future = shard.y - eff_hazard_spd * t
-                sx_future = shard.x + shard.lateral_drift * t
+                shard_vx = getattr(shard, "vx", 0.0)
+                shard_vy = getattr(shard, "vy", 0.0)
+                sy_future = shard.y + (shard_vy - eff_hazard_spd) * t
+                sx_future = shard.x + (shard.lateral_drift + shard_vx) * t
 
                 # Check danger box with safety margins
                 dx = abs(cur_x - sx_future)
@@ -137,11 +139,13 @@ class PlayTestingBot:
                     proximity_factor = (1.0 - dx / safe_w) * (1.0 - dy / safe_h)
                     score -= proximity_factor * 15000.0
 
-            # Check sand collection reward (incorporating individual speed variance)
+            # Check sand collection reward (incorporating speed variance and velocity)
             for sand in visible_sands:
                 sand_spd_var = getattr(sand, "speed_variance", 1.0)
-                sy_future = sand.y - (scroll_speed * sand_spd_var) * t
-                sx_future = sand.x
+                sand_vx = getattr(sand, "vx", 0.0)
+                sand_vy = getattr(sand, "vy", 0.0)
+                sy_future = sand.y + (sand_vy - scroll_speed * sand_spd_var) * t
+                sx_future = sand.x + sand_vx * t
                 dx = abs(cur_x - sx_future)
                 dy = abs(player_y - sy_future)
 

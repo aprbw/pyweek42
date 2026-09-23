@@ -97,6 +97,8 @@ class SandGrain:
                  lateral_drift: float = None, shimmer_phase: float = None):
         self.x = x
         self.y = y
+        self.vx: float = 0.0
+        self.vy: float = 0.0
         self.speed_variance = speed_variance if speed_variance is not None else random.uniform(0.85, 1.15)
         self.alive = True
         self.bypassed = False
@@ -106,34 +108,57 @@ class SandGrain:
     def update(self, scroll_speed: float, player_x: float, player_y: float,
                repel_radius: float = 0.0, attract_radius: float = 0.0,
                mega_attract_radius: float = 0.0):
-        self.y -= scroll_speed * self.speed_variance
         self.shimmer_phase += 0.2
+        base_vy = -scroll_speed * self.speed_variance
+        base_vx = self.lateral_drift + math.sin(self.shimmer_phase * 0.4) * 0.4
 
-        # Small x-axis motion (gentle drift + oscillation - infinite arena)
-        self.x += self.lateral_drift + math.sin(self.shimmer_phase * 0.4) * 0.4
-
-        # Physics fields (Envy Mega Lust / Lust Attract / Envy Repel)
+        # Physics fields: acceleration vectors (Envy Mega Lust / Lust Attract / Envy Repel)
         dx = self.x - player_x
         dy = self.y - player_y
         dist_sq = dx * dx + dy * dy
         dist = math.sqrt(dist_sq) if dist_sq > 0 else 0.001
+        ux = -dx / dist
+        uy = -dy / dist
+
+        ax = 0.0
+        ay = 0.0
 
         if mega_attract_radius > 0 and dist < mega_attract_radius:
-            # Envy Boon: Temporary Mega Lust strongly attracts all grains within 2x vignette radius
-            pull = max(18.0, 32.0 * (1.0 - dist / mega_attract_radius))
-            self.x -= (dx / dist) * pull
-            self.y -= (dy / dist) * pull
+            # Envy Boon: Temporary Mega Lust strongly accelerates all grains within 2x vignette radius
+            accel = max(4.0, 10.0 * (1.0 - dist / mega_attract_radius))
+            ax += ux * accel
+            ay += uy * accel
 
         elif attract_radius > 0 and dist < attract_radius:
-            # Lust Boon: Magnet pull toward player
-            pull = 8.5 * (1.0 - dist / attract_radius)
-            self.x -= (dx / dist) * pull
-            self.y -= (dy / dist) * pull
+            # Lust Boon: Magnet pull acceleration toward player
+            accel = 2.4 * (1.0 - dist / attract_radius)
+            ax += ux * accel
+            ay += uy * accel
 
         elif repel_radius > 0 and dist < repel_radius:
-            # Envy Curse: Repulsion push away from player
-            push = 10.0 * (1.0 - dist / repel_radius)
-            self.x += (dx / dist) * push
+            # Envy Curse: Repulsion acceleration away from player
+            accel = 2.8 * (1.0 - dist / repel_radius)
+            ax -= ux * accel
+            ay -= uy * accel
+
+        # Integrate acceleration into velocity (momentum)
+        self.vx += ax
+        self.vy += ay
+
+        # Viscous drag / damping so momentum carries through smoothly after fields end
+        self.vx *= 0.94
+        self.vy *= 0.94
+
+        # Terminal velocity clamp to keep simulation stable
+        spd_sq = self.vx * self.vx + self.vy * self.vy
+        if spd_sq > 32.0 * 32.0:
+            spd = math.sqrt(spd_sq)
+            self.vx = (self.vx / spd) * 32.0
+            self.vy = (self.vy / spd) * 32.0
+
+        # Integrate velocity into position
+        self.x += base_vx + self.vx
+        self.y += base_vy + self.vy
 
         if self.y < -40 or abs(self.x - player_x) > 3500.0:
             self.alive = False
@@ -152,6 +177,8 @@ class GlassShard:
     def __init__(self, x: float, y: float, speed_variance: float = None):
         self.x = x
         self.y = y
+        self.vx: float = 0.0
+        self.vy: float = 0.0
         self.speed_variance = speed_variance if speed_variance is not None else random.uniform(0.85, 1.18)
         self.alive = True
         self.rotation_angle = random.uniform(0, 6.28)
@@ -161,21 +188,41 @@ class GlassShard:
     def update(self, scroll_speed: float, hazard_speed_mod: float,
                player_x: float, player_y: float, attract_radius: float = 0.0):
         effective_speed = scroll_speed * hazard_speed_mod * self.speed_variance
-        self.y -= effective_speed
-
-        # Small x-axis motion (drift + flutter - infinite arena)
-        self.x += self.lateral_drift + math.sin(self.rotation_angle) * 0.6
+        base_vy = -effective_speed
+        base_vx = self.lateral_drift + math.sin(self.rotation_angle) * 0.6
         self.rotation_angle += self.spin_speed
 
-        # Lust Curse: Glass shards pulled toward player
+        ax = 0.0
+        ay = 0.0
+
+        # Lust Curse: Glass shards accelerated toward player
         if attract_radius > 0:
             dx = self.x - player_x
             dy = self.y - player_y
             dist = math.sqrt(dx * dx + dy * dy)
             if 0 < dist < attract_radius:
-                pull = 6.5 * (1.0 - dist / attract_radius)
-                self.x -= (dx / dist) * pull
-                self.y -= (dy / dist) * pull
+                accel = 1.8 * (1.0 - dist / attract_radius)
+                ax += (-dx / dist) * accel
+                ay += (-dy / dist) * accel
+
+        # Integrate acceleration into velocity (momentum)
+        self.vx += ax
+        self.vy += ay
+
+        # Viscous drag / damping
+        self.vx *= 0.93
+        self.vy *= 0.93
+
+        # Terminal velocity clamp
+        spd_sq = self.vx * self.vx + self.vy * self.vy
+        if spd_sq > 22.0 * 22.0:
+            spd = math.sqrt(spd_sq)
+            self.vx = (self.vx / spd) * 22.0
+            self.vy = (self.vy / spd) * 22.0
+
+        # Integrate velocity into position
+        self.x += base_vx + self.vx
+        self.y += base_vy + self.vy
 
         if self.y < -60 or abs(self.x - player_x) > 3500.0:
             self.alive = False

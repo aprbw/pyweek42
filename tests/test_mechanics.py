@@ -1199,3 +1199,79 @@ def test_kairos_title_significantly_bigger_and_justified_center():
         main.draw_text_scaled = orig_draw
 
 
+def test_envy_momentum_continuation_at_end():
+    """Verify sand grains accelerate and preserve their velocity/momentum after Envy ends."""
+    from engine.entities import SandGrain
+
+    sand = SandGrain(300.0, 450.0, speed_variance=1.0, lateral_drift=0.0)
+    assert sand.vx == 0.0
+    assert sand.vy == 0.0
+
+    player_x = 300.0
+    player_y = 320.0
+    mega_r = 1920.0
+    scroll_speed = 5.0
+
+    # Simulate 5 frames of Envy Mega Lust: sand accelerates upward towards player.y (320)
+    for _ in range(5):
+        sand.update(scroll_speed, player_x, player_y, mega_attract_radius=mega_r)
+
+    assert sand.vy < -5.0, f"Expected upward acceleration (vy < -5), got {sand.vy}"
+    vy_during_envy = sand.vy
+    y_before_end = sand.y
+
+    # Mega Lust ends! mega_attract_radius becomes 0.0
+    sand.update(scroll_speed, player_x, player_y, mega_attract_radius=0.0)
+
+    # Momentum must persist: vy must still be negative (moving upward)
+    assert sand.vy < -4.0, f"Expected momentum continuation after Envy ends, got {sand.vy}"
+    # Total distance moved upward this frame must exceed normal scroll speed (-5.0)
+    delta_y = sand.y - y_before_end
+    assert delta_y < -5.0, f"Sand should carry momentum faster than scroll speed, delta_y={delta_y}"
+
+    # Smooth viscous drag decay over subsequent frames
+    prev_vy = sand.vy
+    for _ in range(10):
+        sand.update(scroll_speed, player_x, player_y, mega_attract_radius=0.0)
+        assert abs(sand.vy) <= abs(prev_vy), "Velocity magnitude must decay smoothly via drag"
+        prev_vy = sand.vy
+
+
+def test_lust_momentum_continuation_for_sands_and_shards():
+    """Verify both sand grains and glass shards accelerate and preserve momentum when Lust ends."""
+    from engine.entities import SandGrain, GlassShard
+
+    sand = SandGrain(350.0, 320.0, speed_variance=1.0, lateral_drift=0.0)
+    shard = GlassShard(250.0, 320.0, speed_variance=1.0)
+    shard.lateral_drift = 0.0
+
+    player_x = 300.0
+    player_y = 320.0
+    lust_r = 200.0
+    scroll_speed = 5.0
+
+    # Accelerate towards player at (300, 320) for 4 frames
+    for _ in range(4):
+        sand.update(scroll_speed, player_x, player_y, attract_radius=lust_r)
+        shard.update(scroll_speed, 1.0, player_x, player_y, attract_radius=lust_r)
+
+    # Sand was at x=350, so accelerated left (vx < 0)
+    assert sand.vx < -0.5, f"Sand should accelerate left, got {sand.vx}"
+    # Shard was at x=250, so accelerated right (vx > 0)
+    assert shard.vx > 0.5, f"Shard should accelerate right, got {shard.vx}"
+
+    # Lust ends! attract_radius becomes 0.0
+    sand_vx_end = sand.vx
+    shard_vx_end = shard.vx
+
+    sand.update(scroll_speed, player_x, player_y, attract_radius=0.0)
+    shard.update(scroll_speed, 1.0, player_x, player_y, attract_radius=0.0)
+
+    # Both must carry their lateral momentum
+    assert sand.vx < 0.0, "Sand must continue traveling left with momentum after Lust ends"
+    assert shard.vx > 0.0, "Shard must continue traveling right with momentum after Lust ends"
+    assert abs(sand.vx) < abs(sand_vx_end), "Sand momentum decays gracefully via drag"
+    assert abs(shard.vx) < abs(shard_vx_end), "Shard momentum decays gracefully via drag"
+
+
+
