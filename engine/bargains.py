@@ -66,8 +66,8 @@ BARGAIN_REGISTRY: Dict[SinType, BargainDefinition] = {
         latin_name="Luxuria",
         boon_name="Sand Magnet Field",
         curse_name="Hazard Magnet Field",
-        boon_base=180.0,  # radius in pixels
-        curse_base=180.0,  # radius in pixels
+        boon_base=100.0,  # radius in pixels
+        curse_base=100.0,  # radius in pixels
         boon_unit="px radius",
         curse_unit="px radius",
     ),
@@ -97,11 +97,11 @@ BARGAIN_REGISTRY: Dict[SinType, BargainDefinition] = {
         sin=SinType.WRATH,
         name="Wrath",
         latin_name="Ira",
-        boon_name="Hazard Purge",
+        boon_name="Wrath Blast (1200px)",
         curse_name="Zero Yield Period",
-        boon_base=300.0,  # 10.0 seconds (frames)
+        boon_base=1200.0,  # radius in pixels
         curse_base=300.0,  # 10.0 seconds (frames)
-        boon_unit="frames",
+        boon_unit="px blast radius",
         curse_unit="frames",
     ),
     SinType.SLOTH: BargainDefinition(
@@ -176,8 +176,8 @@ class BargainManager:
             }
 
         elif sin == SinType.LUST:
-            # Permanently attracts both sand and hazards; subsequent pacts increase radius
-            radius = 180.0 + k * 60.0
+            # Permanently attracts both sand and hazards; starts at 100px, adds +50px per pact
+            radius = 100.0 + k * 50.0
             state.lust_attract_radius = radius
             state.lust_hazard_attract_radius = radius
             summary = {
@@ -215,14 +215,17 @@ class BargainManager:
             }
 
         elif sin == SinType.WRATH:
-            # Non-compounding: flat 10.0s wipe, flat 10.0s zero-yield
-            state.wrath_wipe_timer = 300
-            state.wrath_zero_yield_timer = 300
+            # Wrath is an explosion! Everything (both sand and glass shards) within 1200px
+            # is given an instant HUGE acceleration away from the player
+            shards_hit = 0
+            sands_hit = 0
             if entities_manager:
-                entities_manager.wipe_all_hazards()
+                shards_hit, sands_hit = entities_manager.wrath_explosion(explosion_radius=1200.0, impulse_strength=46.0)
+            state.trigger_shake(duration=20, intensity=12.0)
+            state.wrath_zero_yield_timer = 300
             summary = {
                 "sin": defn.name,
-                "boon": "Hazard Purge: 10.0s (Screen Cleared)",
+                "boon": f"Wrath Blast: {shards_hit} shards & {sands_hit} sands detonated (1200px)",
                 "curse": "Zero Yield: 10.0s (0 pts/sand)",
             }
 
@@ -286,7 +289,7 @@ class BargainManager:
                 state.lust_attract_radius = 0.0
                 state.lust_hazard_attract_radius = 0.0
             else:
-                radius = 180.0 + (new_k - 1) * 60.0
+                radius = 100.0 + (new_k - 1) * 50.0
                 state.lust_attract_radius = radius
                 state.lust_hazard_attract_radius = radius
             summary = {

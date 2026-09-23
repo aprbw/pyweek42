@@ -156,6 +156,11 @@ class StateManager:
             self.trigger_game_over("Hourglass Shattered by Hazard")
         return True
 
+    def trigger_shake(self, duration: int = 10, intensity: float = 12.0) -> None:
+        """Trigger screen shake for given duration in frames and intensity in pixels."""
+        self.shake_timer = duration
+        self.shake_intensity = intensity
+
     def add_score(self, base_points: int = 1):
         if self.wrath_zero_yield_timer > 0:
             return

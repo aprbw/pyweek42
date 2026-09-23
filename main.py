@@ -196,7 +196,7 @@ def is_dev_environment() -> bool:
 
 
 class GrainOfDoubtApp:
-    VERSION: str = "v0.15.0"
+    VERSION: str = "v0.16.0"
     SCREEN_WIDTH: int = 600
     SCREEN_HEIGHT: int = 800
 
@@ -803,13 +803,9 @@ class GrainOfDoubtApp:
         cos_a = math.cos(angle)
         sin_a = math.sin(angle)
 
-        pts = [
-            (0, -20),
-            (10, 20),
-            (-10, 15),
-        ]
+        verts = getattr(shard, "vertices", [(0, -20), (10, 20), (-10, 15)])
         rot_pts = []
-        for x, y in pts:
+        for x, y in verts:
             rx = int(sx + x * cos_a - y * sin_a)
             ry = int(sy + x * sin_a + y * cos_a)
             rot_pts.append((rx, ry))
@@ -1045,13 +1041,13 @@ class GrainOfDoubtApp:
                 draw_text_scaled(cx + 16, col_y + 168, "Hurl Hazards Down (2s)", 11, scale=2)
             elif sin == SinType.LUST:
                 draw_text_scaled(cx + 16, col_y + 144, "Sand Magnet", 7, scale=2)
-                draw_text_scaled(cx + 16, col_y + 168, f"{180 + k * 60}px (Permanent)", 11, scale=2)
+                draw_text_scaled(cx + 16, col_y + 168, f"{100 + k * 50}px (Permanent)", 11, scale=2)
             elif sin == SinType.GLUTTONY:
                 draw_text_scaled(cx + 16, col_y + 144, "+Sand Spawn Rate", 7, scale=2)
                 draw_text_scaled(cx + 16, col_y + 168, "+50% Sand Rate", 11, scale=2)
             elif sin == SinType.WRATH:
-                draw_text_scaled(cx + 16, col_y + 144, "Hazard Purge", 7, scale=2)
-                draw_text_scaled(cx + 16, col_y + 168, "10.0s Screen Clear", 11, scale=2)
+                draw_text_scaled(cx + 16, col_y + 144, "Wrath Explosion", 7, scale=2)
+                draw_text_scaled(cx + 16, col_y + 168, "Blast 1200px Radius", 11, scale=2)
             else:
                 draw_text_scaled(cx + 16, col_y + 144, f"+{defn.boon_name}", 7, scale=2)
                 draw_text_scaled(cx + 16, col_y + 168, f"{defn.boon_base} {defn.boon_unit}", 11, scale=2)
@@ -1079,7 +1075,7 @@ class GrainOfDoubtApp:
                 draw_text_scaled(cx + 16, col_y + 268, f"-{drag:.0f}% Steering (Wave)", 8, scale=2)
             elif sin == SinType.LUST:
                 draw_text_scaled(cx + 16, col_y + 244, "Hazard Magnet", 7, scale=2)
-                draw_text_scaled(cx + 16, col_y + 268, f"{180 + k * 60}px (Permanent)", 8, scale=2)
+                draw_text_scaled(cx + 16, col_y + 268, f"{100 + k * 50}px (Permanent)", 8, scale=2)
             elif sin == SinType.GLUTTONY:
                 draw_text_scaled(cx + 16, col_y + 244, "+Hazard Spawn Rate", 7, scale=2)
                 draw_text_scaled(cx + 16, col_y + 268, "+50% Hazard Rate", 8, scale=2)

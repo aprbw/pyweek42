@@ -1,7 +1,7 @@
 # Grain of Doubt
 
 > **By Arian Prabowo**  
-> **Version:** v0.15.0  
+> **Version:** v0.16.0  
 > **PyWeek 42 Entry ("Borrowed Time")** — September 2026  
 > An endless retro downhill falling-hourglass arcade runner built with the **Pyxel** retro game engine.  
 > **Target Resolution:** 600 × 800 pixels (3:4 Portrait Aspect Ratio, Infinite Horizontal Arena).
@@ -17,13 +17,21 @@
 ## ⏳ Narrative & Gameplay Premise
 
 You control a fragile hourglass falling through the neck of an infinite, crumbling cosmic hourglass (**"Hourglass-ception"**).
-Steer left or right to avoid razor-sharp falling glass shards while collecting glistening golden grains of sand.
+Steer left or right to avoid falling glass shards while collecting glistening golden grains of sand.
 
 ### Chronos vs. Kairos (The Dual-Clock Engine)
 * **Chronos (8.0s descent):** Relentless kinetic tension. Steer left or right across an infinitely wide horizontal arena (±4.5 screen procedural generation horizon) to dodge oncoming glass shards while reaping cascading sand motes.
 * **Kairos (2.0s circuit breaker):** Every 8 seconds, normal time freezes. You are presented with **2 Faustian Bargain cards** drawn from the Seven Deadly Sins. You must choose within 2.0 seconds—if you hesitate, doubt shatters your vessel (*Paralyzed by Doubt: Kairos Expired*). A vertical side timer drains from top to bottom.
   * **Input Re-press Protection:** Entering Kairos requires unpressing/releasing lateral steering first before choosing, preventing accidental card selection if holding arrows during Chronos.
 * **Faustian Bargains:** Every bargain grants an immediate survival boon at the cost of a permanent curse. Repeatedly choosing sins compounds their effects.
+
+### Dynamic Glass Shards: Scalene Geometry & Continuous Angular Spin
+* Glass shards are rendered as dynamically generated, randomized non-right-angled (acute/scalene) triangles rather than uniform right triangles.
+* Each shard spins continuously with an individual randomized angular velocity (`spin_speed` ∈ [-0.18, -0.04] ∪ [0.04, 0.18] rad/frame), creating realistic tumbling debris during Chronos descent.
+
+### Deep World Simulation & Hazard Catch-up (10 Seconds Down)
+* To support downward push mechanics (such as **Sloth's Lazy Reprieve** downward throw and **Wrath's Explosion** blast), the active entity simulation domain extends several screens downward ($y \le 6000.0$ pixels, approximately 10–12 seconds of scroll time).
+* Entities blasted or hurled far downward are not prematurely culled; they remain fully simulated with second-order Newtonian physics, deceleration, and viscous damping. As time marches forward, these pushed hazards inevitably scroll back upward into player territory—ensuring that every survival choice carries lasting gameplay consequences.
 
 ---
 
@@ -37,7 +45,7 @@ Steer left or right to avoid razor-sharp falling glass shards while collecting g
 | `Space` / `Enter` or Tap Screen | Start / Restart | Start game or restart after a 2.0s post-mortem lockout (debounced) |
 | `X` | Return to Menu / Quit | In gameplay: return to Title Menu. On Title Menu: quit game (no-op in browser) |
 | `~` / `` ` `` (Backtick) | Toggle Dev Mode | On-screen debug HUD, live telemetry, and shortcut cheats |
-| `I` (in Dev Mode) | Toggle God Mode | Invulnerability toggle (immune to razor shards and void collision) |
+| `I` (in Dev Mode) | Toggle God Mode | Invulnerability toggle (immune to glass shards and void collision) |
 | `B` (in Dev Mode) | Toggle GOFAI Bot | Autonomous kinematic AI playtesting agent (80% speed handicap, 20% bottom blind zone) |
 | `V` (in Dev Mode) | Toggle MP4 Recording | Lossless FFmpeg background canvas video recorder |
 | `1` - `7` (in Dev Mode) | Add Faustian Pact | Instant-apply sin pact level (1:Pride, 2:Greed, 3:Lust, 4:Envy, 5:Gluttony, 6:Wrath, 7:Sloth) |
@@ -59,8 +67,8 @@ Every 10.0 seconds (300 frames), normal time flow stops and **Kairos** strikes. 
    * *Boon:* During Borrowed Time, each sand multiplies the current score by 110% (Score = max(Score + 1, floor(Score × 1.10))) instead of adding 1 point.
    * *Curse:* Triggers **Borrowed Time** for a randomized window of **10.0 to 18.0 seconds** (300 to 540 frames). At the end, you definitely die (*Borrowed Time Expired: Debt Collected*). Warning HUD shows `BORROWED TIME`, and Dev Mode displays the countdown timer.
 3. **Lust:**
-   * *Boon:* Sand magnetic attraction permanently pulls golden sands within radius toward hourglass (180.0px on 1st pact, +60.0px on subsequent pacts).
-   * *Curse:* Hazard magnetic attraction permanently pulls razor glass shards within radius toward hourglass (180.0px on 1st pact, +60.0px on subsequent pacts).
+   * *Boon:* Sand magnetic attraction permanently pulls golden sands within radius toward hourglass (100.0px on 1st pact, +50.0px on subsequent pacts).
+   * *Curse:* Hazard magnetic attraction permanently pulls glass shards within radius toward hourglass (100.0px on 1st pact, +50.0px on subsequent pacts).
 4. **Envy:**
    * *Boon:* Activates **Tidal Pull** for 2.0 seconds (60 frames), very strongly attracting all golden sand grains within 2× the current vignette pixel radius (1920px on Pact 1) toward the hourglass with full Newtonian momentum.
    * *Curse:* Inflicts **Vignette Vision**, a multi-circle concentric mask with 5 graduated dither transparency tiers between an inner clear core and outer void boundary:
@@ -68,13 +76,13 @@ Every 10.0 seconds (300 frames), normal time flow stops and **Kairos** strikes. 
      * **Innermost circle** (full clear vision): radius = 1000 × 0.8^(k+1) px (Pact 1: 640px, Pact 2: 512px, Pact 3: 410px, Pact 4: 328px, Pact 5: 262px).
 5. **Gluttony:**
    * *Boon:* Increases golden sand spawn rate by +50% per pact level (+0.50).
-   * *Curse:* Increases razor hazard spawn rate by +50% per pact level (+0.50).
+   * *Curse:* Increases glass shard spawn rate by +50% per pact level (+0.50).
 6. **Wrath:**
-   * *Boon:* Instantly purges all razor hazards on screen, granting a 10.0-second (300 frames) hazard-free grace window. (The only sin that does not compound after multiple use).
+   * *Boon:* **Wrath Blast** — Detonates an instant kinetic explosion centered on the player: all entities (both golden sand grains and glass shards) within a **1200-pixel radius** are blasted outward with a massive acceleration impulse away from the hourglass.
    * *Curse:* Zero yield: all sand grains collected yield 0 points for 10.0 seconds (300 frames).
 7. **Sloth:**
-   * *Boon:* **Lazy Reprieve** — Sloth means lazy; lazy means doing nothing! In a single high-acceleration impulse frame, all razor shards below the player within 3 screens wide are hurled downward toward the bottom horizon (vy ≥ 38 px/frame, pushed to y ≥ y_player + 520 px). For ~2.0 to 2.5 seconds, the entire descent space below you is completely cleared of hazards, allowing you to literally do nothing and survive.
-   * *Curse:* The hurled shards clump together into a dense, dangerous wave near the bottom horizon that later scrolls back upward toward the player. Additionally, imposes permanent compounding lateral drag on hourglass steering, reducing horizontal translation speed by -20% × 1.5^k (0.20 reduction on 1st pact, 0.30 on 2nd, 0.45 on 3rd; minimum modifier 0.20).
+   * *Boon:* **Lazy Reprieve** — Sloth means lazy; lazy means doing nothing! In a single high-acceleration impulse frame, all glass shards below the player within 3 screens wide are hurled downward toward the bottom horizon (vy ≥ 38 px/frame, pushed to y ≥ y_player + 520 px). For ~2.0 to 2.5 seconds, the entire descent space below you is completely cleared of hazards, allowing you to literally do nothing and survive.
+   * *Curse:* The hurled glass shards clump together into a dense, dangerous wave near the bottom horizon that later scrolls back upward toward the player. Additionally, imposes permanent compounding lateral drag on hourglass steering, reducing horizontal translation speed by -20% × 1.5^k (0.20 reduction on 1st pact, 0.30 on 2nd, 0.45 on 3rd; minimum modifier 0.20).
 
 ---
 
@@ -157,6 +165,24 @@ python3 -m http.server 8000
 
 ## 📝 Changelog
 
+### v0.16.0 (September 2026)
+* **Wrath Rework — Radial Kinetic Explosion:**
+  * Replaced screen wipe with an instant, powerful radial shockwave explosion.
+  * All entities (both sand grains and glass shards) within a **1200-pixel radius** are blasted outward away from the player with a massive acceleration impulse (`impulse = 46.0 px/frame`).
+  * Triggers dramatic screen shake (12px intensity for 20 frames) and dual-ring particle burst shockwaves.
+  * Zero-yield curse (10.0s / 300 frames) remains in effect.
+* **Lust Rebalance (100px Base + 50px Scaling):**
+  * Rebalanced Lust magnetic attraction to prevent early-game overload: base attraction radius reduced from 180px to **100px**, scaling by **+50px** per subsequent pact ($r = 100.0 + k \times 50.0$ px) for both sand and glass shards.
+* **Deep World Simulation (10 Seconds Down / Consequence Catch-up):**
+  * Expanded entity simulation and despawn boundary down to $y = 6000.0$ pixels (~10–12 seconds of downward descent).
+  * Prevents downward-hurled hazards (Sloth Lazy Reprieve and Wrath explosions) from being culled offscreen, ensuring their consequences persist and catch up to the player.
+  * Raised terminal velocity clamp to 50.0 px/frame to preserve explosive blast momentum.
+* **Dynamic Glass Shard Rotation & Randomized Triangle Geometry:**
+  * Replaced uniform right-angled triangles with individually randomized non-right-angled (acute/scalene) triangles verified by vector dot products.
+  * Each glass shard now tumbles continuously with an organic, randomized angular velocity.
+* **Terminology Standardization:**
+  * Enforced strict naming consistency across the entire codebase and documentation: all hazard entities are consistently named **glass shards** (zero occurrences of "razor").
+
 ### v0.15.0 (September 2026)
 * **Sloth Rework — Lazy Reprieve (Lazy = Doing Nothing):**
   * Reworked Sloth into the "Lazy Reprieve": Sloth means lazy; lazy means doing nothing!
@@ -172,7 +198,7 @@ python3 -m http.server 8000
 ### v0.14.0 (September 2026)
 * **Kinematic Momentum & Acceleration Physics for Lust & Envy:**
   * Replaced discrete positional translation with proper second-order Newtonian physics (`acceleration` → `velocity` → `position`).
-  * Grains and razor shards accumulate velocity (`vx`, `vy`) under Lust magnetic attraction, Envy Tidal Pull, and Envy repulsion.
+  * Grains and glass shards accumulate velocity (`vx`, `vy`) under Lust magnetic attraction, Envy Tidal Pull, and Envy repulsion.
   * When Envy Tidal Pull or Lust ends, entities carry their accumulated velocity forward with momentum and smoothly decelerate through natural viscous damping (`0.94` drag), gliding across the screen instead of abruptly stopping.
   * GOFAI bot kinematics updated to integrate entity momentum into spacetime danger projection.
 
@@ -226,7 +252,7 @@ python3 -m http.server 8000
 * **Faustian Bargains Recalibration:**
   * **Pride:** Organic randomized clusters (+1 grain per level, starting with pairs then triplets); flat +25% descent speed per pact.
   * **Greed:** Borrowed Time (10.0–18.0s); sand multiplies score by 110%; lethal timer expiration.
-  * **Lust:** Permanent magnetic attraction for both sand and razor hazards; subsequent pacts widen attraction radius by +60px.
+  * **Lust:** Permanent magnetic attraction for both sand and glass shards; subsequent pacts widen attraction radius by +50px.
   * **Gluttony:** Symmetric +50% boost to sand and hazard spawn rates per pact level.
   * **Wrath:** Flat 10.0s hazard wipe and 10.0s zero-yield window; does not compound on repeat pacts.
   * **Sloth:** Immediate hazard freeze (0.0 speed) with linear recovery over 8.0 seconds (240 frames); lateral drag curse scales by -5% × 1.5^k.

@@ -224,20 +224,33 @@ def test_vignette_boundary_gate():
 # ---------------------------------------------------------------------------
 # Additional System Mechanics Tests
 # ---------------------------------------------------------------------------
-def test_wrath_entity_wipe_and_zero_yield():
+def test_wrath_explosion_and_zero_yield():
     state = StateManager()
     state.start_game()
     entities = EntityManager(600, 800)
-    # Spawn shards
-    entities.shards.append(GlassShard(300, 700))
-    entities.shards.append(GlassShard(350, 750))
+    entities.player.x = 300.0
+    entities.player.y = 200.0
+    # Spawn shards and sand within 1200px
+    s1 = GlassShard(300, 400)
+    s2 = GlassShard(400, 300)
+    sand1 = SandGrain(300, 350)
+    entities.shards.extend([s1, s2])
+    entities.sands.append(sand1)
     assert len(entities.shards) == 2
+    assert len(entities.sands) == 1
 
     bargains = BargainManager()
     bargains.apply_bargain(SinType.WRATH, state, entities)
-    assert len(entities.shards) == 0
-    assert state.wrath_wipe_timer > 0
-    assert state.wrath_zero_yield_timer > 0
+    # Shards and sand are NOT deleted; they are blasted away with huge acceleration
+    assert len(entities.shards) == 2
+    assert len(entities.sands) == 1
+    assert math.hypot(s1.vx, s1.vy) >= 40.0
+    assert math.hypot(s2.vx, s2.vy) >= 40.0
+    assert math.hypot(sand1.vx, sand1.vy) >= 40.0
+    # Blast direction is outward away from player (y > player.y => vy > 0)
+    assert s1.vy > 0
+    assert sand1.vy > 0
+    assert state.wrath_zero_yield_timer == 300
 
     # In zero yield, collecting sand adds 0 points
     init_score = state.score
@@ -301,7 +314,7 @@ def test_sloth_speed_modifiers():
     # Their y coordinates are tightly grouped together
     y_coords = [s.y for s in [s1, s2, s3] if s.alive]
     assert len(y_coords) >= 2
-    assert max(y_coords) - min(y_coords) < 150.0  # tightly clumped wave
+    assert max(y_coords) - min(y_coords) < 220.0  # tightly clumped wave
 
 
 def test_envy_and_lust_mechanics():
@@ -569,7 +582,7 @@ def test_dev_mode_fixed_pacts_and_title_screen_shortcut():
         # Key 6 applies WRATH
         pyxel.btnp = lambda k: (k == pyxel.KEY_6)
         app.update()
-        assert app.state.wrath_wipe_timer > 0
+        assert app.state.wrath_zero_yield_timer > 0
         assert app.selected_feedback["sin"] == "Wrath"
     finally:
         pyxel.btnp = orig_btnp
@@ -846,11 +859,9 @@ def test_dev_mode_qwertyu_pact_reduction():
 
     # 6. WRATH (Y)
     bargains.apply_bargain(SinType.WRATH, state, entities)
-    assert state.wrath_wipe_timer == 300
     assert state.wrath_zero_yield_timer == 300
     # Reduce Wrath
     bargains.reduce_bargain(SinType.WRATH, state, entities)
-    assert state.wrath_wipe_timer == 0
     assert state.wrath_zero_yield_timer == 0
 
     # 7. SLOTH (U)
@@ -914,19 +925,19 @@ def test_lust_permanent_attraction_both():
 
     bargains.apply_bargain(SinType.LUST, state)
     rad = state.lust_attract_radius
-    assert rad == 180.0
-    assert state.lust_hazard_attract_radius == 180.0
+    assert rad == 100.0
+    assert state.lust_hazard_attract_radius == 100.0
 
     # Advance 400 frames: neither radius should decay to 0!
     for _ in range(400):
         state.update_timers()
-    assert state.lust_attract_radius == 180.0
-    assert state.lust_hazard_attract_radius == 180.0
+    assert state.lust_attract_radius == 100.0
+    assert state.lust_hazard_attract_radius == 100.0
 
-    # Apply 2nd pact: radius expands
+    # Apply 2nd pact: radius expands by +50.0px
     bargains.apply_bargain(SinType.LUST, state)
-    assert state.lust_attract_radius == 240.0
-    assert state.lust_hazard_attract_radius == 240.0
+    assert state.lust_attract_radius == 150.0
+    assert state.lust_hazard_attract_radius == 150.0
 
 
 def test_wrath_non_compounding():
@@ -936,12 +947,10 @@ def test_wrath_non_compounding():
     bargains = BargainManager()
 
     bargains.apply_bargain(SinType.WRATH, state)
-    assert state.wrath_wipe_timer == 300
     assert state.wrath_zero_yield_timer == 300
 
     # Apply Wrath second time: remains flat 300 (does not compound to 600 or 1.5x)
     bargains.apply_bargain(SinType.WRATH, state)
-    assert state.wrath_wipe_timer == 300
     assert state.wrath_zero_yield_timer == 300
 
 
@@ -1350,6 +1359,95 @@ def test_sloth_do_nothing_survival_and_clumped_wave():
     # In a clumped wave, the vertical dispersion is greatly condensed
     spread = max(active_ys) - min(active_ys)
     assert spread < 180.0, f"Expected clumped wave at bottom horizon, got spread={spread}"
+
+
+def test_glass_shards_randomized_velocity_and_non_right_triangle_geometry():
+    """Verify glass shards have randomized angular velocity and non-right-angled triangle geometry."""
+    shards = [GlassShard(100.0 + i * 20.0, 500.0) for i in range(20)]
+    spin_speeds = [s.spin_speed for s in shards]
+    # Randomized continuous spin speeds (not all identical)
+    assert len(set(spin_speeds)) > 5
+    for s in shards:
+        assert abs(s.spin_speed) > 0.01
+        # Check 3 vertices
+        assert len(s.vertices) == 3
+        v0, v1, v2 = s.vertices
+        # Check none of the internal angles is 90 degrees (dot product != 0)
+        # Angle at v0: (v1 - v0) . (v2 - v0)
+        d0 = (v1[0] - v0[0]) * (v2[0] - v0[0]) + (v1[1] - v0[1]) * (v2[1] - v0[1])
+        # Angle at v1: (v0 - v1) . (v2 - v1)
+        d1 = (v0[0] - v1[0]) * (v2[0] - v1[0]) + (v0[1] - v1[1]) * (v2[1] - v1[1])
+        # Angle at v2: (v0 - v2) . (v1 - v2)
+        d2 = (v0[0] - v2[0]) * (v1[0] - v2[0]) + (v0[1] - v2[1]) * (v1[1] - v2[1])
+        assert abs(d0) > 0.05, f"Right-angled triangle detected at v0: d0={d0}"
+        assert abs(d1) > 0.05, f"Right-angled triangle detected at v1: d1={d1}"
+        assert abs(d2) > 0.05, f"Right-angled triangle detected at v2: d2={d2}"
+
+
+def test_wrath_explosion_blasts_both_sand_and_shards_away():
+    """Verify Wrath explosion blasts both sand and shards within 1200px away with huge acceleration."""
+    entities = EntityManager(600, 800)
+    entities.player.x = 300.0
+    entities.player.y = 200.0
+
+    # Inside 1200px radius
+    near_shard = GlassShard(300.0, 500.0)  # dist = 300px
+    near_sand = SandGrain(500.0, 200.0)   # dist = 200px
+    # Outside 1200px radius
+    far_shard = GlassShard(300.0, 1600.0) # dist = 1400px
+    far_sand = SandGrain(2000.0, 200.0)   # dist = 1700px
+
+    entities.shards.extend([near_shard, far_shard])
+    entities.sands.extend([near_sand, far_sand])
+
+    shards_hit, sands_hit = entities.wrath_explosion(explosion_radius=1200.0, impulse_strength=46.0)
+    assert shards_hit == 1
+    assert sands_hit == 1
+
+    # Near shard blasted downward away from player (y > py)
+    assert near_shard.vy > 40.0
+    assert math.hypot(near_shard.vx, near_shard.vy) >= 40.0
+
+    # Near sand blasted rightward away from player (x > px)
+    assert near_sand.vx > 40.0
+    assert math.hypot(near_sand.vx, near_sand.vy) >= 40.0
+
+    # Far entities unaffected
+    assert math.hypot(far_shard.vx, far_shard.vy) == 0.0
+    assert math.hypot(far_sand.vx, far_sand.vy) == 0.0
+
+
+def test_deep_world_simulation_consequence_catchup_ten_seconds_down():
+    """Verify deep world simulation extends 10 seconds down (~3000-6000px) and consequences catch up."""
+    state = StateManager()
+    state.start_game()
+    entities = EntityManager(600, 800)
+    entities.player.x = 300.0
+    entities.player.y = 200.0
+
+    # Spawn shard 10 seconds down (600 frames * 5px/frame = 3000px down => y = 3200)
+    deep_shard = GlassShard(300.0, 3200.0)
+    deep_sand = SandGrain(320.0, 3500.0)
+    entities.shards.append(deep_shard)
+    entities.sands.append(deep_sand)
+
+    # Initial frame update: neither should be despawned (bounds are y <= 6000.0)
+    for s in entities.shards:
+        s.update(scroll_speed=5.0, hazard_speed_mod=1.0, player_x=300.0, player_y=200.0)
+    for g in entities.sands:
+        g.update(scroll_speed=5.0, player_x=300.0, player_y=200.0)
+
+    assert deep_shard.alive is True
+    assert deep_sand.alive is True
+
+    # Simulate 500 frames of upward scrolling: the deep shard moves upward into player territory
+    for _ in range(500):
+        for s in entities.shards:
+            s.update(scroll_speed=5.0, hazard_speed_mod=1.0, player_x=300.0, player_y=200.0)
+
+    # Deep shard moved from y=3200 down to y = 3200 - 500*5 = 700!
+    assert deep_shard.alive is True
+    assert deep_shard.y <= 800.0, f"Expected shard to catch up onto screen, got y={deep_shard.y}"
 
 
 

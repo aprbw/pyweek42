@@ -151,16 +151,17 @@ class SandGrain:
 
         # Terminal velocity clamp to keep simulation stable
         spd_sq = self.vx * self.vx + self.vy * self.vy
-        if spd_sq > 32.0 * 32.0:
+        if spd_sq > 50.0 * 50.0:
             spd = math.sqrt(spd_sq)
-            self.vx = (self.vx / spd) * 32.0
-            self.vy = (self.vy / spd) * 32.0
+            self.vx = (self.vx / spd) * 50.0
+            self.vy = (self.vy / spd) * 50.0
 
         # Integrate velocity into position
         self.x += base_vx + self.vx
         self.y += base_vy + self.vy
 
-        if self.y < -40 or abs(self.x - player_x) > 3500.0:
+        # World bounds: simulate 10+ seconds down (up to y=6000.0) so pushed-down entities catch up
+        if self.y < -40 or self.y > 6000.0 or abs(self.x - player_x) > 4500.0:
             self.alive = False
             self.bypassed = True
 
@@ -182,8 +183,26 @@ class GlassShard:
         self.speed_variance = speed_variance if speed_variance is not None else random.uniform(0.85, 1.18)
         self.alive = True
         self.rotation_angle = random.uniform(0, 6.28)
-        self.spin_speed = random.choice([-0.12, -0.08, 0.08, 0.12])
+        spin_direction = random.choice([-1.0, 1.0])
+        self.spin_speed = spin_direction * random.uniform(0.04, 0.18)
         self.lateral_drift = random.uniform(-1.0, 1.0)
+
+        # Generate unique randomized scalene/acute triangle (never a right-angled triangle)
+        tip_x = random.uniform(-6.0, 6.0)
+        tip_y = random.uniform(-25.0, -15.0)
+        b1_x = random.uniform(7.0, 17.0)
+        b1_y = random.uniform(10.0, 22.0)
+        b2_x = random.uniform(-17.0, -7.0)
+        b2_y = random.uniform(8.0, 20.0)
+
+        # Guarantee non-right-angled triangle: check dot products of all 3 corners
+        d1 = (b1_x - tip_x) * (b2_x - tip_x) + (b1_y - tip_y) * (b2_y - tip_y)
+        d2 = (tip_x - b1_x) * (b2_x - b1_x) + (tip_y - b1_y) * (b2_y - b1_y)
+        d3 = (tip_x - b2_x) * (b1_x - b2_x) + (tip_y - b2_y) * (b1_y - b2_y)
+        if any(abs(d) < 8.0 for d in (d1, d2, d3)):
+            tip_x += 3.5
+
+        self.vertices: List[Tuple[float, float]] = [(tip_x, tip_y), (b1_x, b1_y), (b2_x, b2_y)]
 
     def update(self, scroll_speed: float, hazard_speed_mod: float,
                player_x: float, player_y: float, attract_radius: float = 0.0):
@@ -213,18 +232,19 @@ class GlassShard:
         self.vx *= 0.93
         self.vy *= 0.93
 
-        # Terminal velocity clamp
+        # Terminal velocity clamp (allows high explosive momentum up to 50.0)
         spd_sq = self.vx * self.vx + self.vy * self.vy
-        if spd_sq > 22.0 * 22.0:
+        if spd_sq > 50.0 * 50.0:
             spd = math.sqrt(spd_sq)
-            self.vx = (self.vx / spd) * 22.0
-            self.vy = (self.vy / spd) * 22.0
+            self.vx = (self.vx / spd) * 50.0
+            self.vy = (self.vy / spd) * 50.0
 
         # Integrate velocity into position
         self.x += base_vx + self.vx
         self.y += base_vy + self.vy
 
-        if self.y < -60 or abs(self.x - player_x) > 3500.0:
+        # World bounds: simulate 10+ seconds down (up to y=6000.0) so pushed-down consequences catch up
+        if self.y < -60 or self.y > 6000.0 or abs(self.x - player_x) > 4500.0:
             self.alive = False
 
     def get_hitbox(self) -> Tuple[float, float, float, float]:
@@ -264,6 +284,53 @@ class EntityManager:
         for shard in self.shards:
             self.spawn_particles(shard.x, shard.y, 10, [6, 7], size=4)
         self.shards.clear()
+
+    def wrath_explosion(self, explosion_radius: float = 1200.0, impulse_strength: float = 46.0) -> Tuple[int, int]:
+        """Wrath Boon: Massive radial explosion centered at the player.
+        Everything (both sand and shards) within 1200 pixels radius
+        is given an instant HUGE acceleration / impulse away from the player.
+        """
+        px, py = self.player.x, self.player.y
+        rad_sq = explosion_radius * explosion_radius
+
+        shards_affected = 0
+        for shard in self.shards:
+            if not shard.alive:
+                continue
+            dx = shard.x - px
+            dy = shard.y - py
+            dist_sq = dx * dx + dy * dy
+            if dist_sq <= rad_sq:
+                dist = math.sqrt(dist_sq) if dist_sq > 0 else 0.001
+                ux = dx / dist
+                uy = dy / dist
+                impulse = impulse_strength * (1.0 - 0.4 * (dist / explosion_radius))
+                shard.vx += ux * impulse
+                shard.vy += uy * impulse
+                shard.spin_speed *= 2.5
+                self.spawn_particles(shard.x, shard.y, 8, [7, 6, 8], speed_range=(4.0, 10.0), size=3)
+                shards_affected += 1
+
+        sands_affected = 0
+        for sand in self.sands:
+            if not sand.alive:
+                continue
+            dx = sand.x - px
+            dy = sand.y - py
+            dist_sq = dx * dx + dy * dy
+            if dist_sq <= rad_sq:
+                dist = math.sqrt(dist_sq) if dist_sq > 0 else 0.001
+                ux = dx / dist
+                uy = dy / dist
+                impulse = impulse_strength * (1.0 - 0.4 * (dist / explosion_radius))
+                sand.vx += ux * impulse
+                sand.vy += uy * impulse
+                self.spawn_particles(sand.x, sand.y, 8, [9, 10, 7], speed_range=(4.0, 10.0), size=3)
+                sands_affected += 1
+
+        # Central blast shockwave particles around player
+        self.spawn_particles(px, py, 24, [7, 10, 8, 2], speed_range=(6.0, 14.0), size=4)
+        return (shards_affected, sands_affected)
 
     def sloth_hurl_shards_downward(self, screen_width_factor: float = 3.0, impulse_speed: float = 38.0) -> int:
         """Sloth Boon: Sloth means lazy; lazy means doing nothing.
