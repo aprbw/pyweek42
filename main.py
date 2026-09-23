@@ -17,7 +17,7 @@ except ImportError:
 
 from engine.state import GameState, StateManager
 from engine.entities import EntityManager, HourglassPlayer, SandGrain, GlassShard
-from engine.bargains import BargainManager, SinType
+from engine.bargains import BargainManager, SinType, BARGAIN_REGISTRY
 from engine.audio import AudioManager
 from engine.bot import PlayTestingBot, BotConfig
 from engine.video import VideoRecorder
@@ -196,7 +196,7 @@ def is_dev_environment() -> bool:
 
 
 class GrainOfDoubtApp:
-    VERSION: str = "v0.12.0"
+    VERSION: str = "v0.13.0"
     SCREEN_WIDTH: int = 600
     SCREEN_HEIGHT: int = 800
 
@@ -998,14 +998,29 @@ class GrainOfDoubtApp:
             if is_selected:
                 pyxel.rectb(cx + 1, col_y + 1, col_w - 2, col_h - 2, 10)
 
-            # Directional badge
+            # Directional badge (justified center)
             badge_col = 8 if is_selected else 1
             pyxel.rect(cx + 14, col_y + 12, col_w - 28, 28, badge_col)
-            draw_text_scaled(cx + 26, col_y + 18, col_labels[i], 7, scale=2)
+            badge_lbl = col_labels[i]
+            badge_w = (len(badge_lbl) * 4 - 1) * 2
+            draw_text_scaled(cx + col_w // 2 - badge_w // 2, col_y + 18, badge_lbl, 7, scale=2)
 
-            # Pure Sin Name (NO LATIN NAME)
-            draw_text_scaled(cx + 16, col_y + 50, defn.name.upper(), 10 if is_selected else 7, scale=3)
-            draw_text_scaled(cx + 16, col_y + 82, f"LEVEL: k={k}", 9, scale=2)
+            # Pure Sin Name: significantly bigger, fills entire box horizontally based on longest character, justified center
+            # Longest sin name across all sins (GLUTTONY, 8 chars, 31px base width) defines the maximum fill scale
+            max_sin_len = max(len(d.name) for d in BARGAIN_REGISTRY.values())
+            # Scale 7 gives (8 * 4 - 1) * 7 = 217px in a 228px card (leaves clean 5-6px margins)
+            title_scale = max(1, int((col_w - 11) / (max_sin_len * 4 - 1)))
+            name = defn.name.upper()
+            title_w = (len(name) * 4 - 1) * title_scale
+            center_x = cx + col_w // 2
+            title_x = center_x - title_w // 2
+            draw_text_scaled(title_x, col_y + 46, name, 10 if is_selected else 7, scale=title_scale)
+
+            # Level indicator (justified center below title)
+            lvl_str = f"LEVEL: {k}"
+            lvl_w = (len(lvl_str) * 4 - 1) * 2
+            lvl_x = center_x - lvl_w // 2
+            draw_text_scaled(lvl_x, col_y + 88, lvl_str, 9, scale=2)
 
             # Visual divider
             pyxel.line(cx + 14, col_y + 106, cx + col_w - 14, col_y + 106, 6)

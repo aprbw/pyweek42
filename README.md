@@ -1,7 +1,7 @@
 # Grain of Doubt
 
 > **By Arian Prabowo**  
-> **Version:** v0.11.0  
+> **Version:** v0.13.0  
 > **PyWeek 42 Entry ("Borrowed Time")** — September 2026  
 > An endless retro downhill falling-hourglass arcade runner built with the **Pyxel** retro game engine.  
 > **Target Resolution:** $600 \times 800$ pixels ($3:4$ Portrait Aspect Ratio, Infinite Horizontal Arena).
@@ -156,6 +156,12 @@ python3 -m http.server 8000
 ---
 
 ## 📝 Changelog
+
+### v0.13.0 (September 2026)
+* **Kairos Card Title Typography Overhaul:**
+  * Title font is significantly bigger (scale 7, +133% larger than former scale 3).
+  * Sized so the longest sin name (`GLUTTONY`, 8 characters) fills nearly the entire card box horizontally (217px rendered width across a 228px card, leaving 5–6px margins).
+  * Titles and level indicators are justified center horizontally within each card for instant split-second legibility during the 2.0-second Kairos circuit breaker.
 
 ### v0.12.0 (September 2026)
 * **Score Formatting with Space Separator:**

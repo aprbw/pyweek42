@@ -1150,3 +1150,52 @@ def test_hourglass_sand_falling_proportional_to_tilt():
     player.apply_input(False, False)
     assert player.sand_drain_phase < phase_before_left
 
+
+def test_kairos_title_significantly_bigger_and_justified_center():
+    """Verify Kairos card title is significantly bigger, horizontally fills the box based on the longest sin, and is justified center."""
+    import main
+    from main import GrainOfDoubtApp
+    from engine.state import GameState
+    from engine.bargains import SinType, BARGAIN_REGISTRY
+
+    app = GrainOfDoubtApp(headless=True)
+    app.start_new_game()
+    app.state.current_state = GameState.KAIROS
+    app.active_options = [
+        (SinType.GLUTTONY, BARGAIN_REGISTRY[SinType.GLUTTONY], 0),
+        (SinType.PRIDE, BARGAIN_REGISTRY[SinType.PRIDE], 1),
+    ]
+
+    title_draws = []
+    orig_draw = main.draw_text_scaled
+    try:
+        def mock_draw(x, y, s, col, scale=1, img_bank=2):
+            if s in ["GLUTTONY", "PRIDE"]:
+                title_draws.append((x, y, s, scale))
+        main.draw_text_scaled = mock_draw
+        app.draw_kairos_modal()
+
+        assert len(title_draws) == 2, f"Expected 2 title draw calls, got {title_draws}"
+
+        # 1. Significantly bigger: scale must be >= 6 (specifically 7, vs old scale 3)
+        for x, y, s, scale in title_draws:
+            assert scale >= 6, f"Title {s} scale must be >= 6 (significantly bigger), got {scale}"
+
+        # 2. Longest character/name (GLUTTONY, 8 chars) must fill box horizontally (col_w = 228)
+        glut_x, glut_y, glut_s, glut_scale = [d for d in title_draws if d[2] == "GLUTTONY"][0]
+        glut_rendered_w = (len(glut_s) * 4 - 1) * glut_scale
+        assert glut_rendered_w >= 200, f"GLUTTONY rendered width ({glut_rendered_w}px) must fill >= 200px of the 228px card"
+
+        # 3. Justified center: for each card, text must be centered within ±1px of the card box
+        col_w = 228
+        col_gap = 20
+        start_x = 30 + 32
+        for i, (x, y, s, scale) in enumerate(title_draws):
+            cx = start_x + i * (col_w + col_gap)
+            text_w = (len(s) * 4 - 1) * scale
+            expected_x = cx + col_w // 2 - text_w // 2
+            assert abs(x - expected_x) <= 1, f"Title {s} must be justified center at {expected_x}, got {x}"
+    finally:
+        main.draw_text_scaled = orig_draw
+
+
