@@ -165,6 +165,8 @@ python3 -m http.server 8000
 
 ## 📝 Changelog
 
+> Complete version history for every release from **v0.1.0** through **v0.16.0** is detailed below and in [CHANGELOG.md](CHANGELOG.md).
+
 ### v0.16.0 (September 2026)
 * **Wrath Rework — Radial Kinetic Explosion:**
   * Replaced screen wipe with an instant, powerful radial shockwave explosion.
@@ -225,13 +227,21 @@ python3 -m http.server 8000
   * Outermost circle (zero vision beyond): radius = 1200 × 0.8^k px (Pact 1: 960px, Pact 2: 768px, Pact 3: 614px, Pact 4: 491px, Pact 5: 393px).
   * Innermost circle (full clear vision): radius = 1000 × 0.8^(k+1) px (Pact 1: 640px, Pact 2: 512px, Pact 3: 410px, Pact 4: 328px, Pact 5: 262px).
   * 5 graduated dither tiers are smoothly interpolated between inner and outer radii.
-* **Top-Right Numbered Pact Menu:**
-  * In-game HUD pact list moved to top right, removed `(7)` header, and formatted as canonical numbered list (`1. pride 0`, `2. greed 0`, etc.).
+* **Bot Mode Game Over Restart Delay:**
+  * Bot no longer immediately restarts upon game over; waits 6.0 seconds (180 frames) with live countdown displayed, allowing players to view final statistics. Pressing Space restarts immediately.
+
+### v0.10.0 (September 2026)
 * **X Key Dual-Behaviour:**
   * During gameplay (Chronos / Kairos / Game Over): `X` returns to the Title screen menu without quitting.
   * On Title Screen: `X` exits the application (graceful no-op in browser).
-* **Bot Mode Game Over Restart Delay:**
-  * Bot no longer immediately restarts upon game over; waits 6.0 seconds (180 frames) with live countdown displayed, allowing players to view final statistics. Pressing Space restarts immediately.
+* **Numbered Top-Right Pact Menu:**
+  * In-game HUD pact list moved to top right, removed `(7)` header, and formatted as canonical numbered list (`1. pride 0`, `2. greed 0`, etc.).
+* **Envy Vignette Radius Documentation:**
+  * Documented exact mathematical formula for Envy outer circle radius ($1200 \times 0.8^k$) and inner circle radius ($1000 \times 0.8^{k+1}$).
+* **Sloth Drag Modifier Recalibration:**
+  * Clarified and corrected 3rd-pact lateral drag multiplier value (0.45).
+* **Version Normalization:**
+  * Normalized version sequence to semantic increments (`v0.9.0` → `v0.10.0`).
 
 ### v0.9.0 (September 2026)
 * **Universal PC & Mobile Viewport 3:4 Containment:**
@@ -278,3 +288,73 @@ python3 -m http.server 8000
 * **Validation & Playtest Balancing:**
   * Updated unit test suite to 25 automated tests.
   * Conducted full 10-episode headless GOFAI kinematic playtesting suite to confirm game loop stability and balance.
+
+### v0.7.0 (September 2026)
+* **Dev-Only Bot & Video Toggles:**
+  * Restricted bot mode (`B`) and video recording (`V`) triggers exclusively to Dev Mode.
+* **Greed Timer & 110% Score Multiplier:**
+  * Overhauled Greed: each sand collected multiplies current score by 110% (`floor(score * 1.10)`) during Borrowed Time.
+  * Added visual Borrowed Time countdown and debt collection upon expiration.
+* **Envy Screen Sand Reap & Vignette Darkness:**
+  * Added initial screen-wide sand harvest upon sealing Envy pact.
+  * Converted Envy curse into visual darkness with concentric mask boundary.
+* **Exact Mathematical Formulations in Documentation:**
+  * Added exact formulas ($k \ge 0$) for all 7 deadly sins to README.
+
+### v0.6.0 (September 2026)
+* **Mobile Responsive 3:4 Letterbox:**
+  * Full responsive web layout maintaining strict 3:4 portrait aspect ratio.
+* **Transparent Touch Controls:**
+  * Semi-transparent on-screen `< LEFT` and `RIGHT >` touch steering buttons for mobile viewports.
+* **±4.5 Screen Spawn Horizon:**
+  * Procedural entity generation margin expanding 2700px on each lateral side to support unrestricted horizontal exploration.
+* **Game Over 2.0s Debounce Lockout:**
+  * Enforced 60-frame lockout preventing accidental restart inputs.
+* **Canonical 7 Sins Vertical List:**
+  * Arranged Faustian Bargain deck in strict Gregorian Catholic order (SALIGIA).
+
+### v0.5.0 (September 2026)
+* **1-Point Golden Sand Standard:**
+  * Normalized scoring to 1 point per grain.
+* **Pride Sand Clusters:**
+  * Pride spawns multiple sand motes in clustered formations.
+* **Bottom Alpha Dev Overlay:**
+  * Semi-transparent HUD toggled via backtick (`` ` ``) with telemetry and `1`–`7` instant pact injection keys.
+* **Enlarged Typography:**
+  * Upgraded retro text scale for enhanced readability.
+
+### v0.4.0 (September 2026)
+* **SkiFree Infinite Horizontal Arena:**
+  * Removed lateral boundary walls; player and hazards navigate an infinite horizontal expanse with smooth camera tracking.
+* **Lossless FFmpeg Video Recorder:**
+  * Real-time canvas MP4 video export with unique timestamped filenames.
+* **Elapsed Time HUD:**
+  * Survival timer and descent stopwatch displayed on screen.
+
+### v0.3.0 (September 2026)
+* **Dual-Tier Concentric Vignette:**
+  * Circular darkness mask with clear central core and 50% dithered boundary ring.
+* **5-Heart Life System:**
+  * Fragile hourglass vessel with 5 hearts, invulnerability flash, and impact screen shake.
+* **Background Temporal Stimuli:**
+  * Animated falling cosmic sand streams and parallax dust motes.
+* **Dual-Clock Engine (Chronos & Kairos):**
+  * 8-second Chronos descent followed by 2-second Kairos circuit breaker with 2-card Faustian Bargain selection.
+* **Lateral Drift Physics:**
+  * Dynamic X-axis velocity variance and sinusoidal flutter oscillation for falling entities.
+
+### v0.2.0 (September 2026)
+* **Resolution Upscale to 600 × 800:**
+  * High-definition retro portrait resolution (3:4 aspect ratio).
+* **Kinematic Steering:**
+  * Lateral movement with viscous damping coefficient ($0.82$).
+* **Tilting Hourglass Sprite:**
+  * Physical hourglass tilt proportional to horizontal velocity.
+* **GOFAI Autonomous Playtesting Bot:**
+  * Heuristic AI agent with spacetime trajectory projection for headless evaluation and balance benchmarks.
+
+### v0.1.0 (September 2026)
+* **Initial PyWeek 42 Prototype ("Borrowed Time"):**
+  * Endless downhill retro falling-hourglass arcade runner concept ("Hourglass-ception").
+  * Basic sand collection and glass hazard evasion mechanics.
+  * Pyxel retro game engine loop, state manager, and initial asset framework.
