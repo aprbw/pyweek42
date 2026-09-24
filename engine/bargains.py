@@ -26,6 +26,16 @@ SIN_CARD_COLORS: Dict[SinType, int] = {
     SinType.SLOTH: 1,       # Midnight Navy Blue
 }
 
+CANONICAL_SINS: List[SinType] = [
+    SinType.PRIDE,
+    SinType.GREED,
+    SinType.LUST,
+    SinType.ENVY,
+    SinType.GLUTTONY,
+    SinType.WRATH,
+    SinType.SLOTH,
+]
+
 
 @dataclass
 class BargainDefinition:
@@ -228,32 +238,33 @@ class BargainManager:
             }
 
         elif sin == SinType.WRATH:
-            # Wrath is an explosion! Everything (both sand and glass shards) within 1200px
+            # Wrath is an explosion! Everything (both sand and glass shards) within 2000px
             # is given an instant HUGE acceleration away from the player
             shards_hit = 0
             sands_hit = 0
             if entities_manager:
-                shards_hit, sands_hit = entities_manager.wrath_explosion(explosion_radius=1200.0, impulse_strength=46.0)
+                shards_hit, sands_hit = entities_manager.wrath_explosion(explosion_radius=2000.0, impulse_strength=46.0)
             state.trigger_shake(duration=20, intensity=12.0)
             state.wrath_zero_yield_timer = 300
             summary = {
                 "sin": defn.name,
-                "boon": f"Wrath Blast: {shards_hit} shards & {sands_hit} sands detonated (1200px)",
+                "boon": f"Wrath Blast: {shards_hit} shards & {sands_hit} sands detonated (2000px)",
                 "curse": "Zero Yield: 10.0s (0 pts/sand)",
             }
 
         elif sin == SinType.SLOTH:
             # Boon: Sloth means lazy; lazy means doing nothing!
-            # Single high acceleration frame throws all shards below player (within 3 screens wide) down to bottom
+            # Throws all shards below player down (2000px radius) and pulls grains horizontally on X-axis
             thrown_count = 0
+            sands_pulled = 0
             if entities_manager:
-                thrown_count = entities_manager.sloth_hurl_shards_downward()
+                thrown_count, sands_pulled = entities_manager.sloth_hurl_shards_downward(radius=2000.0)
             # Curse: Aggressive lateral drag: 0.20 * 1.5^k reduction, min 0.20
             drag_reduction = 0.20 * (1.5 ** k)
             state.sloth_player_speed_mod = max(0.20, state.sloth_player_speed_mod - drag_reduction)
             summary = {
                 "sin": defn.name,
-                "boon": f"Lazy Reprieve: {thrown_count} hazards hurled to bottom (~2s safe)",
+                "boon": f"Lazy Reprieve: {thrown_count} hazards hurled & {sands_pulled} sands pulled X-axis",
                 "curse": f"Lateral Drag: -{drag_reduction * 100:.1f}% steering (mod={state.sloth_player_speed_mod:.2f})",
             }
 

@@ -170,7 +170,7 @@ def bg_sand_dunes_landscape(pyxel, cam_x: int, prog: float, dist: int, screen_w:
     # Sort layers back-to-front: furthest away (smallest Y, largest Z) to closest (largest Y, smallest Z)
     layers.sort(key=lambda item: item[2])
 
-    step_x = 2
+    step_x = 3
     start_x = int(cam_x // step_x) * step_x
     x_samples = list(range(start_x, start_x + screen_w + step_x, step_x))
     total_span_y = float(screen_h - horizon_y)
@@ -849,14 +849,15 @@ def render_reader_mode_text(
     wrapped_lines = []
     line_h = 22
     para_gap = 14
+    char_w = 12  # 5x7 typography at scale=2: 6px stride * 2 = 12px
 
     for para in scripture_paras:
         words = para.split()
         curr_line = []
         curr_w = 0
         for w in words:
-            wl = len(w) * 8
-            needed = wl if not curr_line else (8 + wl)
+            wl = len(w) * char_w
+            needed = wl if not curr_line else (char_w + wl)
             if curr_w + needed <= max_w:
                 curr_line.append(w)
                 curr_w += needed
@@ -887,17 +888,17 @@ def render_reader_mode_text(
                 # Left-aligned for final line of paragraph
                 wx = margin_l
                 for w in words:
-                    draw_text_scaled_helper(pyxel, wx, sy, w, col_ink, scale=2)
-                    wx += len(w) * 8 + 8
+                    draw_text_scaled_helper(pyxel, int(wx), sy, w, col_ink, scale=2)
+                    wx += len(w) * char_w + char_w
             else:
                 # Fully justified alignment across margin_l to margin_r
-                tot_words_w = sum(len(w) * 8 for w in words)
+                tot_words_w = sum(len(w) * char_w for w in words)
                 extra = max_w - tot_words_w
-                gap = extra / float(len(words) - 1)
+                gap = max(float(char_w), extra / float(max(1, len(words) - 1)))
                 curr_wx = float(margin_l)
                 for w in words:
-                    draw_text_scaled_helper(pyxel, int(curr_wx), sy, w, col_ink, scale=2)
-                    curr_wx += len(w) * 8 + gap
+                    draw_text_scaled_helper(pyxel, int(round(curr_wx)), sy, w, col_ink, scale=2)
+                    curr_wx += len(w) * char_w + gap
 
 
 def bg_reader_dark(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool, telemetry: Optional[dict] = None):

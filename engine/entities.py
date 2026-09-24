@@ -343,6 +343,19 @@ class GlassShard:
         return (self.x, self.y, self.HITBOX_W, self.HITBOX_H)
 
 
+class SlothResult(int):
+    """Result object for Sloth boon that behaves as int (shards thrown) and unpacks as (thrown, pulled)."""
+    def __new__(cls, thrown: int, pulled: int = 0):
+        obj = super().__new__(cls, thrown)
+        obj.thrown = thrown
+        obj.pulled = pulled
+        return obj
+
+    def __iter__(self):
+        yield self.thrown
+        yield self.pulled
+
+
 class EntityManager:
     def __init__(self, screen_w: int = 600, screen_h: int = 800):
         self.screen_w = screen_w
@@ -369,9 +382,9 @@ class EntityManager:
     def wipe_all_hazards(self):
         self.shards.clear()
 
-    def wrath_explosion(self, explosion_radius: float = 1200.0, impulse_strength: float = 46.0, burst_frames: int = 8) -> Tuple[int, int]:
+    def wrath_explosion(self, explosion_radius: float = 2000.0, impulse_strength: float = 46.0, burst_frames: int = 8) -> Tuple[int, int]:
         """Wrath Boon: Massive radial explosion centered at the player.
-        Everything (both sand and shards) within 1200 pixels radius
+        Everything (both sand and shards) within 2000 pixels radius
         is given an initial moderate acceleration kick on frame 0, followed by sustained
         multi-frame outward acceleration across burst_frames. Particle clutter eliminated.
         """
@@ -425,24 +438,29 @@ class EntityManager:
 
         return (shards_affected, sands_affected)
 
-    def sloth_hurl_shards_downward(self, screen_width_factor: float = 3.0, impulse_speed: float = 46.0, burst_frames: int = 12) -> int:
+    def sloth_hurl_shards_downward(self, radius: float = 2000.0, screen_width_factor: float = 3.0, impulse_speed: float = 46.0, burst_frames: int = 12) -> SlothResult:
         """Sloth Boon: Sloth means lazy; lazy means doing nothing.
         Applies a moderate initial downward kick followed by sustained multi-frame downward acceleration
-        to all shards below the player within 2-3 screens wide, sweeping the descent space clear
+        to all shards within 2000px radius below the player, sweeping the descent space clear
         so the player can do literally nothing to survive for ~2 seconds.
+        Grains within 2000px radius are accelerated towards the player hourglass on the X-axis only!
         Crucially seeds oncoming hazards in the target bottom zone so pushed-down shards
         overlap with oncoming hazards, making the bottom horizon doubly dangerous!
         """
         px, py = self.player.x, self.player.y
-        half_width = (self.screen_w * screen_width_factor) / 2.0
+        rad_sq = radius * radius
+        half_width = max((self.screen_w * screen_width_factor) / 2.0, radius)
 
         thrown = 0
         new_oncoming = []
         for shard in self.shards:
             if not shard.alive:
                 continue
-            # Target shards below the player (oncoming hazards: shard.y > py)
-            if shard.y > py and abs(shard.x - px) <= half_width:
+            dx = shard.x - px
+            dy = shard.y - py
+            dist_sq = dx * dx + dy * dy
+            # Target shards below the player within 2000px radius (or within half_width)
+            if shard.y > py and (dist_sq <= rad_sq or abs(dx) <= half_width):
                 initial_kick = 18.0
                 shard.vy = max(shard.vy + initial_kick, initial_kick)
                 # Sustained downward acceleration over burst_frames
@@ -458,7 +476,29 @@ class EntityManager:
                 new_oncoming.append(GlassShard(overlap_x, overlap_y))
 
         self.shards.extend(new_oncoming)
-        return thrown
+
+        # Grain only: accelerated towards the player hourglass, but X-axis only
+        pulled = 0
+        for sand in self.sands:
+            if not sand.alive:
+                continue
+            dx = px - sand.x
+            dy = py - sand.y
+            dist_sq = dx * dx + dy * dy
+            if dist_sq <= rad_sq:
+                dist = math.sqrt(dist_sq) if dist_sq > 0 else 0.001
+                # Direction on X towards player
+                sign_x = 1.0 if dx > 0 else (-1.0 if dx < 0 else 0.0)
+                dist_factor = max(0.4, 1.0 - (dist / radius))
+                # Initial kick on X-axis only
+                sand.vx += sign_x * 8.0 * dist_factor
+                # Multi-frame sustained acceleration towards player on X-axis only
+                sand.burst_ax = sign_x * 5.0 * dist_factor
+                sand.burst_ay = 0.0  # Y-axis unaffected
+                sand.burst_timer = burst_frames
+                pulled += 1
+
+        return SlothResult(thrown, pulled)
 
     def reclaim_bypassed_sand(self) -> int:
         count = self.bypassed_sand_pool

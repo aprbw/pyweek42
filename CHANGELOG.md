@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.1.2] - 2026-09-24
+### Changed
+- **Homepage Polish & Visual Hierarchy**:
+  - Removed redundant `[L] LORE & LEARN TO PLAY` plaque previously situated above the main box (already featured cleanly in Shortcuts).
+  - Changed subtitle prompt to `COLLECT GOLDEN SAND FOR POINTS` (emphasizing score acquisition over mere survival).
+  - Unified section header color harmony: `SHORTCUTS` is Yellow (`Color 10`), matching `CONTROLS` and `10 THEMES`. Active theme remains Amber/Gold (`Color 9`).
+  - Photosensitivity warning overhaul: `"PHOTOSENSITIVITY WARNING"` is rendered huge at `scale=2`, explanatory body text is standard `scale=1`, and redundant theme-cycling shortcut line was removed.
+- **Lore & Learn Screen Overhaul (`GameState.LORE`)**:
+  - Renamed title to `GRAIN OF DOUBT : LORE & LEARN [PAGE X/4]` (eliminated all "CODEX" terminology).
+  - Expanded and rebalanced manual across 4 dedicated pages utilizing spacious `scale=2` typography filling the 552px wide, 768px tall frame without asymmetric empty space:
+    - **Page 1 (1/4)**: Hourglass-ception narrative, unstoppable downward descent, why "Grain of Doubt", and PyWeek 42 theme context. (Strictly zero mentions of Ecclesiastes).
+    - **Page 2 (2/4)**: Chronos (10.0s relentless descent) and Kairos (10.0s circuit breaker freeze), predatory debt structure, and core kinematic steering.
+    - **Page 3 (3/4)**: Faustian Pacts breakdown for all 7 sins (Pride, Greed, Lust, Envy, Gluttony, Wrath, Sloth), compounding boon/curse equations, and tactical survival tips.
+    - **Page 4 (4/4)**: 10 Themes, High-Contrast Pro Mode, and E-Reader Stealth Mode (*"Pretend you are reading serious literature and not playing a game at work or school, inspired by the classic PhD Comics emergency button!"*).
+  - Refined bottom navigation: `[A / LEFT] PREV   |   [D / RIGHT] NEXT   |   [X] RETURN` (no duplicate page counters at footer).
+  - Input protection: `Escape` and `Space` do **NOT** exit Lore! Only `[X]`, `[RETURN]`, `[L]`, `[H]`, touch tap, or Right arrow on the final page exits back to Title.
+- **Font Recalculations & Layout Bounds Containment**:
+  - **Kairos Modal**:
+    - Scaled card titles using exact 5x7 font formula `(len(name) * 6 - 1) * title_scale`. Gluttony tamed to `scale=4` (188px wide within bulging frame, no longer overlapping neighbor card); other sins `scale=3`.
+    - Pro/Con feature titles rendered at `scale=2` (e.g. "Tidal Pull", "Fat Grains") with detailed stats at `scale=1`, strictly containing all text within the 196px card printable area.
+    - Compounding note centered at `scale=1`.
+    - E-Reader Mode: KJV paragraph rendered at `scale=1` with `line_spacing=14`, fitting comfortably within $col\_h = 530$px without crowding the bottom button.
+  - **Faustian Pacts HUD Board**:
+    - Widened HUD board from 180px to 205px ($x=385$..$590$, clean 10px screen margin).
+    - Capitalized sin names (`sin.name.capitalize()`) so "Pride" begins with a capital "P".
+    - Right-aligned count numbers (`k`) strictly inside the box.
+  - **E-Reader Mode Text Formatting**:
+    - Recalculated `render_reader_mode_text` in `engine/themes.py` using exact 5x7 font metrics at `scale=2` (`char_w = 12`, word widths `len(w) * 12`, space = 12), justifying cleanly between margins without bleeding off-screen.
+- **Performance & Framerate Optimization**:
+  - Verified memory footprint is rock-solid flat at ~151KB across 10,000 continuous simulation frames (zero memory leak).
+  - Implemented viewport/frustum culling in `draw()` (`main.py`) for all falling sand grains and glass shards, eliminating ~90% of off-screen trigonometric calculations and polygon draw calls.
+  - Set `step_x = 3` in `sand_dunes_landscape.py`, reducing background CPU workload in Theme 0 by 33%.
+- **Packaging Pipeline**:
+  - Updated `build.sh` to package `grain-of-doubt-1.1.2.zip`.
+
 ## [v1.1.1] - 2026-09-24
 ### Added
 - **Multi-Page Lore Codex (`GameState.LORE`)**:

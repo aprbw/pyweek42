@@ -1127,16 +1127,16 @@ def test_pact_menu_top_right_numbered_format():
         # Check title is "FAUSTIAN PACTS" (not "PACTS (7)")
         pact_titles = [c for c in calls if c[2] in ("PACTS", "FAUSTIAN PACTS")]
         assert len(pact_titles) == 1, "Must render 'FAUSTIAN PACTS' header"
-        # Must be on the right side of the 600px screen (x >= 400)
-        assert pact_titles[0][0] >= 400, f"Pact menu header must be at top right (x >= 400), got {pact_titles[0][0]}"
+        # Must be on the right side of the 600px screen (x >= 380)
+        assert pact_titles[0][0] >= 380, f"Pact menu header must be at top right (x >= 380), got {pact_titles[0][0]}"
 
-        # Check numbered rows: '1. pride', '2. greed', etc.
-        pride_entry = [c for c in calls if "1. pride" in c[2]]
-        assert len(pride_entry) == 1, f"Must find '1. pride' in HUD text, found {calls}"
-        assert pride_entry[0][0] >= 400, "Pact row must be at top right"
+        # Check numbered rows with capitalized names: '1. Pride', '2. Greed', etc.
+        pride_entry = [c for c in calls if "1. Pride" in c[2]]
+        assert len(pride_entry) == 1, f"Must find '1. Pride' in HUD text, found {calls}"
+        assert pride_entry[0][0] >= 380, "Pact row must be at top right"
 
-        greed_entry = [c for c in calls if "2. greed" in c[2]]
-        assert len(greed_entry) == 1, f"Must find '2. greed' in HUD text, found {calls}"
+        greed_entry = [c for c in calls if "2. Greed" in c[2]]
+        assert len(greed_entry) == 1, f"Must find '2. Greed' in HUD text, found {calls}"
 
         # Ensure no '(7)' anywhere in HUD
         assert not any("(7)" in c[2] for c in calls)
@@ -1250,14 +1250,14 @@ def test_kairos_title_significantly_bigger_and_justified_center():
 
         assert len(title_draws) == 2, f"Expected 2 title draw calls, got {title_draws}"
 
-        # 1. Significantly bigger: scale must be >= 6 (specifically 7, vs old scale 3)
+        # 1. Significantly bigger: scale must be >= 3 and <= 4 (calibrated for 5x7 font without overflowing card)
         for x, y, s, scale in title_draws:
-            assert scale >= 6, f"Title {s} scale must be >= 6 (significantly bigger), got {scale}"
+            assert scale in (3, 4), f"Title {s} scale must be 3 or 4 in 5x7 font, got {scale}"
 
-        # 2. Longest character/name (GLUTTONY, 8 chars) must fill box horizontally (col_w = 228)
+        # 2. Longest character/name (GLUTTONY, 8 chars) must fill box horizontally in 5x7 font (col_w = 228)
         glut_x, glut_y, glut_s, glut_scale = [d for d in title_draws if d[2] == "GLUTTONY"][0]
-        glut_rendered_w = (len(glut_s) * 4 - 1) * glut_scale
-        assert glut_rendered_w >= 200, f"GLUTTONY rendered width ({glut_rendered_w}px) must fill >= 200px of the 228px card"
+        glut_rendered_w = (len(glut_s) * 6 - 1) * glut_scale
+        assert glut_rendered_w >= 180, f"GLUTTONY rendered width ({glut_rendered_w}px) must fill >= 180px of the 228px card"
 
         # 3. Justified center: for each card, text must be centered within ±1px of the card box
         col_w = 228
@@ -1265,7 +1265,7 @@ def test_kairos_title_significantly_bigger_and_justified_center():
         start_x = 30 + 32
         for i, (x, y, s, scale) in enumerate(title_draws):
             cx = start_x + i * (col_w + col_gap)
-            text_w = (len(s) * 4 - 1) * scale
+            text_w = (len(s) * 6 - 1) * scale
             expected_x = cx + col_w // 2 - text_w // 2
             assert abs(x - expected_x) <= 1, f"Title {s} must be justified center at {expected_x}, got {x}"
     finally:
@@ -2411,7 +2411,7 @@ def test_v111_title_screen_layout_and_elements():
         assert not any("[SPACE] START" in t for t in drawn_texts)
 
         # Check photosensitivity warning and start prompt
-        assert any("PHOTOSENSITIVITY WARNING:" in t for t in drawn_texts)
+        assert any("PHOTOSENSITIVITY WARNING" in t for t in drawn_texts)
         assert any("Switch to PRO MODE" in t for t in drawn_texts)
         assert any("PRESS ARROWS OR TOUCH BUTTONS TO START" in t for t in drawn_texts)
 
@@ -2419,7 +2419,7 @@ def test_v111_title_screen_layout_and_elements():
         app.dev_mode = True
         drawn_texts.clear()
         app.draw_title_screen()
-        assert any("VERSION: v1.1.1 [DEV MODE]" in t for t in drawn_texts)
+        assert any("VERSION: v1.1.2 [DEV MODE]" in t for t in drawn_texts)
         assert any("[I] GODMODE" in t for t in drawn_texts)
     finally:
         main.draw_text_scaled = orig_draw
@@ -2434,45 +2434,56 @@ def test_multi_page_lore_navigation_and_content():
     app = GrainOfDoubtApp(headless=True)
     app.state.current_state = GameState.LORE
     assert app.lore_page == 0
-    assert app.MAX_LORE_PAGES == 3
+    assert app.MAX_LORE_PAGES == 4
 
     drawn_texts = []
     orig_draw = main.draw_text_scaled
     try:
         main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2: drawn_texts.append(s)
 
-        # PAGE 0 (Page 1/3): Narrative Premise
+        # PAGE 0 (Page 1/4): Narrative Premise
         app.lore_page = 0
         drawn_texts.clear()
         app.draw_lore_screen()
-        assert any("CODEX [1/3]" in t for t in drawn_texts)
+        assert any("LORE & LEARN [1/4]" in t for t in drawn_texts)
         assert any("PYWEEK 42 (SEP 2026)" in t for t in drawn_texts)
         assert any("BORROWED TIME" in t for t in drawn_texts)
-        assert any("HOURGLASS-CEPTION" in t for t in drawn_texts)
+        assert any("NARRATIVE PREMISE" in t for t in drawn_texts)
         assert any("UNSTOPPABLE DOWNWARD DESCENT" in t for t in drawn_texts)
         assert any("GRAIN OF DOUBT" in t for t in drawn_texts)
         # MUST NOT mention Ecclesiastes on lore screen
         assert not any("ECCLESIASTES" in t.upper() for t in drawn_texts)
 
-        # PAGE 1 (Page 2/3): Chronos vs Kairos
+        # PAGE 1 (Page 2/4): Chronos vs Kairos
         app.lore_page = 1
         drawn_texts.clear()
         app.draw_lore_screen()
-        assert any("CODEX [2/3]" in t for t in drawn_texts)
+        assert any("LORE & LEARN [2/4]" in t for t in drawn_texts)
         assert any("CHRONOS" in t for t in drawn_texts)
         assert any("KAIROS" in t for t in drawn_texts)
         assert any("PREDATORY DEBT" in t for t in drawn_texts)
         assert not any("ECCLESIASTES" in t.upper() for t in drawn_texts)
 
-        # PAGE 2 (Page 3/3): Faustian Covenants
+        # PAGE 2 (Page 3/4): Faustian Pacts
         app.lore_page = 2
         drawn_texts.clear()
         app.draw_lore_screen()
-        assert any("CODEX [3/3]" in t for t in drawn_texts)
-        assert any("SEVEN FAUSTIAN COVENANTS" in t for t in drawn_texts)
-        assert any("PRIDE (Pd)" in t for t in drawn_texts)
-        assert any("GREED (Gd)" in t for t in drawn_texts)
+        assert any("LORE & LEARN [3/4]" in t for t in drawn_texts)
+        assert any("SEVEN FAUSTIAN PACTS" in t for t in drawn_texts)
+        assert any("1. PRIDE" in t for t in drawn_texts)
+        assert any("2. GREED" in t for t in drawn_texts)
         assert any("COMPOUNDING DECAY" in t for t in drawn_texts)
+        assert not any("ECCLESIASTES" in t.upper() for t in drawn_texts)
+
+        # PAGE 3 (Page 4/4): Themes & E-Reader Stealth Mode
+        app.lore_page = 3
+        drawn_texts.clear()
+        app.draw_lore_screen()
+        assert any("LORE & LEARN [4/4]" in t for t in drawn_texts)
+        assert any("10 DIVERGENT AESTHETIC THEMES" in t for t in drawn_texts)
+        assert any("PRO MODE" in t for t in drawn_texts)
+        assert any("E-READER STEALTH MODE" in t for t in drawn_texts)
+        assert any("PhD Comics" in t for t in drawn_texts)
         assert not any("ECCLESIASTES" in t.upper() for t in drawn_texts)
     finally:
         main.draw_text_scaled = orig_draw
@@ -2494,10 +2505,169 @@ def test_theme_5_glacial_crevasse_and_theme_9_pastel_sakura():
     assert t9.render_bg.__name__ == "bg_pastel_sakura"
 
 
+def test_lore_screen_escape_and_space_do_not_exit():
+    """Verify that pressing Escape or Space while in GameState.LORE does NOT exit to TITLE."""
+    import pyxel
+    from main import GrainOfDoubtApp
+    from engine.state import GameState
+
+    app = GrainOfDoubtApp(headless=True)
+    app.state.current_state = GameState.LORE
+    app.lore_page = 1
+
+    orig_btnp = pyxel.btnp
+    try:
+        # Simulate pressing ESCAPE: state must remain LORE!
+        pyxel.btnp = lambda k: (k == pyxel.KEY_ESCAPE)
+        app.update()
+        assert app.state.current_state == GameState.LORE, "Pressing ESCAPE must NOT exit Lore screen"
+        assert app.lore_page == 1
+
+        # Simulate pressing SPACE: state must remain LORE!
+        pyxel.btnp = lambda k: (k == pyxel.KEY_SPACE)
+        app.update()
+        assert app.state.current_state == GameState.LORE, "Pressing SPACE must NOT exit Lore screen"
+        assert app.lore_page == 1
+
+        # Simulate pressing X: state exits to TITLE!
+        pyxel.btnp = lambda k: (k == pyxel.KEY_X)
+        app.update()
+        assert app.state.current_state == GameState.TITLE, "Pressing X must return to TITLE screen"
+    finally:
+        pyxel.btnp = orig_btnp
 
 
+def test_kairos_modal_text_bounds_all_sins():
+    """Verify that title and descriptions for all 7 sins stay strictly within 228px card width."""
+    import main
+    from main import GrainOfDoubtApp
+    from engine.state import GameState
+    from engine.bargains import CANONICAL_SINS, BARGAIN_REGISTRY
+
+    app = GrainOfDoubtApp(headless=True)
+    app.start_new_game()
+    app.state.current_state = GameState.KAIROS
+
+    for i in range(len(CANONICAL_SINS) - 1):
+        sin_a = CANONICAL_SINS[i]
+        sin_b = CANONICAL_SINS[i + 1]
+        app.active_options = [
+            (sin_a, BARGAIN_REGISTRY[sin_a], 0),
+            (sin_b, BARGAIN_REGISTRY[sin_b], 1),
+        ]
+
+        drawn = []
+        orig_draw = main.draw_text_scaled
+        try:
+            main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2: drawn.append((x, y, s, scale))
+            app.draw_kairos_modal()
+
+            col_w = 228
+            col_h = 530
+            col_gap = 20
+            start_x = 30 + 32  # 62
+
+            for card_idx in (0, 1):
+                cx = start_x + card_idx * (col_w + col_gap)
+                right_bound = cx + col_w
+                # Check all texts drawn inside this card column (cards start at col_y = 170 and end at 680)
+                card_texts = [d for d in drawn if cx <= d[0] < right_bound and 170 <= d[1] <= 680]
+                for x, y, s, scale in card_texts:
+                    w = main.get_text_width_5x7(s, scale)
+                    # Text must not bleed past card right border
+                    assert x + w <= right_bound + 1, f"Text '{s}' (w={w}) at x={x} overflows card right bound ({right_bound})"
+        finally:
+            main.draw_text_scaled = orig_draw
 
 
+def test_faustian_pacts_hud_alignment_and_capitalization():
+    """Verify all 7 sin names in HUD are capitalized and count numbers are strictly inside the box."""
+    import main
+    from main import GrainOfDoubtApp
 
+    app = GrainOfDoubtApp(headless=True)
+    app.start_new_game()
+
+    calls = []
+    orig_draw = main.draw_text_scaled
+    try:
+        main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2: calls.append((x, y, s, scale))
+        app.draw_hud()
+
+        pacts_box_w = 205
+        pacts_box_x = 600 - pacts_box_w - 10  # 385
+        right_limit = pacts_box_x + pacts_box_w
+
+        # Check all 7 sins are capitalized with numbers inside box
+        sins = ["Pride", "Greed", "Lust", "Envy", "Gluttony", "Wrath", "Sloth"]
+        for idx, sin_name in enumerate(sins):
+            row_call = [c for c in calls if f"{idx+1}. {sin_name}" in c[2]]
+            assert len(row_call) == 1, f"Expected '{idx+1}. {sin_name}' in HUD, found: {calls}"
+            x, y, s, scale = row_call[0]
+            w = main.get_text_width_5x7(s, scale)
+            assert x >= pacts_box_x, f"Row text '{s}' starts before box x"
+            assert x + w < right_limit, f"Row text '{s}' overflows box right edge ({right_limit})"
+    finally:
+        main.draw_text_scaled = orig_draw
+
+
+def test_v112_wrath_2k_radius_and_sloth_horizontal_grain_pull():
+    """Verify v1.1.2 2do.md requirements:
+    1. Wrath radius increased to 2000px, radial acceleration away from player for a few frames.
+    2. Sloth radius increased to 2000px, shards accelerated down, grains accelerated towards player X-axis only.
+    """
+    from engine.entities import EntityManager, GlassShard, SandGrain
+    import math
+
+    entities = EntityManager(600, 800)
+    entities.player.x = 300.0
+    entities.player.y = 200.0
+
+    # Shard and sand at 1500px distance (inside 2000px, outside old 1200px)
+    s_far = GlassShard(300.0, 1700.0)  # dy = 1500.0
+    g_far = SandGrain(300.0, 1700.0)   # dy = 1500.0
+    entities.shards.append(s_far)
+    entities.sands.append(g_far)
+
+    # Test Wrath 2000px radius
+    shards_hit, sands_hit = entities.wrath_explosion(explosion_radius=2000.0, burst_frames=8)
+    assert shards_hit == 1, f"Expected 1 shard hit at 1500px, got {shards_hit}"
+    assert sands_hit == 1, f"Expected 1 sand hit at 1500px, got {sands_hit}"
+    assert s_far.vy > 0, "Shard must accelerate away downwards"
+    assert g_far.vy > 0, "Sand must accelerate away downwards"
+    assert s_far.burst_timer == 8
+    assert g_far.burst_timer == 8
+
+    # Test Sloth 2000px radius with X-axis only pull for sand
+    entities.reset()
+    entities.player.x = 300.0
+    entities.player.y = 200.0
+
+    # Shards below player within 2000px
+    s_sloth = GlassShard(400.0, 800.0)  # below player, dist ~ 608px
+    # Grains to the left and right of player
+    g_left = SandGrain(100.0, 500.0)    # x < px (dx = +200)
+    g_right = SandGrain(600.0, 500.0)   # x > px (dx = -300)
+
+    entities.shards.append(s_sloth)
+    entities.sands.extend([g_left, g_right])
+
+    thrown, pulled = entities.sloth_hurl_shards_downward(radius=2000.0, burst_frames=12)
+    assert thrown == 1
+    assert pulled == 2
+
+    # Shards: downward acceleration only
+    assert s_sloth.vy >= 18.0
+    assert s_sloth.burst_ay == 6.0
+    assert s_sloth.burst_ax == 0.0
+
+    # Grains: X-axis acceleration ONLY towards player, Y-axis unaffected!
+    assert g_left.vx > 0, "Sand on left must accelerate rightward (+X) toward player"
+    assert g_left.burst_ax > 0
+    assert g_left.burst_ay == 0.0, "Sand Y-axis acceleration must be zero (X-axis only!)"
+
+    assert g_right.vx < 0, "Sand on right must accelerate leftward (-X) toward player"
+    assert g_right.burst_ax < 0
+    assert g_right.burst_ay == 0.0, "Sand Y-axis acceleration must be zero (X-axis only!)"
 
 
