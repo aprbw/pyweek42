@@ -42,6 +42,72 @@ class HourglassPalette:
 
 
 @dataclass
+class KairosPalette:
+    modal_bg: int              # Modal window background
+    dimmer: int                # Full-screen ambient dimmer backdrop
+    border_outer: int          # Outer border line
+    border_inner: int          # Inner border line
+    header_title: int          # "KAIROS CIRCUIT BREAKER" color
+    header_sub: int            # "BORROW YOUR TIME" color
+    timer_bar_bg: int          # Countdown bar gutter background
+    timer_bar_fill: int        # Countdown bar fill color (before urgency flash)
+    timer_bar_border: int      # Countdown bar border
+    card_bg: int               # Non-selected card background
+    card_bg_selected: int      # Selected card background
+    card_border: int           # Non-selected card border
+    card_border_selected: int  # Selected card border
+    badge_bg: int              # Badge background
+    badge_text: int            # Badge text color
+    badge_bg_selected: int     # Selected badge background
+    badge_text_selected: int   # Selected badge text color
+    selected_btn_bg: int       # Bottom "SELECTED" button background
+    selected_btn_text: int     # Bottom "SELECTED" button text color
+    sin_title: int             # Sin title text color
+    sin_title_selected: int    # Sin title text color when selected
+    level_text: int            # "LEVEL: K" color
+    divider: int               # Visual divider line color
+    pro_label: int             # "PRO (NOW):" label color
+    pro_text: int              # Boon description text color
+    con_label: int             # "CON (FOREVER):" label color
+    con_text: int              # Curse description text color
+    footer_text: int           # "STEER LEFT OR RIGHT TO SELECT" color
+    footer_warn: int           # "CHOOSE OR DIE: 2.0s TIME LIMIT" color
+
+
+DEFAULT_KAIROS_PALETTE = KairosPalette(
+    modal_bg=0,
+    dimmer=0,
+    border_outer=8,
+    border_inner=2,
+    header_title=7,
+    header_sub=8,
+    timer_bar_bg=0,
+    timer_bar_fill=10,
+    timer_bar_border=6,
+    card_bg=1,
+    card_bg_selected=5,
+    card_border=1,
+    card_border_selected=6,
+    badge_bg=1,
+    badge_text=7,
+    badge_bg_selected=8,
+    badge_text_selected=7,
+    selected_btn_bg=10,
+    selected_btn_text=0,
+    sin_title=7,
+    sin_title_selected=10,
+    level_text=9,
+    divider=2,
+    pro_label=11,
+    pro_text=7,
+    con_label=8,
+    con_text=8,
+    footer_text=7,
+    footer_warn=8,
+)
+
+
+@dataclass
 class Theme:
     id: int
     name: str
@@ -51,10 +117,14 @@ class Theme:
     shard: ShardPalette
     hourglass: HourglassPalette
     render_bg: Callable[..., None]
+    kairos: Optional[KairosPalette] = None
     is_reader_mode: bool = False
 
     def get_clear_color(self, greed_active: bool) -> int:
         return self.greed_clear_color if greed_active else self.clear_color
+
+    def get_kairos_palette(self) -> KairosPalette:
+        return self.kairos if self.kairos is not None else DEFAULT_KAIROS_PALETTE
 
     def render(self, pyxel_mod, cam_x: int, prog: float, dist: int, screen_w: int = 600, screen_h: int = 800, is_greed: bool = False, telemetry: Optional[dict] = None):
         if self.render_bg and pyxel_mod:
@@ -104,10 +174,22 @@ def bg_sand_dunes_landscape(pyxel, cam_x: int, prog: float, dist: int, screen_w:
     x_samples = list(range(start_x, start_x + screen_w + step_x, step_x))
     total_span_y = float(screen_h - horizon_y)
 
+    num_layers = len(layers)
+    warn_ratio = max(0.0, min(1.0, (prog - 0.85) / 0.15)) if prog > 0.85 else 0.0
+
     curve_profiles = []
-    for d, z, y_base in layers:
+    for idx, (d, z, y_persp) in enumerate(layers):
+        if warn_ratio > 0.0:
+            # Equalize gap between horizontal lines, destroying perspective illusion to show cosmic breakdown
+            equal_step = total_span_y / float(max(1, num_layers))
+            y_equal = horizon_y + (idx + 1) * equal_step
+            y_base = y_persp * (1.0 - warn_ratio) + y_equal * warn_ratio
+        else:
+            y_base = y_persp
+
         s = max(0.0, min(1.0, (y_base - horizon_y) / total_span_y))
-        amp = 90.0 * (s ** 1.30)
+        # Flatten waves as warning intensifies towards straight equal-spaced horizontal lines
+        amp = 90.0 * (s ** 1.30) * (1.0 - warn_ratio * 0.85)
 
         k1 = 0.006 + 0.010 * (1.0 - s)
         k2 = 0.015 + 0.018 * (1.0 - s)
@@ -152,10 +234,15 @@ def bg_sand_dunes_landscape(pyxel, cam_x: int, prog: float, dist: int, screen_w:
                     c_top, c_mid, c_bot = 8, 14, 15
                     t1 = int(y_top + span * 0.34)
                     t2 = int(y_top + span * 0.74)
-            elif prog > 0.85 and (pyxel.frame_count // 3) % 2 == 0:
-                c_top, c_mid, c_bot = 9, 10, 7
-                t1 = int(y_top + span * 0.20)
-                t2 = int(y_top + span * 0.60)
+            elif prog > 0.85:
+                # Kairos warning: blink to random colors in the 3 palette
+                flicker_seed = (pyxel.frame_count // 2 + d * 7 + i * 3) & 0xFFFFFF
+                p_pool = [8, 2, 14, 10, 7] if is_greed else [4, 9, 10, 15, 7]
+                c_top = p_pool[flicker_seed % len(p_pool)]
+                c_mid = p_pool[(flicker_seed * 3 + 1) % len(p_pool)]
+                c_bot = p_pool[(flicker_seed * 7 + 2) % len(p_pool)]
+                t1 = int(y_top + span * 0.33)
+                t2 = int(y_top + span * 0.66)
             else:
                 if s > 0.60:
                     c_top, c_mid, c_bot = 4, 9, 10
@@ -298,23 +385,36 @@ def bg_cartographers_scroll(pyxel, cam_x: int, prog: float, dist: int, screen_w:
 
 
 def bg_pro_mode_dark(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool):
-    """Theme 7: Pro Mode High Contrast Dark (Functional, static CAD grid, zero noise)."""
+    """Theme 7: Pro Mode High Contrast Dark (Functional CAD grid anchored to world coordinates)."""
     col_minor = 2 if is_greed else 1   # Faint navy / dark purple
     col_major = 8 if is_greed else 5   # Crisp dark grey
 
-    # Minor grid lines (every 25px) - completely static to screen back, not following descent
-    for x in range(0, screen_w + 1, 25):
-        if x % 100 != 0:
-            pyxel.line(cam_x + x, 0, cam_x + x, screen_h, col_minor)
-    for y in range(0, screen_h + 1, 25):
-        if y % 100 != 0:
-            pyxel.line(cam_x, y, cam_x + screen_w, y, col_minor)
+    step_minor = 25
+    step_major = 100
 
-    # Major grid lines (every 100px) - completely static to screen back
-    for x in range(0, screen_w + 1, 100):
-        pyxel.line(cam_x + x, 0, cam_x + x, screen_h, col_major)
-    for y in range(0, screen_h + 1, 100):
-        pyxel.line(cam_x, y, cam_x + screen_w, y, col_major)
+    # Horizontal grid lines moving UP at falling descent speed (dist)
+    start_minor_wy = int((dist - step_minor) // step_minor) * step_minor
+    end_wy = dist + screen_h + step_major
+    for wy in range(start_minor_wy, end_wy + 1, step_minor):
+        if wy % step_major != 0:
+            sy = wy - dist
+            pyxel.line(cam_x - 40, sy, cam_x + screen_w + 40, sy, col_minor)
+
+    start_major_wy = int((dist - step_major) // step_major) * step_major
+    for wy in range(start_major_wy, end_wy + 1, step_major):
+        sy = wy - dist
+        pyxel.line(cam_x - 40, sy, cam_x + screen_w + 40, sy, col_major)
+
+    # Vertical grid lines anchored to fixed world X coordinates (staying in place like monochrome blueprint)
+    start_minor_x = int((cam_x - 50) // step_minor) * step_minor
+    end_x = cam_x + screen_w + 50
+    for x in range(start_minor_x, end_x + 1, step_minor):
+        if x % step_major != 0:
+            pyxel.line(x, 0, x, screen_h, col_minor)
+
+    start_major_x = int((cam_x - 50) // step_major) * step_major
+    for x in range(start_major_x, end_x + 1, step_major):
+        pyxel.line(x, 0, x, screen_h, col_major)
 
 
 def bg_copper_and_verdigris(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool):
@@ -380,23 +480,36 @@ def bg_monochrome_blueprint(pyxel, cam_x: int, prog: float, dist: int, screen_w:
 
 
 def bg_pro_mode_light(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool):
-    """Theme 8: Pro Mode High Contrast Light (Clinical technical grid, high luminance, pure functional)."""
+    """Theme 8: Pro Mode High Contrast Light (Clinical technical grid anchored to world coordinates)."""
     col_minor = 2 if is_greed else 6   # Light grey
     col_major = 8 if is_greed else 5   # Darker slate grey
 
-    # Minor grid lines (every 25px) - completely static to screen back, not following descent
-    for x in range(0, screen_w + 1, 25):
-        if x % 100 != 0:
-            pyxel.line(cam_x + x, 0, cam_x + x, screen_h, col_minor)
-    for y in range(0, screen_h + 1, 25):
-        if y % 100 != 0:
-            pyxel.line(cam_x, y, cam_x + screen_w, y, col_minor)
+    step_minor = 25
+    step_major = 100
 
-    # Major grid lines (every 100px) - completely static to screen back
-    for x in range(0, screen_w + 1, 100):
-        pyxel.line(cam_x + x, 0, cam_x + x, screen_h, col_major)
-    for y in range(0, screen_h + 1, 100):
-        pyxel.line(cam_x, y, cam_x + screen_w, y, col_major)
+    # Horizontal grid lines moving UP at falling descent speed (dist)
+    start_minor_wy = int((dist - step_minor) // step_minor) * step_minor
+    end_wy = dist + screen_h + step_major
+    for wy in range(start_minor_wy, end_wy + 1, step_minor):
+        if wy % step_major != 0:
+            sy = wy - dist
+            pyxel.line(cam_x - 40, sy, cam_x + screen_w + 40, sy, col_minor)
+
+    start_major_wy = int((dist - step_major) // step_major) * step_major
+    for wy in range(start_major_wy, end_wy + 1, step_major):
+        sy = wy - dist
+        pyxel.line(cam_x - 40, sy, cam_x + screen_w + 40, sy, col_major)
+
+    # Vertical grid lines anchored to fixed world X coordinates (staying in place like monochrome blueprint)
+    start_minor_x = int((cam_x - 50) // step_minor) * step_minor
+    end_x = cam_x + screen_w + 50
+    for x in range(start_minor_x, end_x + 1, step_minor):
+        if x % step_major != 0:
+            pyxel.line(x, 0, x, screen_h, col_minor)
+
+    start_major_x = int((cam_x - 50) // step_major) * step_major
+    for x in range(start_major_x, end_x + 1, step_major):
+        pyxel.line(x, 0, x, screen_h, col_major)
 
 
 def bg_glacial_crevasse(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool):
@@ -616,94 +729,185 @@ def draw_text_scaled_helper(pyxel, x: int, y: int, s: str, col: int, scale: int 
     pyxel.blt(blt_x, blt_y, img_bank, 0, 0, w, h, colkey=bg_key, scale=scale)
 
 
-def bg_reader_dark(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool, telemetry: Optional[dict] = None):
-    """Theme 14: Reader Mode E-Reader Dark (Ecclesiastes 3 KJV e-reader in dark OLED mode)."""
-    col_ink = 8 if is_greed else 6     # Moonlight soft grey text
-    col_head = 8 if is_greed else 7    # Header white
-    col_rule = 8 if is_greed else 1    # Rule divider
-    col_stat = 8 if is_greed else 7    # Status text
+def render_reader_mode_text(
+    pyxel,
+    cam_x: int,
+    prog: float,
+    dist: int,
+    screen_w: int,
+    screen_h: int,
+    is_greed: bool,
+    col_ink: int,
+    col_rule: int,
+    telemetry: Optional[dict] = None,
+):
+    """Render Reader Mode with justified paragraphs, integrated telemetry, and 10s Chronos scroll."""
+    margin_l = cam_x + 36
+    margin_r = cam_x + screen_w - 36
+    max_w = margin_r - margin_l
 
-    margin_l = cam_x + 32
-    margin_r = cam_x + screen_w - 32
-    pyxel.line(margin_l, 0, margin_l, screen_h, col_rule)
-    pyxel.line(margin_r, 0, margin_r, screen_h, col_rule)
+    # Margin border rules
+    pyxel.line(margin_l - 4, 0, margin_l - 4, screen_h, col_rule)
+    pyxel.line(margin_r + 4, 0, margin_r + 4, screen_h, col_rule)
 
-    text_x = cam_x + 44
+    # Telemetry formatted seamlessly as scripture paragraph in KJV style (strictly no brackets)
+    def _to_kjv_num(n: int) -> str:
+        words = {
+            0: "no", 1: "one", 2: "two", 3: "three", 4: "four",
+            5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine",
+            10: "ten", 11: "eleven", 12: "twelve"
+        }
+        return words.get(n, str(n))
 
-    # Line 1: Running header
-    draw_text_scaled_helper(pyxel, text_x, 16, "ECCLESIASTES 3 (KJV)  --  BORROWED TIME", col_head, scale=2)
-
-    # Line 2: Telemetry status disguise (Hearts, Score, Time, Pacts)
     if telemetry:
-        h = telemetry.get("hearts", 3)
-        mh = telemetry.get("max_hearts", 3)
+        h = telemetry.get("hearts", 5)
+        mh = telemetry.get("max_hearts", 5)
         sc = telemetry.get("score", 0)
-        t_rem = telemetry.get("time_remaining", 15.0)
+        t_elapsed = telemetry.get("time_elapsed", 0.0)
         pacts = telemetry.get("pacts", [])
-        p_str = ", ".join(pacts) if pacts else "None"
-        line2 = f"Hearts: {h}/{mh}   Score: {sc}   Time: {t_rem:.1f}s   Pacts: {p_str}"
+        pact_counts = telemetry.get("pact_counts", {})
+        if not pact_counts and pacts:
+            pact_counts = {p: 1 for p in pacts}
+        pact_count = telemetry.get("pact_count", sum(pact_counts.values()) if pact_counts else len(pacts))
+
+        if pact_count == 0:
+            cov_clause = "and no faustian covenant hath yet been made."
+        elif pact_count == 1:
+            sin_name = list(pact_counts.keys())[0] if pact_counts else (pacts[0] if pacts else "Pride")
+            cov_clause = f"and one faustian covenant hath been made, even one of {sin_name}."
+        else:
+            parts = [f"{_to_kjv_num(c)} of {s}" for s, c in pact_counts.items()]
+            if len(parts) == 1:
+                breakdown = parts[0]
+            elif len(parts) == 2:
+                breakdown = f"{parts[0]}, and {parts[1]}"
+            else:
+                breakdown = ", ".join(parts[:-1]) + f", and {parts[-1]}"
+            cov_clause = f"and {_to_kjv_num(pact_count)} faustian covenants have been made, to wit, {breakdown}."
+
+        telemetry_para = (
+            f"The vessel holdeth {h} of {mh} measures intact, "
+            f"and {sc} sacred grains reaped from the sands; "
+            f"even as {t_elapsed:.1f} moments of borrowed time have now elapsed under heaven, "
+            f"{cov_clause}"
+        )
     else:
-        line2 = "Hearts: 3/3   Score: 0   Time: 15.0s   Pacts: None"
-    draw_text_scaled_helper(pyxel, text_x, 38, line2, col_stat, scale=2)
+        telemetry_para = (
+            "The vessel holdeth 5 of 5 measures intact, "
+            "and 0 sacred grains reaped from the sands; "
+            "even as 0.0 moments of borrowed time have now elapsed under heaven, "
+            "and no faustian covenant hath yet been made."
+        )
 
-    # Divider under Line 2
-    pyxel.line(margin_l, 58, margin_r, 58, col_rule)
+    # Full text divided into scriptural paragraphs with telemetry placed as the 2nd paragraph (between 1st and 2nd para of Ecc 3)
+    scripture_paras = [
+        (
+            "To every thing there is a season, and a time to every purpose under the heaven: "
+            "A time to be born, and a time to die; a time to plant, and a time to pluck up that which is planted; "
+            "A time to kill, and a time to heal; a time to break down, and a time to build up; "
+            "A time to weep, and a time to laugh; a time to mourn, and a time to dance; "
+            "A time to cast away stones, and a time to gather stones together; "
+            "A time to embrace, and a time to refrain from embracing; "
+            "A time to get, and a time to lose; a time to keep, and a time to cast away; "
+            "A time to rend, and a time to sew; a time to keep silence, and a time to speak; "
+            "A time to love, and a time to hate; a time of war, and a time of peace."
+        ),
+        telemetry_para,
+        (
+            "What profit hath he that worketh in that wherein he laboureth? "
+            "I have seen the travail, which God hath given to the sons of men to be exercised in it. "
+            "He hath made every thing beautiful in his time: also he hath set the world in their heart, "
+            "so that no man can find out the work that God maketh from the beginning to the end. "
+            "I know that there is no good in them, but for a man to rejoice, and to do good in his life. "
+            "And also that every man should eat and drink, and enjoy the good of all his labour, it is the gift of God."
+        ),
+        (
+            "I know that, whatsoever God doeth, it shall be for ever: nothing can be put to it, "
+            "nor any thing taken from it: and God doeth it, that men should fear before him. "
+            "That which hath been is now; and that which is to be hath already been; "
+            "and God requireth that which is past. And moreover I saw under the sun the place of judgment, "
+            "that wickedness was there; and the place of righteousness, that iniquity was there."
+        ),
+        (
+            "I said in mine heart, God shall judge the righteous and the wicked: "
+            "for there is a time there for every purpose and for every work. "
+            "I said in mine heart concerning the estate of the sons of men, that God might manifest them, "
+            "and that they might see that they themselves are beasts. For that which befalleth the sons of men "
+            "befalleth beasts; even one thing befalleth them: as the one dieth, so dieth the other; yea, they have all "
+            "one breath; so that a man hath no preeminence above a beast: for all is vanity. "
+            "All go unto one place; all are of the dust, and all turn to dust again. "
+            "Who knoweth the spirit of man that goeth upward, and the spirit of the beast that goeth downward to the earth? "
+            "Wherefore I perceive that there is nothing better, than that a man should rejoice in his own works; "
+            "for that is his portion: for who shall bring him to see what shall be after him?"
+        ),
+    ]
 
-    # Verses: Double size font, continuous e-reader wrapping, scrolling with fall
-    line_spacing = 20
-    total_h = len(ECCLESIASTES_3_KJV_LINES) * line_spacing
-    scroll_y = int(dist * 0.4) % total_h
-    start_y = 66
+    wrapped_lines = []
+    line_h = 22
+    para_gap = 14
 
-    for idx, line in enumerate(ECCLESIASTES_3_KJV_LINES):
-        sy = start_y + (idx * line_spacing - scroll_y) % total_h
-        if 48 <= sy <= screen_h + 10:
-            draw_text_scaled_helper(pyxel, text_x, sy, line, col_ink, scale=2)
+    for para in scripture_paras:
+        words = para.split()
+        curr_line = []
+        curr_w = 0
+        for w in words:
+            wl = len(w) * 8
+            needed = wl if not curr_line else (8 + wl)
+            if curr_w + needed <= max_w:
+                curr_line.append(w)
+                curr_w += needed
+            else:
+                if curr_line:
+                    wrapped_lines.append((curr_line, False))
+                curr_line = [w]
+                curr_w = wl
+        if curr_line:
+            wrapped_lines.append((curr_line, True))
+
+    total_doc_h = 0
+    line_y_offsets = []
+    for words, is_para_end in wrapped_lines:
+        line_y_offsets.append(total_doc_h)
+        total_doc_h += line_h + (para_gap if is_para_end else 0)
+
+    # Scroll: At prog=0.0: first line at y=40; At prog=1.0: last line reaches bottom of screen (screen_h - 50)
+    start_y = 40
+    last_line_offset = line_y_offsets[-1] if line_y_offsets else 0
+    max_scroll = max(0, start_y + last_line_offset - (screen_h - 55))
+    scroll_y = int(min(1.0, max(0.0, prog)) * max_scroll)
+
+    for (words, is_para_end), y_off in zip(wrapped_lines, line_y_offsets):
+        sy = start_y + y_off - scroll_y
+        if -24 <= sy <= screen_h + 10:
+            if is_para_end or len(words) <= 1:
+                # Left-aligned for final line of paragraph
+                wx = margin_l
+                for w in words:
+                    draw_text_scaled_helper(pyxel, wx, sy, w, col_ink, scale=2)
+                    wx += len(w) * 8 + 8
+            else:
+                # Fully justified alignment across margin_l to margin_r
+                tot_words_w = sum(len(w) * 8 for w in words)
+                extra = max_w - tot_words_w
+                gap = extra / float(len(words) - 1)
+                curr_wx = float(margin_l)
+                for w in words:
+                    draw_text_scaled_helper(pyxel, int(curr_wx), sy, w, col_ink, scale=2)
+                    curr_wx += len(w) * 8 + gap
+
+
+def bg_reader_dark(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool, telemetry: Optional[dict] = None):
+    """Theme 14: Reader Mode E-Reader Dark (Ecclesiastes 3 KJV in dark OLED mode)."""
+    col_ink = 8 if is_greed else 6     # Moonlight soft grey text (crimson in greed)
+    col_rule = 8 if is_greed else 1    # Rule divider
+    render_reader_mode_text(pyxel, cam_x, prog, dist, screen_w, screen_h, is_greed, col_ink, col_rule, telemetry)
 
 
 def bg_reader_light(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool, telemetry: Optional[dict] = None):
     """Theme 15: Reader Mode E-Reader Light (Ecclesiastes 3 KJV on warm cream e-reader paper)."""
-    col_ink = 8 if is_greed else 0     # Pitch-black ink
-    col_head = 8 if is_greed else 4    # Sepia / dark brown header
+    col_ink = 8 if is_greed else 0     # Pitch-black ink (crimson in greed)
     col_rule = 8 if is_greed else 4    # Sepia margin rule
-    col_stat = 8 if is_greed else 0    # Ink status text
-
-    margin_l = cam_x + 32
-    margin_r = cam_x + screen_w - 32
-    pyxel.line(margin_l, 0, margin_l, screen_h, col_rule)
-    pyxel.line(margin_r, 0, margin_r, screen_h, col_rule)
-
-    text_x = cam_x + 44
-
-    # Line 1: Running header
-    draw_text_scaled_helper(pyxel, text_x, 16, "ECCLESIASTES 3 (KJV)  --  BORROWED TIME", col_head, scale=2)
-
-    # Line 2: Telemetry status disguise (Hearts, Score, Time, Pacts)
-    if telemetry:
-        h = telemetry.get("hearts", 3)
-        mh = telemetry.get("max_hearts", 3)
-        sc = telemetry.get("score", 0)
-        t_rem = telemetry.get("time_remaining", 15.0)
-        pacts = telemetry.get("pacts", [])
-        p_str = ", ".join(pacts) if pacts else "None"
-        line2 = f"Hearts: {h}/{mh}   Score: {sc}   Time: {t_rem:.1f}s   Pacts: {p_str}"
-    else:
-        line2 = "Hearts: 3/3   Score: 0   Time: 15.0s   Pacts: None"
-    draw_text_scaled_helper(pyxel, text_x, 38, line2, col_stat, scale=2)
-
-    # Divider under Line 2
-    pyxel.line(margin_l, 58, margin_r, 58, col_rule)
-
-    # Verses: Double size font, continuous e-reader wrapping, scrolling with fall
-    line_spacing = 20
-    total_h = len(ECCLESIASTES_3_KJV_LINES) * line_spacing
-    scroll_y = int(dist * 0.4) % total_h
-    start_y = 66
-
-    for idx, line in enumerate(ECCLESIASTES_3_KJV_LINES):
-        sy = start_y + (idx * line_spacing - scroll_y) % total_h
-        if 48 <= sy <= screen_h + 10:
-            draw_text_scaled_helper(pyxel, text_x, sy, line, col_ink, scale=2)
+    render_reader_mode_text(pyxel, cam_x, prog, dist, screen_w, screen_h, is_greed, col_ink, col_rule, telemetry)
 
 
 # Aliases for backward compatibility
@@ -807,168 +1011,294 @@ def bg_zen_ink_wash(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, sc
 
 
 # =============================================================================
+# KAIROS PALETTES FOR ALL 20 THEMES
+# =============================================================================
+
+KAIROS_SKIFREE_SANDFALL = KairosPalette(
+    modal_bg=4, dimmer=4, border_outer=10, border_inner=9,
+    header_title=15, header_sub=10,
+    timer_bar_bg=4, timer_bar_fill=10, timer_bar_border=9,
+    card_bg=9, card_bg_selected=10, card_border=4, card_border_selected=7,
+    badge_bg=4, badge_text=15, badge_bg_selected=7, badge_text_selected=0,
+    selected_btn_bg=7, selected_btn_text=0,
+    sin_title=15, sin_title_selected=0, level_text=4, divider=4,
+    pro_label=15, pro_text=15, con_label=8, con_text=4,
+    footer_text=15, footer_warn=8,
+)
+
+KAIROS_COSMIC_CHRONOMETER = KairosPalette(
+    modal_bg=1, dimmer=1, border_outer=12, border_inner=5,
+    header_title=7, header_sub=12,
+    timer_bar_bg=0, timer_bar_fill=12, timer_bar_border=7,
+    card_bg=0, card_bg_selected=5, card_border=1, card_border_selected=12,
+    badge_bg=1, badge_text=12, badge_bg_selected=12, badge_text_selected=1,
+    selected_btn_bg=12, selected_btn_text=1,
+    sin_title=7, sin_title_selected=10, level_text=12, divider=1,
+    pro_label=12, pro_text=7, con_label=8, con_text=14,
+    footer_text=7, footer_warn=12,
+)
+
+KAIROS_ABYSSAL_HOURGLASS = KairosPalette(
+    modal_bg=0, dimmer=0, border_outer=6, border_inner=1,
+    header_title=7, header_sub=12,
+    timer_bar_bg=1, timer_bar_fill=12, timer_bar_border=6,
+    card_bg=1, card_bg_selected=5, card_border=1, card_border_selected=6,
+    badge_bg=1, badge_text=6, badge_bg_selected=6, badge_text_selected=0,
+    selected_btn_bg=6, selected_btn_text=0,
+    sin_title=7, sin_title_selected=12, level_text=6, divider=1,
+    pro_label=12, pro_text=7, con_label=8, con_text=6,
+    footer_text=6, footer_warn=12,
+)
+
+KAIROS_SHATTERED_MIRROR_CHASM = KairosPalette(
+    modal_bg=2, dimmer=2, border_outer=14, border_inner=13,
+    header_title=7, header_sub=14,
+    timer_bar_bg=2, timer_bar_fill=14, timer_bar_border=7,
+    card_bg=13, card_bg_selected=2, card_border=7, card_border_selected=14,
+    badge_bg=2, badge_text=7, badge_bg_selected=14, badge_text_selected=0,
+    selected_btn_bg=14, selected_btn_text=0,
+    sin_title=7, sin_title_selected=10, level_text=14, divider=13,
+    pro_label=12, pro_text=7, con_label=8, con_text=14,
+    footer_text=7, footer_warn=14,
+)
+
+KAIROS_MAGMA_CALDERA = KairosPalette(
+    modal_bg=0, dimmer=0, border_outer=8, border_inner=9,
+    header_title=10, header_sub=9,
+    timer_bar_bg=0, timer_bar_fill=9, timer_bar_border=8,
+    card_bg=2, card_bg_selected=4, card_border=8, card_border_selected=10,
+    badge_bg=8, badge_text=10, badge_bg_selected=8, badge_text_selected=10,
+    selected_btn_bg=10, selected_btn_text=0,
+    sin_title=10, sin_title_selected=7, level_text=9, divider=8,
+    pro_label=9, pro_text=10, con_label=8, con_text=9,
+    footer_text=9, footer_warn=8,
+)
+
+KAIROS_CARTOGRAPHERS_SCROLL = KairosPalette(
+    modal_bg=15, dimmer=4, border_outer=4, border_inner=9,
+    header_title=4, header_sub=8,
+    timer_bar_bg=7, timer_bar_fill=9, timer_bar_border=4,
+    card_bg=7, card_bg_selected=15, card_border=4, card_border_selected=9,
+    badge_bg=4, badge_text=15, badge_bg_selected=8, badge_text_selected=15,
+    selected_btn_bg=8, selected_btn_text=15,
+    sin_title=4, sin_title_selected=8, level_text=9, divider=4,
+    pro_label=3, pro_text=4, con_label=8, con_text=4,
+    footer_text=4, footer_warn=8,
+)
+
+KAIROS_PRO_MODE_DARK = KairosPalette(
+    modal_bg=0, dimmer=0, border_outer=7, border_inner=5,
+    header_title=7, header_sub=10,
+    timer_bar_bg=0, timer_bar_fill=10, timer_bar_border=7,
+    card_bg=0, card_bg_selected=5, card_border=5, card_border_selected=7,
+    badge_bg=0, badge_text=7, badge_bg_selected=10, badge_text_selected=0,
+    selected_btn_bg=10, selected_btn_text=0,
+    sin_title=7, sin_title_selected=10, level_text=10, divider=5,
+    pro_label=11, pro_text=7, con_label=8, con_text=7,
+    footer_text=7, footer_warn=10,
+)
+
+KAIROS_PRO_MODE_LIGHT = KairosPalette(
+    modal_bg=7, dimmer=5, border_outer=0, border_inner=5,
+    header_title=0, header_sub=8,
+    timer_bar_bg=6, timer_bar_fill=0, timer_bar_border=0,
+    card_bg=7, card_bg_selected=6, card_border=0, card_border_selected=8,
+    badge_bg=0, badge_text=7, badge_bg_selected=0, badge_text_selected=7,
+    selected_btn_bg=0, selected_btn_text=7,
+    sin_title=0, sin_title_selected=8, level_text=0, divider=5,
+    pro_label=3, pro_text=0, con_label=8, con_text=0,
+    footer_text=0, footer_warn=8,
+)
+
+KAIROS_COPPER_VERDIGRIS = KairosPalette(
+    modal_bg=4, dimmer=4, border_outer=11, border_inner=9,
+    header_title=10, header_sub=11,
+    timer_bar_bg=4, timer_bar_fill=10, timer_bar_border=11,
+    card_bg=3, card_bg_selected=4, card_border=11, card_border_selected=10,
+    badge_bg=3, badge_text=11, badge_bg_selected=10, badge_text_selected=0,
+    selected_btn_bg=10, selected_btn_text=0,
+    sin_title=10, sin_title_selected=7, level_text=9, divider=11,
+    pro_label=11, pro_text=7, con_label=8, con_text=9,
+    footer_text=10, footer_warn=8,
+)
+
+KAIROS_SOLAR_FLARE = KairosPalette(
+    modal_bg=8, dimmer=2, border_outer=10, border_inner=9,
+    header_title=7, header_sub=10,
+    timer_bar_bg=8, timer_bar_fill=10, timer_bar_border=7,
+    card_bg=2, card_bg_selected=8, card_border=9, card_border_selected=10,
+    badge_bg=8, badge_text=10, badge_bg_selected=10, badge_text_selected=0,
+    selected_btn_bg=10, selected_btn_text=0,
+    sin_title=10, sin_title_selected=7, level_text=9, divider=9,
+    pro_label=10, pro_text=7, con_label=8, con_text=9,
+    footer_text=10, footer_warn=7,
+)
+
+KAIROS_MONOCHROME_BLUEPRINT = KairosPalette(
+    modal_bg=1, dimmer=1, border_outer=7, border_inner=12,
+    header_title=7, header_sub=12,
+    timer_bar_bg=1, timer_bar_fill=12, timer_bar_border=7,
+    card_bg=0, card_bg_selected=1, card_border=12, card_border_selected=7,
+    badge_bg=12, badge_text=1, badge_bg_selected=7, badge_text_selected=1,
+    selected_btn_bg=7, selected_btn_text=1,
+    sin_title=7, sin_title_selected=12, level_text=12, divider=12,
+    pro_label=12, pro_text=7, con_label=7, con_text=6,
+    footer_text=12, footer_warn=7,
+)
+
+KAIROS_GLACIAL_CREVASSE = KairosPalette(
+    modal_bg=1, dimmer=1, border_outer=12, border_inner=6,
+    header_title=7, header_sub=12,
+    timer_bar_bg=1, timer_bar_fill=12, timer_bar_border=6,
+    card_bg=5, card_bg_selected=1, card_border=6, card_border_selected=12,
+    badge_bg=1, badge_text=12, badge_bg_selected=12, badge_text_selected=0,
+    selected_btn_bg=12, selected_btn_text=0,
+    sin_title=7, sin_title_selected=12, level_text=6, divider=6,
+    pro_label=12, pro_text=7, con_label=8, con_text=6,
+    footer_text=6, footer_warn=12,
+)
+
+KAIROS_RETRO_TERMINAL_MATRIX = KairosPalette(
+    modal_bg=0, dimmer=0, border_outer=11, border_inner=3,
+    header_title=11, header_sub=3,
+    timer_bar_bg=0, timer_bar_fill=11, timer_bar_border=3,
+    card_bg=0, card_bg_selected=3, card_border=3, card_border_selected=11,
+    badge_bg=3, badge_text=11, badge_bg_selected=11, badge_text_selected=0,
+    selected_btn_bg=11, selected_btn_text=0,
+    sin_title=11, sin_title_selected=7, level_text=11, divider=3,
+    pro_label=11, pro_text=7, con_label=8, con_text=11,
+    footer_text=11, footer_warn=8,
+)
+
+KAIROS_READER_MODE_DARK = KairosPalette(
+    modal_bg=0, dimmer=0, border_outer=6, border_inner=5,
+    header_title=7, header_sub=6,
+    timer_bar_bg=0, timer_bar_fill=6, timer_bar_border=5,
+    card_bg=5, card_bg_selected=0, card_border=5, card_border_selected=6,
+    badge_bg=5, badge_text=7, badge_bg_selected=6, badge_text_selected=0,
+    selected_btn_bg=6, selected_btn_text=0,
+    sin_title=7, sin_title_selected=10, level_text=6, divider=5,
+    pro_label=6, pro_text=7, con_label=8, con_text=6,
+    footer_text=6, footer_warn=8,
+)
+
+KAIROS_READER_MODE_LIGHT = KairosPalette(
+    modal_bg=15, dimmer=5, border_outer=4, border_inner=5,
+    header_title=0, header_sub=4,
+    timer_bar_bg=7, timer_bar_fill=4, timer_bar_border=5,
+    card_bg=7, card_bg_selected=15, card_border=5, card_border_selected=4,
+    badge_bg=4, badge_text=7, badge_bg_selected=4, badge_text_selected=15,
+    selected_btn_bg=4, selected_btn_text=15,
+    sin_title=0, sin_title_selected=4, level_text=5, divider=5,
+    pro_label=3, pro_text=0, con_label=8, con_text=0,
+    footer_text=0, footer_warn=8,
+)
+
+KAIROS_NEON_NOIR_MEGACITY = KairosPalette(
+    modal_bg=0, dimmer=0, border_outer=14, border_inner=12,
+    header_title=12, header_sub=14,
+    timer_bar_bg=0, timer_bar_fill=14, timer_bar_border=12,
+    card_bg=1, card_bg_selected=2, card_border=12, card_border_selected=14,
+    badge_bg=14, badge_text=0, badge_bg_selected=12, badge_text_selected=0,
+    selected_btn_bg=12, selected_btn_text=0,
+    sin_title=12, sin_title_selected=10, level_text=14, divider=12,
+    pro_label=12, pro_text=7, con_label=14, con_text=8,
+    footer_text=12, footer_warn=14,
+)
+
+KAIROS_LIMINAL_VAPORWAVE = KairosPalette(
+    modal_bg=2, dimmer=2, border_outer=14, border_inner=12,
+    header_title=7, header_sub=14,
+    timer_bar_bg=2, timer_bar_fill=12, timer_bar_border=14,
+    card_bg=13, card_bg_selected=2, card_border=14, card_border_selected=12,
+    badge_bg=12, badge_text=0, badge_bg_selected=14, badge_text_selected=0,
+    selected_btn_bg=14, selected_btn_text=0,
+    sin_title=7, sin_title_selected=10, level_text=14, divider=12,
+    pro_label=12, pro_text=7, con_label=14, con_text=10,
+    footer_text=7, footer_warn=14,
+)
+
+KAIROS_CHALKBOARD_THEORY = KairosPalette(
+    modal_bg=13, dimmer=5, border_outer=7, border_inner=6,
+    header_title=7, header_sub=10,
+    timer_bar_bg=5, timer_bar_fill=10, timer_bar_border=7,
+    card_bg=5, card_bg_selected=13, card_border=6, card_border_selected=7,
+    badge_bg=5, badge_text=7, badge_bg_selected=10, badge_text_selected=0,
+    selected_btn_bg=10, selected_btn_text=0,
+    sin_title=7, sin_title_selected=10, level_text=10, divider=6,
+    pro_label=10, pro_text=7, con_label=8, con_text=7,
+    footer_text=7, footer_warn=10,
+)
+
+KAIROS_BLOOD_MOON_ECLIPSE = KairosPalette(
+    modal_bg=0, dimmer=0, border_outer=8, border_inner=2,
+    header_title=7, header_sub=8,
+    timer_bar_bg=0, timer_bar_fill=8, timer_bar_border=2,
+    card_bg=2, card_bg_selected=0, card_border=8, card_border_selected=7,
+    badge_bg=8, badge_text=7, badge_bg_selected=8, badge_text_selected=7,
+    selected_btn_bg=8, selected_btn_text=7,
+    sin_title=7, sin_title_selected=10, level_text=8, divider=8,
+    pro_label=8, pro_text=7, con_label=8, con_text=9,
+    footer_text=7, footer_warn=8,
+)
+
+KAIROS_ZEN_INK_WASH = KairosPalette(
+    modal_bg=7, dimmer=5, border_outer=0, border_inner=8,
+    header_title=0, header_sub=8,
+    timer_bar_bg=15, timer_bar_fill=0, timer_bar_border=8,
+    card_bg=15, card_bg_selected=7, card_border=0, card_border_selected=8,
+    badge_bg=0, badge_text=7, badge_bg_selected=8, badge_text_selected=7,
+    selected_btn_bg=8, selected_btn_text=7,
+    sin_title=0, sin_title_selected=8, level_text=8, divider=5,
+    pro_label=3, pro_text=0, con_label=8, con_text=0,
+    footer_text=0, footer_warn=8,
+)
+
+
+# =============================================================================
 # THEME REGISTRY
 # =============================================================================
 
 ALL_THEMES: List[Theme] = [
-    # 1. SkiFree Sandfall
+    # 0. Desert Dunes (formerly SkiFree Sandfall)
     Theme(
         id=0,
-        name="SKIFREE SANDFALL",
+        name="DESERT DUNES",
         clear_color=15,
         greed_clear_color=2,
         sand=SandPalette(body=10, border=4, glint=7, shadow=4, fat_body=10, fat_border=4, fat_glint=7),
-        shard=ShardPalette(facet=6, border=0, glint=7, shadow=4, fat_facet=8, fat_border=0),
+        shard=ShardPalette(facet=6, border=0, glint=7, shadow=4, fat_facet=6, fat_border=0),
         hourglass=HourglassPalette(caps=4, cap_hl=9, cap_rivet=10, glass_walls=6, waist_neck=7, sand_a=10, sand_b=9, shadow=4),
-        render_bg=bg_skifree_sandfall,
+        render_bg=bg_sand_dunes_landscape,
+        kairos=KAIROS_SKIFREE_SANDFALL,
     ),
-    # 2. Cosmic Chronometer
+    # 1. Pro Mode (High Contrast Light)
     Theme(
         id=1,
-        name="COSMIC CHRONOMETER",
-        clear_color=1,
-        greed_clear_color=0,
-        sand=SandPalette(body=10, border=1, glint=7, shadow=0, fat_body=10, fat_border=1, fat_glint=7),
-        shard=ShardPalette(facet=13, border=1, glint=7, shadow=0, fat_facet=8, fat_border=0),
-        hourglass=HourglassPalette(caps=4, cap_hl=9, cap_rivet=10, glass_walls=13, waist_neck=7, sand_a=10, sand_b=9, shadow=0),
-        render_bg=bg_cosmic_chronometer,
-    ),
-    # 3. Abyssal Hourglass
-    Theme(
-        id=2,
-        name="ABYSSAL HOURGLASS",
-        clear_color=0,
-        greed_clear_color=2,
-        sand=SandPalette(body=10, border=0, glint=7, shadow=0, fat_body=10, fat_border=0, fat_glint=7),
-        shard=ShardPalette(facet=0, border=6, glint=7, shadow=0, fat_facet=8, fat_border=7),
-        hourglass=HourglassPalette(caps=1, cap_hl=6, cap_rivet=7, glass_walls=6, waist_neck=7, sand_a=10, sand_b=9, shadow=0),
-        render_bg=bg_abyssal_hourglass,
-    ),
-    # 4. Shattered Mirror Chasm
-    Theme(
-        id=3,
-        name="SHATTERED MIRROR CHASM",
-        clear_color=13,
-        greed_clear_color=2,
-        sand=SandPalette(body=7, border=1, glint=12, shadow=1, fat_body=7, fat_border=1, fat_glint=12),
-        shard=ShardPalette(facet=7, border=1, glint=14, shadow=1, fat_facet=8, fat_border=0),
-        hourglass=HourglassPalette(caps=1, cap_hl=6, cap_rivet=7, glass_walls=12, waist_neck=7, sand_a=7, sand_b=12, shadow=1),
-        render_bg=bg_shattered_mirror_chasm,
-    ),
-    # 5. Magma Caldera
-    Theme(
-        id=4,
-        name="MAGMA CALDERA",
-        clear_color=0,
-        greed_clear_color=2,
-        sand=SandPalette(body=10, border=8, glint=7, shadow=0, fat_body=10, fat_border=8, fat_glint=7),
-        shard=ShardPalette(facet=0, border=8, glint=7, shadow=8, fat_facet=8, fat_border=7),
-        hourglass=HourglassPalette(caps=5, cap_hl=8, cap_rivet=10, glass_walls=8, waist_neck=7, sand_a=10, sand_b=8, shadow=0),
-        render_bg=bg_magma_caldera,
-    ),
-    # 6. Cartographer's Scroll
-    Theme(
-        id=5,
-        name="CARTOGRAPHER'S SCROLL",
-        clear_color=15,
-        greed_clear_color=4,
-        sand=SandPalette(body=9, border=4, glint=10, shadow=4, fat_body=9, fat_border=4, fat_glint=10),
-        shard=ShardPalette(facet=0, border=4, glint=7, shadow=4, fat_facet=8, fat_border=0),
-        hourglass=HourglassPalette(caps=4, cap_hl=9, cap_rivet=10, glass_walls=4, waist_neck=7, sand_a=9, sand_b=10, shadow=4),
-        render_bg=bg_cartographers_scroll,
-    ),
-    # 7. Pro Mode (High Contrast Dark)
-    Theme(
-        id=6,
-        name="PRO MODE (HIGH CONTRAST DARK)",
-        clear_color=0,
-        greed_clear_color=0,
-        sand=SandPalette(body=10, border=0, glint=7, shadow=0, fat_body=10, fat_border=0, fat_glint=7),
-        shard=ShardPalette(facet=12, border=0, glint=7, shadow=0, fat_facet=8, fat_border=7),
-        hourglass=HourglassPalette(caps=7, cap_hl=7, cap_rivet=0, glass_walls=12, waist_neck=7, sand_a=10, sand_b=7, shadow=0),
-        render_bg=bg_pro_mode_dark,
-    ),
-    # 8. Pro Mode (High Contrast Light)
-    Theme(
-        id=7,
         name="PRO MODE (HIGH CONTRAST LIGHT)",
         clear_color=7,
         greed_clear_color=7,
         sand=SandPalette(body=9, border=0, glint=10, shadow=0, fat_body=9, fat_border=0, fat_glint=10),
-        shard=ShardPalette(facet=0, border=0, glint=5, shadow=0, fat_facet=8, fat_border=0),
+        shard=ShardPalette(facet=0, border=0, glint=5, shadow=0, fat_facet=0, fat_border=0),
         hourglass=HourglassPalette(caps=0, cap_hl=5, cap_rivet=0, glass_walls=1, waist_neck=0, sand_a=9, sand_b=10, shadow=5),
         render_bg=bg_pro_mode_light,
+        kairos=KAIROS_PRO_MODE_LIGHT,
     ),
-    # 9. Copper & Verdigris
+    # 2. Pro Mode (High Contrast Dark)
     Theme(
-        id=8,
-        name="COPPER & VERDIGRIS",
-        clear_color=4,
-        greed_clear_color=2,
-        sand=SandPalette(body=9, border=0, glint=10, shadow=0, fat_body=9, fat_border=0, fat_glint=10),
-        shard=ShardPalette(facet=3, border=0, glint=11, shadow=0, fat_facet=8, fat_border=0),
-        hourglass=HourglassPalette(caps=4, cap_hl=9, cap_rivet=10, glass_walls=3, waist_neck=7, sand_a=9, sand_b=10, shadow=0),
-        render_bg=bg_copper_and_verdigris,
-    ),
-    # 10. Solar Flare
-    Theme(
-        id=9,
-        name="SOLAR FLARE",
-        clear_color=9,
-        greed_clear_color=2,
-        sand=SandPalette(body=7, border=8, glint=10, shadow=4, fat_body=7, fat_border=8, fat_glint=10),
-        shard=ShardPalette(facet=0, border=8, glint=7, shadow=8, fat_facet=8, fat_border=7),
-        hourglass=HourglassPalette(caps=8, cap_hl=10, cap_rivet=7, glass_walls=7, waist_neck=10, sand_a=7, sand_b=10, shadow=8),
-        render_bg=bg_solar_flare,
-    ),
-    # 11. Monochrome Blueprint
-    Theme(
-        id=10,
-        name="MONOCHROME BLUEPRINT",
-        clear_color=1,
-        greed_clear_color=0,
-        sand=SandPalette(body=7, border=1, glint=12, shadow=0, fat_body=7, fat_border=1, fat_glint=12),
-        shard=ShardPalette(facet=7, border=1, glint=12, shadow=0, fat_facet=8, fat_border=7),
-        hourglass=HourglassPalette(caps=12, cap_hl=7, cap_rivet=7, glass_walls=12, waist_neck=7, sand_a=7, sand_b=12, shadow=0),
-        render_bg=bg_monochrome_blueprint,
-    ),
-    # 12. Glacial Crevasse
-    Theme(
-        id=11,
-        name="GLACIAL CREVASSE",
-        clear_color=1,
-        greed_clear_color=0,
-        sand=SandPalette(body=12, border=1, glint=7, shadow=0, fat_body=12, fat_border=1, fat_glint=7),
-        shard=ShardPalette(facet=7, border=1, glint=6, shadow=0, fat_facet=8, fat_border=7),
-        hourglass=HourglassPalette(caps=12, cap_hl=6, cap_rivet=7, glass_walls=6, waist_neck=7, sand_a=12, sand_b=7, shadow=0),
-        render_bg=bg_glacial_crevasse,
-    ),
-    # 13. Retro Terminal Matrix
-    Theme(
-        id=12,
-        name="RETRO TERMINAL MATRIX",
-        clear_color=0,
-        greed_clear_color=2,
-        sand=SandPalette(body=11, border=0, glint=7, shadow=0, fat_body=11, fat_border=0, fat_glint=7),
-        shard=ShardPalette(facet=3, border=0, glint=11, shadow=0, fat_facet=8, fat_border=7),
-        hourglass=HourglassPalette(caps=3, cap_hl=11, cap_rivet=7, glass_walls=3, waist_neck=11, sand_a=11, sand_b=3, shadow=0),
-        render_bg=bg_retro_terminal_matrix,
-    ),
-    # 14. Reader Mode (E-Reader Dark)
-    Theme(
-        id=13,
-        name="READER MODE (E-READER DARK)",
+        id=2,
+        name="PRO MODE (HIGH CONTRAST DARK)",
         clear_color=0,
         greed_clear_color=0,
         sand=SandPalette(body=10, border=0, glint=7, shadow=0, fat_body=10, fat_border=0, fat_glint=7),
-        shard=ShardPalette(facet=8, border=0, glint=7, shadow=0, fat_facet=8, fat_border=7),
-        hourglass=HourglassPalette(caps=5, cap_hl=6, cap_rivet=7, glass_walls=6, waist_neck=12, sand_a=10, sand_b=7, shadow=0),
-        render_bg=bg_reader_dark,
-        is_reader_mode=True,
+        shard=ShardPalette(facet=12, border=0, glint=7, shadow=0, fat_facet=12, fat_border=7),
+        hourglass=HourglassPalette(caps=7, cap_hl=7, cap_rivet=0, glass_walls=12, waist_neck=7, sand_a=10, sand_b=7, shadow=0),
+        render_bg=bg_pro_mode_dark,
+        kairos=KAIROS_PRO_MODE_DARK,
     ),
-    # 15. Reader Mode (E-Reader Light)
+    # 3. Reader Mode (E-Reader Light)
     Theme(
-        id=14,
+        id=3,
         name="READER MODE (E-READER LIGHT)",
         clear_color=15,
         greed_clear_color=15,
@@ -976,66 +1306,85 @@ ALL_THEMES: List[Theme] = [
         shard=ShardPalette(facet=8, border=4, glint=7, shadow=4, fat_facet=8, fat_border=0),
         hourglass=HourglassPalette(caps=4, cap_hl=9, cap_rivet=10, glass_walls=0, waist_neck=7, sand_a=9, sand_b=10, shadow=4),
         render_bg=bg_reader_light,
+        kairos=KAIROS_READER_MODE_LIGHT,
         is_reader_mode=True,
     ),
-    # 16. Neon Noir Megacity
+    # 4. Reader Mode (E-Reader Dark)
     Theme(
-        id=15,
-        name="NEON NOIR MEGACITY",
+        id=4,
+        name="READER MODE (E-READER DARK)",
+        clear_color=0,
+        greed_clear_color=0,
+        sand=SandPalette(body=10, border=0, glint=7, shadow=0, fat_body=10, fat_border=0, fat_glint=7),
+        shard=ShardPalette(facet=8, border=0, glint=7, shadow=0, fat_facet=8, fat_border=7),
+        hourglass=HourglassPalette(caps=5, cap_hl=6, cap_rivet=7, glass_walls=6, waist_neck=12, sand_a=10, sand_b=7, shadow=0),
+        render_bg=bg_reader_dark,
+        kairos=KAIROS_READER_MODE_DARK,
+        is_reader_mode=True,
+    ),
+    # 5. Monochrome Blueprint
+    Theme(
+        id=5,
+        name="MONOCHROME BLUEPRINT",
+        clear_color=1,
+        greed_clear_color=0,
+        sand=SandPalette(body=7, border=1, glint=12, shadow=0, fat_body=7, fat_border=1, fat_glint=12),
+        shard=ShardPalette(facet=7, border=1, glint=12, shadow=0, fat_facet=7, fat_border=7),
+        hourglass=HourglassPalette(caps=12, cap_hl=7, cap_rivet=7, glass_walls=12, waist_neck=7, sand_a=7, sand_b=12, shadow=0),
+        render_bg=bg_monochrome_blueprint,
+        kairos=KAIROS_MONOCHROME_BLUEPRINT,
+    ),
+    # 6. Magma Caldera
+    Theme(
+        id=6,
+        name="MAGMA CALDERA",
         clear_color=0,
         greed_clear_color=2,
         sand=SandPalette(body=10, border=8, glint=7, shadow=0, fat_body=10, fat_border=8, fat_glint=7),
-        shard=ShardPalette(facet=14, border=0, glint=12, shadow=0, fat_facet=8, fat_border=7),
-        hourglass=HourglassPalette(caps=1, cap_hl=14, cap_rivet=12, glass_walls=12, waist_neck=14, sand_a=10, sand_b=14, shadow=0),
-        render_bg=bg_neon_noir_megacity,
+        shard=ShardPalette(facet=0, border=8, glint=7, shadow=8, fat_facet=0, fat_border=7),
+        hourglass=HourglassPalette(caps=5, cap_hl=8, cap_rivet=10, glass_walls=8, waist_neck=7, sand_a=10, sand_b=8, shadow=0),
+        render_bg=bg_magma_caldera,
+        kairos=KAIROS_MAGMA_CALDERA,
     ),
-    # 17. Liminal Vaporwave
+    # 7. Retro Terminal Matrix
     Theme(
-        id=16,
-        name="LIMINAL VAPORWAVE",
-        clear_color=14,
+        id=7,
+        name="RETRO TERMINAL MATRIX",
+        clear_color=0,
         greed_clear_color=2,
-        sand=SandPalette(body=10, border=1, glint=7, shadow=1, fat_body=10, fat_border=1, fat_glint=7),
-        shard=ShardPalette(facet=12, border=1, glint=7, shadow=1, fat_facet=8, fat_border=0),
-        hourglass=HourglassPalette(caps=1, cap_hl=12, cap_rivet=7, glass_walls=12, waist_neck=14, sand_a=10, sand_b=12, shadow=1),
-        render_bg=bg_liminal_vaporwave,
+        sand=SandPalette(body=11, border=0, glint=7, shadow=0, fat_body=11, fat_border=0, fat_glint=7),
+        shard=ShardPalette(facet=3, border=0, glint=11, shadow=0, fat_facet=3, fat_border=7),
+        hourglass=HourglassPalette(caps=3, cap_hl=11, cap_rivet=7, glass_walls=3, waist_neck=11, sand_a=11, sand_b=3, shadow=0),
+        render_bg=bg_retro_terminal_matrix,
+        kairos=KAIROS_RETRO_TERMINAL_MATRIX,
     ),
-    # 18. Chalkboard Theory
+    # 8. Zen Ink Wash (Sumi-e)
     Theme(
-        id=17,
-        name="CHALKBOARD THEORY",
-        clear_color=5,
-        greed_clear_color=2,
-        sand=SandPalette(body=10, border=5, glint=7, shadow=0, fat_body=10, fat_border=5, fat_glint=7),
-        shard=ShardPalette(facet=0, border=7, glint=6, shadow=0, fat_facet=8, fat_border=7),
-        hourglass=HourglassPalette(caps=0, cap_hl=6, cap_rivet=7, glass_walls=6, waist_neck=7, sand_a=10, sand_b=7, shadow=0),
-        render_bg=bg_chalkboard_theory,
-    ),
-    # 19. Blood Moon Eclipse
-    Theme(
-        id=18,
-        name="BLOOD MOON ECLIPSE",
-        clear_color=2,
-        greed_clear_color=0,
-        sand=SandPalette(body=9, border=2, glint=8, shadow=0, fat_body=9, fat_border=2, fat_glint=8),
-        shard=ShardPalette(facet=8, border=0, glint=7, shadow=0, fat_facet=8, fat_border=7),
-        hourglass=HourglassPalette(caps=2, cap_hl=8, cap_rivet=7, glass_walls=8, waist_neck=7, sand_a=9, sand_b=8, shadow=0),
-        render_bg=bg_blood_moon_eclipse,
-    ),
-    # 20. Zen Ink Wash (Sumi-e)
-    Theme(
-        id=19,
+        id=8,
         name="ZEN INK WASH (SUMI-E)",
         clear_color=7,
         greed_clear_color=2,
         sand=SandPalette(body=9, border=0, glint=10, shadow=5, fat_body=9, fat_border=0, fat_glint=10),
-        shard=ShardPalette(facet=0, border=5, glint=7, shadow=5, fat_facet=8, fat_border=0),
+        shard=ShardPalette(facet=0, border=5, glint=7, shadow=5, fat_facet=0, fat_border=0),
         hourglass=HourglassPalette(caps=0, cap_hl=5, cap_rivet=8, glass_walls=5, waist_neck=0, sand_a=9, sand_b=0, shadow=5),
         render_bg=bg_zen_ink_wash,
+        kairos=KAIROS_ZEN_INK_WASH,
+    ),
+    # 9. Liminal Vaporwave
+    Theme(
+        id=9,
+        name="LIMINAL VAPORWAVE",
+        clear_color=14,
+        greed_clear_color=2,
+        sand=SandPalette(body=10, border=1, glint=7, shadow=1, fat_body=10, fat_border=1, fat_glint=7),
+        shard=ShardPalette(facet=12, border=1, glint=7, shadow=1, fat_facet=12, fat_border=0),
+        hourglass=HourglassPalette(caps=1, cap_hl=12, cap_rivet=7, glass_walls=12, waist_neck=14, sand_a=10, sand_b=12, shadow=1),
+        render_bg=bg_liminal_vaporwave,
+        kairos=KAIROS_LIMINAL_VAPORWAVE,
     ),
 ]
 
 
 def get_theme(index: int) -> Theme:
-    """Return theme by modular index (0..19)."""
+    """Return theme by modular index (0..9)."""
     return ALL_THEMES[index % len(ALL_THEMES)]

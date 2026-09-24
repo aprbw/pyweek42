@@ -168,6 +168,24 @@ def test_bot_bargain_policy_never_greed():
         assert chosen_sin != SinType.GREED, f"Trial {trial}: Bot chose GREED!"
 
 
+def test_bot_kairos_2_seconds_delay():
+    """Verify bot waits 2.0s (60 frames) elapsed before confirming Kairos selection."""
+    bot = PlayTestingBot()
+    options = [
+        (SinType.PRIDE, BARGAIN_REGISTRY[SinType.PRIDE], 1),
+        (SinType.SLOTH, BARGAIN_REGISTRY[SinType.SLOTH], 1),
+    ]
+    bot.target_card_index = 0
+    # Under 60 frames, bot will navigate but NOT confirm
+    for elapsed in [0, 15, 30, 45, 59]:
+        _, _, confirm = bot.decide_kairos_choice(options, current_index=0, frames_elapsed=elapsed)
+        assert confirm is False, f"Bot should not confirm at elapsed frame {elapsed} (< 60)"
+
+    # At 60+ frames, bot confirms selection
+    _, _, confirm = bot.decide_kairos_choice(options, current_index=0, frames_elapsed=60)
+    assert confirm is True
+
+
 def test_headless_bot_simulation_survives():
     """Verify bot executes headless game for multiple cycles without crash."""
     bot = PlayTestingBot(BotConfig(speed_handicap=0.80, bottom_blind_ratio=0.20), seed=42)

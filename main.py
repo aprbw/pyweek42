@@ -199,7 +199,7 @@ def is_dev_environment() -> bool:
 
 
 class GrainOfDoubtApp:
-    VERSION: str = "v0.19.0"
+    VERSION: str = "v1.0.0"
     SCREEN_WIDTH: int = 600
     SCREEN_HEIGHT: int = 800
 
@@ -457,7 +457,7 @@ class GrainOfDoubtApp:
                 frames_rem = self.state.KAIROS_FRAMES - self.state.kairos_timer
                 if pyxel.frame_count % 2 == 0:
                     b_left, b_right, b_seal = self.bot.decide_kairos_choice(
-                        self.active_options, self.selected_card_index, frames_remaining=frames_rem
+                        self.active_options, self.selected_card_index, frames_remaining=frames_rem, frames_elapsed=self.state.kairos_timer
                     )
                     if b_left and self.selected_card_index > 0:
                         self.selected_card_index -= 1
@@ -481,30 +481,32 @@ class GrainOfDoubtApp:
                 if not is_right_now:
                     self.kairos_right_released = True
 
-                # Selection triggers only on fresh press AFTER releasing Chronos steering
-                move_left = (
-                    (pyxel.btnp(pyxel.KEY_LEFT) or pyxel.btnp(pyxel.KEY_A) or
-                     (pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT) and pyxel.mouse_x < self.SCREEN_WIDTH / 2.0))
-                    and self.kairos_left_released
-                )
-                move_right = (
-                    (pyxel.btnp(pyxel.KEY_RIGHT) or pyxel.btnp(pyxel.KEY_D) or
-                     (pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT) and pyxel.mouse_x >= self.SCREEN_WIDTH / 2.0))
-                    and self.kairos_right_released
-                )
+                # Lockout: don't accept user input for the 1st 1.0 second (30 frames)
+                if self.state.kairos_timer >= 30:
+                    # Selection triggers only on fresh press AFTER releasing Chronos steering
+                    move_left = (
+                        (pyxel.btnp(pyxel.KEY_LEFT) or pyxel.btnp(pyxel.KEY_A) or
+                         (pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT) and pyxel.mouse_x < self.SCREEN_WIDTH / 2.0))
+                        and self.kairos_left_released
+                    )
+                    move_right = (
+                        (pyxel.btnp(pyxel.KEY_RIGHT) or pyxel.btnp(pyxel.KEY_D) or
+                         (pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT) and pyxel.mouse_x >= self.SCREEN_WIDTH / 2.0))
+                        and self.kairos_right_released
+                    )
 
-                if move_left:
-                    self.selected_card_index = 0
-                    instant_seal = True
-                elif move_right:
-                    self.selected_card_index = 1
-                    instant_seal = True
-
-                # Space/Enter also confirms immediately
-                if pyxel.btnp(pyxel.KEY_SPACE) or pyxel.btnp(pyxel.KEY_RETURN):
-                    if self.selected_card_index < 0:
+                    if move_left:
                         self.selected_card_index = 0
-                    instant_seal = True
+                        instant_seal = True
+                    elif move_right:
+                        self.selected_card_index = 1
+                        instant_seal = True
+
+                    # Space/Enter also confirms immediately
+                    if pyxel.btnp(pyxel.KEY_SPACE) or pyxel.btnp(pyxel.KEY_RETURN):
+                        if self.selected_card_index < 0:
+                            self.selected_card_index = 0
+                        instant_seal = True
 
             # Advance Kairos timer
             self.state.update_timers()
@@ -584,14 +586,24 @@ class GrainOfDoubtApp:
 
         # Telemetry payload for status-display themes (e.g. Reader Mode)
         active_pacts = []
+        pact_counts = {}
+        pact_count = 0
         if hasattr(self, "bargains") and hasattr(self.bargains, "selection_counts"):
-            active_pacts = [sin.name.title() for sin in CANONICAL_SINS if self.bargains.selection_counts.get(sin, 0) > 0]
+            for sin in CANONICAL_SINS:
+                cnt = self.bargains.selection_counts.get(sin, 0)
+                if cnt > 0:
+                    active_pacts.append(sin.name.title())
+                    pact_counts[sin.name.title()] = cnt
+            pact_count = len(self.bargains.history) if self.bargains.history else sum(self.bargains.selection_counts.values())
         telemetry = {
             "hearts": self.state.hearts,
             "max_hearts": getattr(self.state, "max_hearts", 5),
             "score": self.state.score,
+            "time_elapsed": self.state.chronos_timer / 30.0,
             "time_remaining": max(0.0, (self.state.CHRONOS_FRAMES - self.state.chronos_timer) / 30.0),
             "pacts": active_pacts,
+            "pact_counts": pact_counts,
+            "pact_count": pact_count,
         }
 
         # Compute descent distance (continuous falling distance in-game, gentle drift on title)
@@ -616,12 +628,12 @@ class GrainOfDoubtApp:
                 self.draw_theme_banner()
             return
 
-        # In Reader Mode: gameplay elements (sand, shards, hourglass) rendered with 30% alpha
         is_reader = getattr(theme, "is_reader_mode", False)
-        if is_reader and hasattr(pyxel, "dither"):
-            pyxel.dither(0.30)
 
-        # Draw Sand grains in world coordinates with theme-aware palette
+        # Draw Sand grains in world coordinates with theme-aware palette (alpha = 0.60 in Reader Mode)
+        if is_reader and hasattr(pyxel, "dither"):
+            pyxel.dither(0.60)
+
         s_pal = theme.sand
         for sand in self.entities.sands:
             c = s_pal.body if (pyxel.frame_count // 3 + int(sand.shimmer_phase * 4)) % 2 == 0 else s_pal.border
@@ -642,11 +654,15 @@ class GrainOfDoubtApp:
                 pyxel.rectb(int(sand.x - 5), int(sand.y - 5), 10, 10, s_pal.shadow)
                 pyxel.rect(int(sand.x - 2), int(sand.y - 2), 4, 4, s_pal.glint)  # Center glint
 
-        # Draw Glass shards in world coordinates with theme-aware palette
+        # Draw Glass shards in world coordinates with theme-aware palette (alpha = 0.30 in Reader Mode)
+        if is_reader and hasattr(pyxel, "dither"):
+            pyxel.dither(0.30)
         for shard in self.entities.shards:
             self.draw_glass_shard(shard, theme.shard)
 
-        # Draw Player Hourglass in world coordinates with theme-aware palette
+        # Draw Player Hourglass in world coordinates with theme-aware palette (alpha = 0.60 in Reader Mode)
+        if is_reader and hasattr(pyxel, "dither"):
+            pyxel.dither(0.60)
         self.draw_player_hourglass(theme.hourglass)
 
         # Restore 100% full opacity
@@ -975,11 +991,13 @@ class GrainOfDoubtApp:
         pyxel.tri(x0 + 3, y0 + 4, x1 + 3, y1 + 4, x2 + 3, y2 + 4, pal.shadow)
 
         if is_fat:
-            pyxel.tri(x0, y0, x1, y1, x2, y2, pal.fat_facet)
+            # Gluttony big triangle: exact same color as regular shard
+            pyxel.tri(x0, y0, x1, y1, x2, y2, pal.facet)
             pyxel.line(x0, y0, x1, y1, pal.border)
             pyxel.line(x1, y1, x2, y2, pal.border)
             pyxel.line(x2, y2, x0, y0, pal.border)
-            pyxel.line(x0, y0, (x1 + x2) // 2, (y1 + y2) // 2, pal.fat_border)
+            if (pyxel.frame_count // 3) % 2 == 0:
+                pyxel.line(x0, y0, x1, y1, pal.glint)
         else:
             # Facet
             pyxel.tri(x0, y0, x1, y1, x2, y2, pal.facet)
@@ -997,9 +1015,26 @@ class GrainOfDoubtApp:
             # In Reader Mode: All floating UI is suppressed; telemetry is described on line 2 of text
             return
 
-        # 1. Hearts container (Top Left) - solid opaque dark container
-        pyxel.rect(10, 8, 172, 30, 0)
-        pyxel.rectb(10, 8, 172, 30, 1)
+        # Transparency & theme contrast adaptation for floating HUD elements
+        is_light = theme.clear_color in (7, 15, 6, 11) or getattr(theme, "id", 0) in (7, 15)
+        kp = theme.get_kairos_palette()
+        box_bg = 7 if is_light else 0
+        box_border = 0 if is_light else (kp.border_inner if kp.border_inner != 0 else 1)
+        text_col = 0 if is_light else 7
+        title_col = 4 if is_light else 6
+        num_col = 0 if is_light else 10
+        flash_time = (pyxel.frame_count // 15) % 2 == 0
+
+        def draw_hud_box(bx: int, by: int, bw: int, bh: int):
+            if hasattr(pyxel, "dither"):
+                pyxel.dither(0.50)
+            pyxel.rect(bx, by, bw, bh, box_bg)
+            if hasattr(pyxel, "dither"):
+                pyxel.dither(1.0)
+            pyxel.rectb(bx, by, bw, bh, box_border)
+
+        # 1. Hearts container (Top Left) - translucent theme-aware container
+        draw_hud_box(10, 8, 172, 30)
 
         for i in range(5):
             hx = 16 + i * 32
@@ -1013,45 +1048,42 @@ class GrainOfDoubtApp:
                 pyxel.rect(hx + 12, hy + 20, 4, 4, 8)
                 pyxel.rect(hx + 4, hy + 4, 4, 4, 7)  # Specular glint
             else:
-                pyxel.rectb(hx, hy + 4, 28, 16, 5)
+                pyxel.rectb(hx, hy + 4, 28, 16, 4 if is_light else 5)
 
-        # 2. Elapsed Time container (Top Center) - solid opaque dark container
-        pyxel.rect(self.SCREEN_WIDTH // 2 - 76, 8, 152, 30, 0)
-        pyxel.rectb(self.SCREEN_WIDTH // 2 - 76, 8, 152, 30, 1)
+        # 2. Elapsed Time container (Top Center) - translucent theme-aware container
+        draw_hud_box(self.SCREEN_WIDTH // 2 - 76, 8, 152, 30)
 
         elapsed_sec = self.state.total_frames / 30.0
         time_str = f"TIME: {elapsed_sec:04.1f} s"
-        flash_time = (pyxel.frame_count // 15) % 2 == 0
-        draw_text_scaled(self.SCREEN_WIDTH // 2 - 47, 14, time_str, 10 if flash_time else 7, scale=2)
+        t_col = (8 if is_light else 10) if flash_time else text_col
+        draw_text_scaled(self.SCREEN_WIDTH // 2 - 47, 14, time_str, t_col, scale=2)
 
-        # 3. Score container (Top Right) - solid opaque dark container
-        pyxel.rect(self.SCREEN_WIDTH - 250, 8, 240, 30, 0)
-        pyxel.rectb(self.SCREEN_WIDTH - 250, 8, 240, 30, 1)
+        # 3. Score container (Top Right) - translucent theme-aware container
+        draw_hud_box(self.SCREEN_WIDTH - 250, 8, 240, 30)
 
         score_fmt = f"{self.state.score:,}".replace(",", " ")
         score_str = f"SCORE: {score_fmt}"
-        draw_text_scaled(self.SCREEN_WIDTH - 240, 14, score_str, 10, scale=2)
+        draw_text_scaled(self.SCREEN_WIDTH - 240, 14, score_str, num_col, scale=2)
 
         # Multiplier (inside score container at right)
         if self.state.score_multiplier > 1.05:
             mult_str = f"x{self.state.score_multiplier:.1f}"
-            draw_text_scaled(self.SCREEN_WIDTH - 65, 14, mult_str, 9, scale=2)
+            draw_text_scaled(self.SCREEN_WIDTH - 65, 14, mult_str, 8 if is_light else 9, scale=2)
 
         # 4. Vertical Pacts List in Catholic Canonical Order at Top Right (All 7 always listed)
         pacts_box_w = 180
         pacts_box_h = 140
         pacts_box_x = self.SCREEN_WIDTH - pacts_box_w - 10
         pacts_box_y = 44
-        pyxel.rect(pacts_box_x, pacts_box_y, pacts_box_w, pacts_box_h, 0)
-        pyxel.rectb(pacts_box_x, pacts_box_y, pacts_box_w, pacts_box_h, 1)
+        draw_hud_box(pacts_box_x, pacts_box_y, pacts_box_w, pacts_box_h)
 
-        draw_text_scaled(pacts_box_x + 8, pacts_box_y + 4, "FAUSTIAN PACTS", 6, scale=2)
+        draw_text_scaled(pacts_box_x + 8, pacts_box_y + 4, "FAUSTIAN PACTS", title_col, scale=2)
         for idx, sin in enumerate(CANONICAL_SINS):
             k = self.bargains.selection_counts.get(sin, 0)
             row_y = pacts_box_y + 22 + idx * 16
             sin_lbl = sin.name.lower()
             line_txt = f"{idx+1}. {sin_lbl:<10} {k}"
-            col = 10 if k > 0 else 5
+            col = (8 if is_light else 10) if k > 0 else (4 if is_light else 5)
             # Draw color swatch matching the background of the pact card
             sin_col = SIN_CARD_COLORS.get(sin, 1)
             pyxel.rect(pacts_box_x + 5, row_y + 2, 4, 11, sin_col)
@@ -1060,33 +1092,29 @@ class GrainOfDoubtApp:
         # Minimal Status Badges when active (drawn below hearts at top left)
         badge_y = 44
         if self.bot_mode and not self.dev_mode:
-            pyxel.rect(10, badge_y, 100, 20, 0)
-            pyxel.rectb(10, badge_y, 100, 20, 11)
-            draw_text_scaled(15, badge_y + 4, "[BOT ON]", 11, scale=2)
+            draw_hud_box(10, badge_y, 100, 20)
+            draw_text_scaled(15, badge_y + 4, "[BOT ON]", 11 if not is_light else 3, scale=2)
             badge_y += 24
 
         if self.video_recorder.is_recording and not self.dev_mode:
             rec_secs = self.video_recorder.frames_recorded // 30
             flash = (pyxel.frame_count // 6) % 2 == 0
-            pyxel.rect(10, badge_y, 100, 20, 0)
-            pyxel.rectb(10, badge_y, 100, 20, 8)
-            draw_text_scaled(15, badge_y + 4, f"REC {rec_secs:02d} s", 8 if flash else 7, scale=2)
+            draw_hud_box(10, badge_y, 100, 20)
+            draw_text_scaled(15, badge_y + 4, f"REC {rec_secs:02d} s", 8 if flash else text_col, scale=2)
             badge_y += 24
 
         # Invulnerability Badge
         if self.state.godmode:
-            pyxel.rect(10, badge_y, 100, 20, 0)
-            pyxel.rectb(10, badge_y, 100, 20, 10)
-            draw_text_scaled(15, badge_y + 4, "[GODMODE]", 10, scale=2)
+            draw_hud_box(10, badge_y, 100, 20)
+            draw_text_scaled(15, badge_y + 4, "[GODMODE]", 10 if not is_light else 8, scale=2)
             badge_y += 24
 
         # Envy Tidal Pull Badge
         if self.state.envy_mega_lust_active:
             lust_secs = (self.state.envy_mega_lust_timer + 29) // 30
             flash = (pyxel.frame_count // 4) % 2 == 0
-            pyxel.rect(10, badge_y, 100, 20, 0)
-            pyxel.rectb(10, badge_y, 100, 20, 10 if flash else 9)
-            draw_text_scaled(15, badge_y + 4, f"TIDAL PULL {lust_secs} s", 10 if flash else 7, scale=2)
+            draw_hud_box(10, badge_y, 100, 20)
+            draw_text_scaled(15, badge_y + 4, f"TIDAL PULL {lust_secs} s", (10 if flash else 7) if not is_light else (8 if flash else 0), scale=2)
             badge_y += 24
 
         # Greed Borrowed Time Warning Indicator
@@ -1155,21 +1183,25 @@ class GrainOfDoubtApp:
         modal_w = 540
         modal_h = 680
 
+        theme = get_theme(self.current_theme_index)
+        kp = theme.get_kairos_palette()
+        is_pro_mode = theme.name.startswith("PRO MODE")
+
         # Full-screen ambient dimmer overlay over background gameplay world
         if hasattr(pyxel, "dither"):
             pyxel.dither(0.50)
-        pyxel.rect(0, 0, self.SCREEN_WIDTH, self.SCREEN_HEIGHT, 0)
+        pyxel.rect(0, 0, self.SCREEN_WIDTH, self.SCREEN_HEIGHT, kp.dimmer)
         if hasattr(pyxel, "dither"):
             pyxel.dither(1.0)
 
-        # Modal backdrop: SOLID opaque black box with crisp double border (no checkered noise)
-        pyxel.rect(modal_x, modal_y, modal_w, modal_h, 0)
-        pyxel.rectb(modal_x, modal_y, modal_w, modal_h, 8)
-        pyxel.rectb(modal_x + 2, modal_y + 2, modal_w - 4, modal_h - 4, 2)
+        # Modal backdrop: SOLID opaque box with crisp double border matching current theme
+        pyxel.rect(modal_x, modal_y, modal_w, modal_h, kp.modal_bg)
+        pyxel.rectb(modal_x, modal_y, modal_w, modal_h, kp.border_outer)
+        pyxel.rectb(modal_x + 2, modal_y + 2, modal_w - 4, modal_h - 4, kp.border_inner)
 
         # Header
-        draw_text_scaled(modal_x + 70, modal_y + 16, "KAIROS CIRCUIT BREAKER", 7, scale=2)
-        draw_text_scaled(modal_x + 150, modal_y + 38, "BORROW YOUR TIME", 8, scale=2)
+        draw_text_scaled(modal_x + 70, modal_y + 16, "KAIROS CIRCUIT BREAKER", kp.header_title, scale=2)
+        draw_text_scaled(modal_x + 150, modal_y + 38, "BORROW YOUR TIME", kp.header_sub, scale=2)
 
         # 2 Wide Columns matching Left and Right
         col_w = 228
@@ -1182,18 +1214,16 @@ class GrainOfDoubtApp:
         ratio = max(0.0, min(1.0, 1.0 - (self.state.kairos_timer / float(self.state.KAIROS_FRAMES))))
         fill_h = int(col_h * ratio)
         drain_offset = col_h - fill_h
-        bar_col = (8 if (pyxel.frame_count // 3) % 2 == 0 else 9) if ratio < 0.30 else 10
+        urgent_flash = kp.con_label if (pyxel.frame_count // 3) % 2 == 0 else kp.header_sub
+        bar_col = urgent_flash if ratio < 0.30 else kp.timer_bar_fill
 
         for bar_x in [modal_x + 8, modal_x + modal_w - 20]:
-            pyxel.rect(bar_x, col_y, 12, col_h, 0)
+            pyxel.rect(bar_x, col_y, 12, col_h, kp.timer_bar_bg)
             if fill_h > 0:
                 pyxel.rect(bar_x, col_y + drain_offset, 12, fill_h, bar_col)
-            pyxel.rectb(bar_x, col_y, 12, col_h, 6)
+            pyxel.rectb(bar_x, col_y, 12, col_h, kp.timer_bar_border)
 
         col_labels = ["< STEER LEFT <", "> STEER RIGHT >"]
-
-        theme = get_theme(self.current_theme_index)
-        is_pro_mode = theme.name.startswith("PRO MODE")
 
         for i, (sin, defn, k) in enumerate(self.active_options):
             cx = start_x + i * (col_w + col_gap)
@@ -1202,10 +1232,11 @@ class GrainOfDoubtApp:
             # Card background & frame: in Pro Mode, color-match each pact to its unique signature color
             if is_pro_mode:
                 bg_col = SIN_CARD_COLORS.get(sin, 1)
-                border_col = 10 if (is_selected and (pyxel.frame_count // 3) % 2 == 0) else (7 if is_selected else 0)
+                border_col = 10 if (is_selected and (pyxel.frame_count // 3) % 2 == 0) else (7 if is_selected else (0 if theme.id == 7 else 5))
             else:
-                bg_col = 1 if not is_selected else 5
-                border_col = 10 if (is_selected and (pyxel.frame_count // 3) % 2 == 0) else (6 if is_selected else 1)
+                bg_col = kp.card_bg if not is_selected else kp.card_bg_selected
+                flash_col = kp.sin_title_selected if (pyxel.frame_count // 3) % 2 == 0 else kp.card_border_selected
+                border_col = flash_col if is_selected else kp.card_border
 
             if sin == SinType.GLUTTONY and not is_pro_mode:
                 # Gluttony: card intentionally bulges and bends the frame outward around the oversized title!
@@ -1245,19 +1276,27 @@ class GrainOfDoubtApp:
 
                 draw_bent_outline(0, border_col)
                 if is_selected:
-                    draw_bent_outline(1, 10)
+                    draw_bent_outline(1, kp.card_border_selected)
             else:
                 pyxel.rect(cx, col_y, col_w, col_h, bg_col)
                 pyxel.rectb(cx, col_y, col_w, col_h, border_col)
                 if is_selected:
-                    pyxel.rectb(cx + 1, col_y + 1, col_w - 2, col_h - 2, 10)
+                    pyxel.rectb(cx + 1, col_y + 1, col_w - 2, col_h - 2, kp.card_border_selected)
 
             # Directional badge (justified center)
-            badge_col = 8 if is_selected else (0 if is_pro_mode else 1)
+            if is_selected:
+                badge_col = kp.badge_bg_selected
+                badge_txt_col = kp.badge_text_selected
+            elif is_pro_mode:
+                badge_col = 0 if theme.id == 6 else 7
+                badge_txt_col = 7 if theme.id == 6 else 0
+            else:
+                badge_col = kp.badge_bg
+                badge_txt_col = kp.badge_text
             pyxel.rect(cx + 14, col_y + 12, col_w - 28, 28, badge_col)
             badge_lbl = col_labels[i]
             badge_w = (len(badge_lbl) * 4 - 1) * 2
-            draw_text_scaled(cx + col_w // 2 - badge_w // 2, col_y + 18, badge_lbl, 7, scale=2)
+            draw_text_scaled(cx + col_w // 2 - badge_w // 2, col_y + 18, badge_lbl, badge_txt_col, scale=2)
 
             # Pure Sin Name: significantly bigger, fills entire box horizontally based on longest character, justified center
             max_sin_len = max(len(d.name) for d in BARGAIN_REGISTRY.values())
@@ -1269,14 +1308,28 @@ class GrainOfDoubtApp:
             title_w = (len(name) * 4 - 1) * title_scale
             center_x = cx + col_w // 2
             title_x = center_x - title_w // 2
-            title_col = 10 if is_selected else (0 if (is_pro_mode and sin == SinType.LUST) else 7)
+            if is_selected:
+                title_col = kp.sin_title_selected
+            elif is_pro_mode and sin == SinType.LUST:
+                title_col = 0
+            elif is_pro_mode:
+                title_col = 7
+            else:
+                title_col = kp.sin_title
             draw_text_scaled(title_x, col_y + 46, name, title_col, scale=title_scale)
 
             # Level indicator (justified center below title)
             lvl_str = f"LEVEL: {k}"
             lvl_w = (len(lvl_str) * 4 - 1) * 2
             lvl_x = center_x - lvl_w // 2
-            lvl_col = 10 if is_selected else (0 if (is_pro_mode and sin == SinType.LUST) else 9)
+            if is_selected:
+                lvl_col = kp.sin_title_selected
+            elif is_pro_mode and sin == SinType.LUST:
+                lvl_col = 0
+            elif is_pro_mode:
+                lvl_col = 9
+            else:
+                lvl_col = kp.level_text
             draw_text_scaled(lvl_x, col_y + 88, lvl_str, lvl_col, scale=2)
 
             if is_pro_mode:
@@ -1288,111 +1341,119 @@ class GrainOfDoubtApp:
 
                 # Selection status button at bottom
                 if is_selected:
-                    pyxel.rect(cx + 14, col_y + col_h - 48, col_w - 28, 34, 10)
+                    pyxel.rect(cx + 14, col_y + col_h - 48, col_w - 28, 34, kp.selected_btn_bg)
                     sel_lbl = "SELECTED"
                     sel_w = (len(sel_lbl) * 4 - 1) * 2
-                    draw_text_scaled(center_x - sel_w // 2, col_y + col_h - 40, sel_lbl, 0, scale=2)
+                    draw_text_scaled(center_x - sel_w // 2, col_y + col_h - 40, sel_lbl, kp.selected_btn_text, scale=2)
                 else:
-                    pyxel.rectb(cx + 14, col_y + col_h - 48, col_w - 28, 34, 0 if sin == SinType.LUST else 7)
+                    pyxel.rectb(cx + 14, col_y + col_h - 48, col_w - 28, 34, 0 if sin == SinType.LUST else (0 if theme.id == 7 else 7))
                     btn_lbl = "STEER TO CHOOSE"
                     btn_w = (len(btn_lbl) * 4 - 1) * 2
-                    draw_text_scaled(center_x - btn_w // 2, col_y + col_h - 40, btn_lbl, 0 if sin == SinType.LUST else 7, scale=2)
+                    draw_text_scaled(center_x - btn_w // 2, col_y + col_h - 40, btn_lbl, 0 if sin == SinType.LUST else (0 if theme.id == 7 else 7), scale=2)
             else:
                 # Visual divider
-                pyxel.line(cx + 14, col_y + 106, cx + col_w - 14, col_y + 106, 6)
+                pyxel.line(cx + 14, col_y + 106, cx + col_w - 14, col_y + 106, kp.divider)
 
                 # Boon section
-                draw_text_scaled(cx + 16, col_y + 120, "PRO (NOW):", 11, scale=2)
+                draw_text_scaled(cx + 16, col_y + 120, "PRO (NOW):", kp.pro_label, scale=2)
                 if sin == SinType.PRIDE:
                     group_name = ["Pairs", "Triplets", "Quadruplets", "Quintuplets"][min(3, k)]
-                    draw_text_scaled(cx + 16, col_y + 144, "Sand Clusters", 7, scale=2)
-                    draw_text_scaled(cx + 16, col_y + 168, f"{group_name} (+{k+1} grains)", 11, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 144, "Sand Clusters", kp.pro_text, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 168, f"{group_name} (+{k+1} grains)", kp.pro_label, scale=2)
                 elif sin == SinType.ENVY:
                     next_k = k + 1
                     k_eff = next_k + 2
                     outer_preview = int(1200.0 * (0.8 ** k_eff))
                     mega_r = outer_preview * 2
-                    draw_text_scaled(cx + 16, col_y + 144, "Tidal Pull (2.0s)", 7, scale=2)
-                    draw_text_scaled(cx + 16, col_y + 168, f"Pull {mega_r}px Radius", 11, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 144, "Tidal Pull (2.0s)", kp.pro_text, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 168, f"Pull {mega_r}px Radius", kp.pro_label, scale=2)
                 elif sin == SinType.GREED:
-                    draw_text_scaled(cx + 16, col_y + 144, "Score Multiplier", 7, scale=2)
-                    draw_text_scaled(cx + 16, col_y + 168, "x110% per sand", 11, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 144, "Score Multiplier", kp.pro_text, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 168, "x110% per sand", kp.pro_label, scale=2)
                 elif sin == SinType.SLOTH:
-                    draw_text_scaled(cx + 16, col_y + 144, "Lazy Reprieve", 7, scale=2)
-                    draw_text_scaled(cx + 16, col_y + 168, "Hurl Hazards Down (2s)", 11, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 144, "Lazy Reprieve", kp.pro_text, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 168, "Hurl Hazards Down (2s)", kp.pro_label, scale=2)
                 elif sin == SinType.LUST:
-                    draw_text_scaled(cx + 16, col_y + 144, "Sand Magnet", 7, scale=2)
-                    draw_text_scaled(cx + 16, col_y + 168, f"{100 + k * 50}px (Permanent)", 11, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 144, "Sand Magnet", kp.pro_text, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 168, f"{100 + k * 50}px (Permanent)", kp.pro_label, scale=2)
                 elif sin == SinType.GLUTTONY:
                     next_k = k + 1
                     next_fat = (1.0 - (0.90 ** next_k)) * 100.0
-                    draw_text_scaled(cx + 16, col_y + 144, "Fat Grains (3x Pts)", 7, scale=2)
-                    draw_text_scaled(cx + 16, col_y + 168, f"{next_fat:.1f}% Fat (10x Area)", 11, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 144, "Fat Grains (3x Pts)", kp.pro_text, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 168, f"{next_fat:.1f}% Fat (10x Area)", kp.pro_label, scale=2)
                 elif sin == SinType.WRATH:
-                    draw_text_scaled(cx + 16, col_y + 144, "Wrath Explosion", 7, scale=2)
-                    draw_text_scaled(cx + 16, col_y + 168, "Blast 1200px Radius", 11, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 144, "Wrath Explosion", kp.pro_text, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 168, "Blast 1200px Radius", kp.pro_label, scale=2)
                 else:
-                    draw_text_scaled(cx + 16, col_y + 144, f"+{defn.boon_name}", 7, scale=2)
-                    draw_text_scaled(cx + 16, col_y + 168, f"{defn.boon_base} {defn.boon_unit}", 11, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 144, f"+{defn.boon_name}", kp.pro_text, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 168, f"{defn.boon_base} {defn.boon_unit}", kp.pro_label, scale=2)
 
                 # Visual divider
-                pyxel.line(cx + 14, col_y + 206, cx + col_w - 14, col_y + 206, 2)
+                pyxel.line(cx + 14, col_y + 206, cx + col_w - 14, col_y + 206, kp.divider)
 
                 # Curse section
-                draw_text_scaled(cx + 16, col_y + 220, "CON (FOREVER):", 8, scale=2)
+                draw_text_scaled(cx + 16, col_y + 220, "CON (FOREVER):", kp.con_label, scale=2)
                 if sin == SinType.PRIDE:
-                    draw_text_scaled(cx + 16, col_y + 244, "Descent Speed", 7, scale=2)
-                    draw_text_scaled(cx + 16, col_y + 268, "+25% Fall Velocity", 8, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 244, "Descent Speed", kp.con_text, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 268, "+25% Fall Velocity", kp.con_label, scale=2)
                 elif sin == SinType.GREED:
-                    draw_text_scaled(cx + 16, col_y + 244, "Borrowed Time", 7, scale=2)
-                    draw_text_scaled(cx + 16, col_y + 268, "10-18s (LETHAL END)", 8, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 244, "Borrowed Time", kp.con_text, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 268, "10-18s (LETHAL END)", kp.con_label, scale=2)
                 elif sin == SinType.ENVY:
                     next_k = k + 1
                     k_eff = next_k + 2
                     outer_preview = int(1200.0 * (0.8 ** k_eff))
                     inner_preview = int(1000.0 * (0.8 ** (k_eff + 1)))
-                    draw_text_scaled(cx + 16, col_y + 244, "Vignette Vision", 7, scale=2)
-                    draw_text_scaled(cx + 16, col_y + 268, f"{outer_preview}/{inner_preview} px", 8, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 244, "Vignette Vision", kp.con_text, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 268, f"{outer_preview}/{inner_preview} px", kp.con_label, scale=2)
                 elif sin == SinType.SLOTH:
                     drag = 0.20 * (1.5 ** k) * 100
-                    draw_text_scaled(cx + 16, col_y + 244, "Lateral Drag", 7, scale=2)
-                    draw_text_scaled(cx + 16, col_y + 268, f"-{drag:.0f}% Steering (Wave)", 8, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 244, "Lateral Drag", kp.con_text, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 268, f"-{drag:.0f}% Steering (Wave)", kp.con_label, scale=2)
                 elif sin == SinType.LUST:
-                    draw_text_scaled(cx + 16, col_y + 244, "Hazard Magnet", 7, scale=2)
-                    draw_text_scaled(cx + 16, col_y + 268, f"{100 + k * 50}px (Permanent)", 8, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 244, "Hazard Magnet", kp.con_text, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 268, f"{100 + k * 50}px (Permanent)", kp.con_label, scale=2)
                 elif sin == SinType.GLUTTONY:
                     next_k = k + 1
                     next_fat = (1.0 - (0.90 ** next_k)) * 100.0
-                    draw_text_scaled(cx + 16, col_y + 244, "Fat Glass Shards", 7, scale=2)
-                    draw_text_scaled(cx + 16, col_y + 268, f"{next_fat:.1f}% Fat (10x Area)", 8, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 244, "Fat Glass Shards", kp.con_text, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 268, f"{next_fat:.1f}% Fat (10x Area)", kp.con_label, scale=2)
                 elif sin == SinType.WRATH:
-                    draw_text_scaled(cx + 16, col_y + 244, "Zero Yield", 7, scale=2)
-                    draw_text_scaled(cx + 16, col_y + 268, "10.0s Zero Yield", 8, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 244, "Zero Yield", kp.con_text, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 268, "10.0s Zero Yield", kp.con_label, scale=2)
                 else:
-                    draw_text_scaled(cx + 16, col_y + 244, f"-{defn.curse_name}", 7, scale=2)
-                    draw_text_scaled(cx + 16, col_y + 268, f"{defn.curse_base} {defn.curse_unit}", 8, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 244, f"-{defn.curse_name}", kp.con_text, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 268, f"{defn.curse_base} {defn.curse_unit}", kp.con_label, scale=2)
 
                 # Compounding note
-                draw_text_scaled(cx + 16, col_y + 350, "COMPOUNDS PER PACT", 6, scale=2)
+                draw_text_scaled(cx + 16, col_y + 350, "COMPOUNDS PER PACT", kp.level_text, scale=2)
 
                 # Selection status
                 if is_selected:
-                    pyxel.rect(cx + 14, col_y + col_h - 48, col_w - 28, 34, 10)
-                    draw_text_scaled(cx + 52, col_y + col_h - 40, "SELECTED", 0, scale=2)
+                    pyxel.rect(cx + 14, col_y + col_h - 48, col_w - 28, 34, kp.selected_btn_bg)
+                    sel_w = (len("SELECTED") * 4 - 1) * 2
+                    draw_text_scaled(center_x - sel_w // 2, col_y + col_h - 40, "SELECTED", kp.selected_btn_text, scale=2)
 
         # Footer instructions
-        draw_text_scaled(modal_x + 50, modal_y + modal_h - 44, "STEER LEFT OR RIGHT TO SELECT", 7, scale=2)
-        draw_text_scaled(modal_x + 60, modal_y + modal_h - 22, "CHOOSE OR DIE: 2.0s TIME LIMIT", 8, scale=2)
+        if not self.bot_mode and self.state.kairos_timer < 30:
+            rem_lock = (30 - self.state.kairos_timer + 29) // 30
+            draw_text_scaled(modal_x + 85, modal_y + modal_h - 44, f"STABILIZING CIRCUIT ({rem_lock}s)...", kp.header_sub, scale=2)
+        else:
+            draw_text_scaled(modal_x + 50, modal_y + modal_h - 44, "STEER LEFT OR RIGHT TO SELECT", kp.footer_text, scale=2)
+        limit_sec = self.state.KAIROS_FRAMES / 30.0
+        draw_text_scaled(modal_x + 55, modal_y + modal_h - 22, f"CHOOSE OR DIE: {limit_sec:.1f}s TIME LIMIT", kp.footer_warn, scale=2)
 
     def draw_feedback_banner(self):
         fb = self.selected_feedback
         if not fb:
             return
+        theme = get_theme(self.current_theme_index)
+        kp = theme.get_kairos_palette()
         # Position banner safely above bottom window / buttons
-        pyxel.rect(40, 540, 520, 44, 0)
-        pyxel.rectb(40, 540, 520, 44, 10)
+        pyxel.rect(40, 540, 520, 44, kp.modal_bg)
+        pyxel.rectb(40, 540, 520, 44, kp.border_outer)
         txt = f"PACT SEALED: {fb['sin'].upper()}!"
-        draw_text_scaled(70, 554, txt, 10, scale=2)
+        draw_text_scaled(70, 554, txt, kp.sin_title_selected, scale=2)
 
     def draw_title_screen(self):
         # Header plaque for high-contrast presentation on any background theme
@@ -1430,10 +1491,10 @@ class GrainOfDoubtApp:
         draw_text_scaled(60, 400, "< LEFT BUTTON   |   RIGHT BUTTON >", 7, scale=2)
         draw_text_scaled(60, 420, "Tap buttons or screen half to steer", 6, scale=2)
 
-        draw_text_scaled(60, 446, "20 DIVERGENT THEMES (PRO & READER MODES)", 10, scale=2)
-        draw_text_scaled(60, 470, f"[,] PREV THEME   |   [.] NEXT THEME  ({self.current_theme_index + 1}/20)", 7, scale=2)
+        draw_text_scaled(60, 446, "10 DIVERGENT THEMES (PRO & READER MODES)", 10, scale=2)
+        draw_text_scaled(60, 470, f"[0-9] SELECT | [,] PREV | [.] NEXT  ({self.current_theme_index + 1}/{len(ALL_THEMES)})", 7, scale=2)
         theme = get_theme(self.current_theme_index)
-        draw_text_scaled(60, 492, f"ACTIVE: {theme.name}", 10 if (self.current_theme_index in (6, 7) or getattr(theme, "is_reader_mode", False)) else 9, scale=2)
+        draw_text_scaled(60, 492, f"ACTIVE: {theme.name}", 10 if (self.current_theme_index in (1, 2) or getattr(theme, "is_reader_mode", False)) else 9, scale=2)
 
         draw_text_scaled(60, 522, "SHORTCUTS", 9, scale=2)
         if self.dev_mode:
@@ -1475,7 +1536,9 @@ class GrainOfDoubtApp:
         draw_text_scaled(210, 128, "BY ARIAN PRABOWO", 6, scale=2)
 
         reason = self.state.death_reason or "Consumed by the Void"
-        draw_text_scaled(70, 150, reason[:36], 7, scale=2)
+        reason_w = (len(reason) * 4 - 1) * 2
+        reason_x = max(50, (self.SCREEN_WIDTH - reason_w) // 2)
+        draw_text_scaled(reason_x, 150, reason, 7, scale=2)
 
         # Inner stats container: SOLID Midnight Navy with Slate border (no checkered noise)
         pyxel.rect(60, 175, 480, 420, 1)
@@ -1536,19 +1599,19 @@ class GrainOfDoubtApp:
         draw_text_scaled(rx + 65, btn_y + 24, "RIGHT >", 10 if self.touch_right else 7, scale=3)
 
     def draw_theme_banner(self):
-        """Render prominent theme switcher banner without HUD overlap."""
+        """Render prominent theme switcher banner at the bottom of the screen."""
         theme = get_theme(self.current_theme_index)
         box_w = 520
         box_h = 46
         box_x = (self.SCREEN_WIDTH - box_w) // 2  # 40
-        box_y = 196
+        box_y = self.SCREEN_HEIGHT - box_h - 24  # 730 at bottom of screen
 
         pyxel.rect(box_x, box_y, box_w, box_h, 0)
         pyxel.rectb(box_x, box_y, box_w, box_h, 10)
         pyxel.rectb(box_x + 1, box_y + 1, box_w - 2, box_h - 2, 9)
 
-        name_str = f"THEME [{self.current_theme_index + 1}/20]: {theme.name}"
-        sub_str = "[,] PREV THEME    [.] NEXT THEME"
+        name_str = f"THEME [{self.current_theme_index + 1}/{len(ALL_THEMES)}]: {theme.name}"
+        sub_str = "[0-9] SELECT    [,] PREV THEME    [.] NEXT THEME"
         draw_text_scaled(box_x + 16, box_y + 8, name_str, 10, scale=2)
         draw_text_scaled(box_x + 16, box_y + 28, sub_str, 7, scale=1)
 
@@ -1573,7 +1636,7 @@ class GrainOfDoubtApp:
         draw_text_scaled(box_x + 12, box_y + 8, f"[DEV MODE] (` close) {self.VERSION} | SHORTCUT: [I] INVULNERABILITY: {inv_str}", 11, scale=2)
 
         # Line 2: Active Theme and Hotkeys
-        draw_text_scaled(box_x + 12, box_y + 36, f"[,] PREV THEME  [.] NEXT THEME | THEME [{self.current_theme_index + 1}/20]: {theme.name}", 10, scale=2)
+        draw_text_scaled(box_x + 12, box_y + 36, f"[0-9] SELECT  [,] PREV  [.] NEXT | THEME [{self.current_theme_index + 1}/{len(ALL_THEMES)}]: {theme.name}", 10, scale=2)
 
         # Line 3: Other shortcuts and Faustian Bargains controls
         draw_text_scaled(box_x + 12, box_y + 64, f"[B] BOT:{bot_str}  [V] REC:{rec_str}  [X] MENU  |  PACTS: 1-7:ADD  Q-U:REDUCE", 7, scale=2)

@@ -7,6 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.0.0] - 2026-09-24
+### Added
+- **Curated 10 Maximally Divergent Themes (`0..9`)**:
+  - Streamlined the theme catalog into a curated roster of 10 maximally divergent, high-contrast themes mapped directly to keyboard number keys `0` through `9` as well as `,` / `.`:
+    - `0: Desert Dunes` (Continuous procedural sand dunes landscape with perspective inverse Z-depth motion, intra-layer shadow mapping, and atmospheric scattering; formerly SkiFree Sandfall).
+    - `1: Pro Mode Light` (Clinical white engineering grid, static major/minor blueprint grid, dual vertical margin countdown bars, extreme contrast).
+    - `2: Pro Mode Dark` (Pitch-black background, static major/minor blueprint grid, dual vertical margin countdown bars, WCAG AAA compliant contrast).
+    - `3: Reader Mode Light` (Warm parchment digital e-reader displaying Ecclesiastes 3 KJV with justified typography and disguised scripture telemetry).
+    - `4: Reader Mode Dark` (Midnight slate digital e-reader displaying Ecclesiastes 3 KJV with justified typography and disguised scripture telemetry).
+    - `5: Monochrome Blueprint` (Navy architectural drafting blueprint with precision coordinate grids and measurement callouts).
+    - `6: Magma Caldera` (Volcanic obsidian crags, molten basalt flumes, glowing embers, and fiery core).
+    - `7: Retro Terminal Matrix` (Monochrome green CRT phosphor terminal with digital glyph matrix rain and scanlines).
+    - `8: Zen Ink Wash (Sumi-e)` (Minimalist Japanese washi parchment, black ink calligraphy brush strokes, and red artisan seal).
+    - `9: Liminal Vaporwave` (Dreamlike pink, periwinkle, and cyan wireframe grid with synthwave retro aesthetic).
+- **Direct Number Key Theme Shortcuts**:
+  - Keys `0` through `9` instantly select the corresponding curated theme from anywhere in gameplay or the title screen.
+- **Ecclesiastes 3 KJV Prose Telemetry**:
+  - Formatted telemetry as authentic 17th-century King James Bible prose strictly avoiding modern parentheses or brackets (e.g., *"and three faustian covenants have been made, to wit, two of Pride, and one of Sloth."*).
+  - Embedded as the second paragraph between Ecclesiastes 3:1-8 and 3:9-13.
+- **Dune Horizon Kairos Warning Temporal Glitch**:
+  - In Theme 0 (Desert Dunes), imminent Kairos triggers a cosmic temporal rupture: dune layers rapidly blink across randomized desert palette tones and the vertical perspective gap dynamically shifts, destroying the spatial depth illusion.
+
+### Changed
+- **Chronos & Kairos 10.0-Second Cycle Rhythm**:
+  - Chronos active sandfall descent duration set to `10.0` seconds (300 frames).
+  - Kairos dilemma choice duration set to `10.0` seconds (300 frames).
+- **Kairos Input Safety Lockout**:
+  - Added a `1.0`-second input lockout upon entering Kairos time, preventing accidental card triggers from held steering inputs or immediate panic reactions.
+- **Autonomous Bot Deliberation Delay**:
+  - AI playtesting bot now incorporates a deliberate `2.0`-second evaluation pause before choosing Faustian bargains, reflecting human cognitive processing.
+- **Reader Mode Translucent Watermark Tuning**:
+  - Glass shards rendered at `0.30` alpha (`pyxel.dither(0.30)`).
+  - Sand grains and player hourglass rendered at `0.60` alpha (`pyxel.dither(0.60)`).
+  - Cleanly restores full opacity (`1.0`) after entity drawing.
+- **Pro Mode Blueprint Grid**:
+  - Both minor grid ($10 \times 10$ px) and major grid ($50 \times 50$ px) remain static on screen as a stationary drafting blueprint across player movement.
+- **Theme-Harmonized Kairos Modal Styling**:
+  - Modal body and border colors dynamically harmonize with each active theme's custom palette tokens.
+- **Greed Pact Borrowed Time Mechanics**:
+  - Enhanced sand simulation during Borrowed Time so Gluttony sand clusters cleanly multiply score potential.
+- **Typography & Polishing**:
+  - Fixed Game Over screen typo ("Debt Collected").
+  - Fixed Gluttony oversized triangle rendering to use the exact theme shard facet palette.
+  - Bumped engine release version to `v1.0.0`.
+
 ## [v0.19.0] - 2026-09-24
 ### Added
 - **Continuous 2D Procedural Sand Dunes Landscape (`sand_dunes_landscape.py` & Theme 0)**:

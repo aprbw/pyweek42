@@ -11,8 +11,8 @@ class GameState(Enum):
 
 class StateManager:
     # 30 FPS timing constants
-    CHRONOS_FRAMES: int = 240  # 8.0 seconds
-    KAIROS_FRAMES: int = 60    # 2.0 seconds
+    CHRONOS_FRAMES: int = 300  # 10.0 seconds
+    KAIROS_FRAMES: int = 300   # 10.0 seconds
     INVULNERABLE_FRAMES: int = 20  # 0.66 second for tighter evasion
     SHAKE_FRAMES: int = 8
     SHAKE_INTENSITY: float = 12.0
@@ -165,13 +165,15 @@ class StateManager:
     def add_score(self, base_points: int = 1):
         if self.wrath_zero_yield_timer > 0:
             return
-        self.total_sand_collected += 1
+        self.total_sand_collected += base_points
         if self.greed_active:
             # During Greed Borrowed Time: sand multiplies current score by 110%
-            if self.score <= 0:
-                self.score = 1
-            else:
-                self.score = max(self.score + 1, int(self.score * 1.10))
+            # Gluttony fat sand (base_points=3) simulates collecting 3 small sands sequentially
+            for _ in range(base_points):
+                if self.score <= 0:
+                    self.score = 1
+                else:
+                    self.score = max(self.score + 1, int(self.score * 1.10))
         else:
             points = int(base_points * self.score_multiplier)
             self.score += points

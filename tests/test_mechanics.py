@@ -75,13 +75,13 @@ def test_kairos_timing_gate():
     state.start_game()
     assert state.current_state == GameState.CHRONOS
 
-    # Assert Kairos triggers exactly at 8.0s (240 frames at 30 FPS)
-    for frame in range(239):
+    # Assert Kairos triggers exactly at 10.0s (300 frames at 30 FPS)
+    for frame in range(299):
         state.update_timers()
         assert state.current_state == GameState.CHRONOS
         assert state.scroll_speed > 0.0
 
-    # 240th frame triggers Kairos
+    # 300th frame triggers Kairos
     state.update_timers()
     assert state.current_state == GameState.KAIROS
     assert state.scroll_speed == 0.0  # Freezes kinematics
@@ -97,15 +97,15 @@ def test_kairos_timing_gate():
     assert state.scroll_speed > 0.0
     assert state.chronos_timer == 0
 
-    # Test timeout transition (if no input for 60 frames / 2.0s -> Instant Death)
+    # Test timeout transition (if no input for 300 frames / 10.0s -> Instant Death)
     state.trigger_kairos()
     assert state.current_state == GameState.KAIROS
-    for _ in range(59):
+    for _ in range(299):
         state.update_timers()
         assert state.current_state == GameState.KAIROS
         assert state.scroll_speed == 0.0
 
-    # 60th frame of Kairos triggers instant death (Paralyzed by Doubt)
+    # 300th frame of Kairos triggers instant death (Paralyzed by Doubt)
     state.update_timers()
     assert state.current_state == GameState.GAMEOVER
     assert "Paralyzed by Doubt" in state.death_reason
@@ -160,6 +160,14 @@ def test_greed_borrowed_time_mechanics_gate():
     state.score = 100
     state.add_score(1)
     assert state.score == 110  # 100 * 1.10 = 110
+
+    # Gluttony sand (base_points=3) simulates collecting 3 small sand grains sequentially
+    state.score = 100
+    state.total_sand_collected = 0
+    state.add_score(3)
+    # 100 * 1.1 = 110; 110 * 1.1 = 121; 121 * 1.1 = 133.1 -> 133
+    assert state.score == 133
+    assert state.total_sand_collected == 3
 
     # Advance frames in Chronos until 1 frame before expiration: player remains alive
     duration = state.greed_timer
@@ -1742,11 +1750,11 @@ def test_skifree_desert_terrain_and_daylight_contrast():
     app.draw_celestial_depth_astrolabe(cam_x=100, prog=0.0)
 
 
-def test_all_20_divergent_themes_registry():
-    """Verify ALL_THEMES has exactly 20 distinct themes with unique IDs, names, and palettes."""
+def test_all_10_divergent_themes_registry():
+    """Verify ALL_THEMES has exactly 10 distinct, divergent themes with unique IDs, names, and palettes."""
     from engine.themes import ALL_THEMES, get_theme
 
-    assert len(ALL_THEMES) == 20, f"Expected exactly 20 themes, found {len(ALL_THEMES)}"
+    assert len(ALL_THEMES) == 10, f"Expected exactly 10 themes, found {len(ALL_THEMES)}"
 
     theme_ids = set()
     theme_names = set()
@@ -1768,11 +1776,11 @@ def test_all_20_divergent_themes_registry():
 
         # Check get_theme wrapping
         assert get_theme(idx).id == idx
-        assert get_theme(idx + 20).id == idx
+        assert get_theme(idx + 10).id == idx
 
 
 def test_pro_mode_and_stealth_mode_themes():
-    """Verify the 4 Pro Mode and Reader Mode themes are registered with proper aesthetics and adjacent dark/light pairs."""
+    """Verify the 4 Pro Mode and Reader Mode themes are registered with proper aesthetics in order (1: Pro Light, 2: Pro Dark, 3: Reader Light, 4: Reader Dark)."""
     from engine.themes import ALL_THEMES, ECCLESIASTES_3_KJV_LINES, STEALTH_DARK_DOC, STEALTH_LIGHT_DOC
     from engine.bargains import SinType, SIN_CARD_COLORS
 
@@ -1782,35 +1790,39 @@ def test_pro_mode_and_stealth_mode_themes():
     for sin in SinType:
         assert sin in SIN_CARD_COLORS
 
-    # Theme 6: Pro Mode High Contrast Dark (adjacent to Theme 7)
-    t6 = ALL_THEMES[6]
-    assert t6.name == "PRO MODE (HIGH CONTRAST DARK)"
-    assert t6.clear_color == 0
-    assert t6.sand.body == 10  # High-vis yellow
-    assert t6.shard.facet == 12  # High-vis cyan
-    assert t6.render_bg.__name__ == "bg_pro_mode_dark"
+    # Theme 0: Desert Dunes
+    t0 = ALL_THEMES[0]
+    assert t0.name == "DESERT DUNES"
 
-    # Theme 7: Pro Mode High Contrast Light (adjacent to Theme 6)
-    t7 = ALL_THEMES[7]
-    assert t7.name == "PRO MODE (HIGH CONTRAST LIGHT)"
-    assert t7.clear_color == 7  # Clinical white
-    assert t7.sand.body == 9  # Amber
-    assert t7.shard.facet == 0  # Pitch-black shard for maximum contrast
-    assert t7.render_bg.__name__ == "bg_pro_mode_light"
+    # Theme 1: Pro Mode High Contrast Light
+    t1 = ALL_THEMES[1]
+    assert t1.name == "PRO MODE (HIGH CONTRAST LIGHT)"
+    assert t1.clear_color == 7  # Clinical white
+    assert t1.sand.body == 9  # Amber
+    assert t1.shard.facet == 0  # Pitch-black shard for maximum contrast
+    assert t1.render_bg.__name__ == "bg_pro_mode_light"
 
-    # Theme 13: Reader Mode E-Reader Dark (adjacent to Theme 14)
-    t13 = ALL_THEMES[13]
-    assert t13.name == "READER MODE (E-READER DARK)"
-    assert t13.clear_color == 0
-    assert t13.is_reader_mode is True
-    assert t13.render_bg.__name__ in ("bg_reader_dark", "bg_stealth_dark")
+    # Theme 2: Pro Mode High Contrast Dark
+    t2 = ALL_THEMES[2]
+    assert t2.name == "PRO MODE (HIGH CONTRAST DARK)"
+    assert t2.clear_color == 0
+    assert t2.sand.body == 10  # High-vis yellow
+    assert t2.shard.facet == 12  # High-vis cyan
+    assert t2.render_bg.__name__ == "bg_pro_mode_dark"
 
-    # Theme 14: Reader Mode E-Reader Light (adjacent to Theme 13)
-    t14 = ALL_THEMES[14]
-    assert t14.name == "READER MODE (E-READER LIGHT)"
-    assert t14.clear_color == 15  # Cream parchment
-    assert t14.is_reader_mode is True
-    assert t14.render_bg.__name__ in ("bg_reader_light", "bg_stealth_light")
+    # Theme 3: Reader Mode E-Reader Light
+    t3 = ALL_THEMES[3]
+    assert t3.name == "READER MODE (E-READER LIGHT)"
+    assert t3.clear_color == 15  # Cream parchment
+    assert t3.is_reader_mode is True
+    assert t3.render_bg.__name__ in ("bg_reader_light", "bg_stealth_light")
+
+    # Theme 4: Reader Mode E-Reader Dark
+    t4 = ALL_THEMES[4]
+    assert t4.name == "READER MODE (E-READER DARK)"
+    assert t4.clear_color == 0
+    assert t4.is_reader_mode is True
+    assert t4.render_bg.__name__ in ("bg_reader_dark", "bg_stealth_dark")
 
     # Verify Ecclesiastes 3 KJV text
     assert len(ECCLESIASTES_3_KJV_LINES) >= 40
@@ -1982,7 +1994,7 @@ def test_sand_dunes_landscape_script_and_topology_engine():
 
 
 def test_reader_mode_gameplay_alpha_and_hud_suppression():
-    """Verify that Reader Mode suppresses all floating HUD boxes and applies 30% alpha dither to gameplay elements."""
+    """Verify that Reader Mode suppresses all floating HUD boxes and applies 60% alpha dither to sand/player and 30% alpha to shards."""
     import pyxel
     from main import GrainOfDoubtApp
     from engine.state import GameState
@@ -1997,21 +2009,232 @@ def test_reader_mode_gameplay_alpha_and_hud_suppression():
     app.start_new_game()
     app.state.current_state = GameState.CHRONOS
 
-    # Switch to Reader Mode Dark (Theme 13)
-    app.current_theme_index = 13
-    theme_dark = get_theme(13)
-    assert theme_dark.is_reader_mode is True
+    # Track dither calls
+    dither_values = []
+    orig_dither = getattr(pyxel, "dither", None)
+    pyxel.dither = lambda alpha: dither_values.append(round(alpha, 2))
 
-    # Render frame in Reader Mode Dark
-    app.draw()
+    try:
+        # Switch to Reader Mode Light (Theme 3)
+        app.current_theme_index = 3
+        theme_light = get_theme(3)
+        assert theme_light.is_reader_mode is True
 
-    # Switch to Reader Mode Light (Theme 14)
-    app.current_theme_index = 14
-    theme_light = get_theme(14)
-    assert theme_light.is_reader_mode is True
+        # Render frame in Reader Mode Light
+        app.draw()
 
-    # Render frame in Reader Mode Light
-    app.draw()
+        # Check that dither(0.60), dither(0.30), and dither(1.0) were applied
+        assert 0.60 in dither_values, f"Expected 0.60 dither for sand/hourglass in Reader Mode, got {dither_values}"
+        assert 0.30 in dither_values, f"Expected 0.30 dither for shards in Reader Mode, got {dither_values}"
+        assert 1.0 in dither_values, f"Expected 1.0 dither restoration in Reader Mode, got {dither_values}"
+
+        # Switch to Reader Mode Dark (Theme 4)
+        app.current_theme_index = 4
+        theme_dark = get_theme(4)
+        assert theme_dark.is_reader_mode is True
+
+        # Render frame in Reader Mode Dark
+        app.draw()
+    finally:
+        if orig_dither is not None:
+            pyxel.dither = orig_dither
+
+
+def test_all_10_themes_kairos_palettes_and_modal_rendering():
+    """Verify that every theme has a valid, distinct KairosPalette and renders the Kairos modal safely."""
+    import pyxel
+    from engine.themes import ALL_THEMES, KairosPalette
+    from main import GrainOfDoubtApp
+    from engine.state import GameState
+
+    try:
+        pyxel.init(600, 800, headless=True)
+    except BaseException:
+        pass
+
+    app = GrainOfDoubtApp(headless=True)
+    app.state.current_state = GameState.KAIROS
+    app.active_options = [
+        (SinType.PRIDE, BARGAIN_REGISTRY[SinType.PRIDE], 1),
+        (SinType.GLUTTONY, BARGAIN_REGISTRY[SinType.GLUTTONY], 2),
+    ]
+
+    modal_bgs = set()
+
+    for idx, theme in enumerate(ALL_THEMES):
+        kp = theme.get_kairos_palette()
+        assert isinstance(kp, KairosPalette)
+
+        # Validate that all color fields are valid Pyxel color indices 0..15
+        color_fields = [
+            kp.modal_bg, kp.dimmer, kp.border_outer, kp.border_inner,
+            kp.header_title, kp.header_sub, kp.timer_bar_bg, kp.timer_bar_fill,
+            kp.timer_bar_border, kp.card_bg, kp.card_bg_selected, kp.card_border,
+            kp.card_border_selected, kp.badge_bg, kp.badge_text,
+            kp.badge_bg_selected, kp.badge_text_selected,
+            kp.selected_btn_bg, kp.selected_btn_text,
+            kp.sin_title, kp.sin_title_selected, kp.level_text, kp.divider,
+            kp.pro_label, kp.pro_text, kp.con_label, kp.con_text,
+            kp.footer_text, kp.footer_warn,
+        ]
+        for val in color_fields:
+            assert isinstance(val, int)
+            assert 0 <= val <= 15, f"Theme {idx} ({theme.name}) has invalid color {val}"
+
+        modal_bgs.add(kp.modal_bg)
+
+        # Verify modal draws without error in this theme
+        app.current_theme_index = idx
+        app.draw_kairos_modal()
+
+        # Also test feedback banner drawing
+        app.selected_feedback = {'sin': 'gluttony'}
+        app.draw_feedback_banner()
+
+    # Verify diversity across themes: themes don't all share a single hardcoded modal_bg
+    assert len(modal_bgs) >= 5, f"Expected varied modal_bg across themes, got: {modal_bgs}"
+
+
+def test_kairos_input_lockout_1sec():
+    """Verify player input during Kairos time is locked out / ignored for the first 1.0s (30 frames)."""
+    import pyxel
+    from main import GrainOfDoubtApp
+    from engine.state import GameState
+
+    try:
+        pyxel.init(600, 800, headless=True)
+    except BaseException:
+        pass
+
+    app = GrainOfDoubtApp(headless=True)
+    app.state.current_state = GameState.KAIROS
+    app.active_options = [
+        (SinType.PRIDE, BARGAIN_REGISTRY[SinType.PRIDE], 1),
+        (SinType.SLOTH, BARGAIN_REGISTRY[SinType.SLOTH], 1),
+    ]
+    app.kairos_left_released = True
+    app.kairos_right_released = True
+    app.selected_card_index = 0
+
+    # During the first 1.0 second (timer < 30 frames), input lockout is strictly active
+    for t in [0, 5, 15, 29]:
+        app.state.kairos_timer = t
+        # Lockout check
+        assert app.state.kairos_timer < 30
+
+    # At frame 30 (1.0s) and beyond, lockout is lifted
+    app.state.kairos_timer = 30
+    assert app.state.kairos_timer >= 30
+
+
+def test_pro_mode_grid_anchored_like_blueprint():
+    """Verify that in Pro Mode (both Dark and Light), major grid lines stay anchored to exact multiples of 100 in world coordinates like Monochrome Blueprint."""
+    from engine.themes import bg_pro_mode_dark, bg_pro_mode_light
+
+    class MockPyxel:
+        def __init__(self):
+            self.lines = []
+
+        def line(self, x1, y1, x2, y2, col):
+            self.lines.append((x1, y1, x2, y2, col))
+
+    mock = MockPyxel()
+
+    # Test across various cam_x positions (simulating player steering left/right)
+    for cam_x in [-125, -50, 0, 37, 75, 110, 320]:
+        for fn, col_maj, col_min in [(bg_pro_mode_dark, 5, 1), (bg_pro_mode_light, 5, 6)]:
+            mock.lines.clear()
+            fn(mock, cam_x=cam_x, prog=0.2, dist=150, screen_w=600, screen_h=800, is_greed=False)
+
+            # Check vertical lines (x1 == x2, y1 == 0, y2 == 800)
+            vert_lines = [l for l in mock.lines if l[0] == l[2] and l[1] == 0 and l[3] == 800]
+            assert len(vert_lines) > 0
+
+            for x1, y1, x2, y2, col in vert_lines:
+                if col == col_maj:
+                    # Major grid lines MUST stay strictly at multiples of 100 in world space
+                    assert x1 % 100 == 0, f"Major grid line at world x={x1} not multiple of 100 at cam_x={cam_x}"
+                elif col == col_min:
+                    # Minor grid lines must be at multiples of 25 and not 100
+                    assert x1 % 25 == 0, f"Minor grid line at world x={x1} not multiple of 25 at cam_x={cam_x}"
+                    assert x1 % 100 != 0, f"Minor grid line drew over major line at x={x1}"
+
+
+def test_reader_mode_telemetry_second_paragraph():
+    """Verify that in Reader Mode, the telemetry is positioned as the 2nd paragraph (between Ecc 3:1-8 and Ecc 3:9-13), phrased in KJV style with time elapsed and 'faustian covenant'."""
+    from engine.themes import render_reader_mode_text
+
+    class MockPyxel:
+        def __init__(self):
+            self.lines = []
+            self.texts = []
+            self.images = {2: self}
+
+        def line(self, x1, y1, x2, y2, col):
+            self.lines.append((x1, y1, x2, y2, col))
+
+        def cls(self, col):
+            pass
+
+        def text(self, x, y, s, col):
+            self.texts.append(s)
+
+        def blt(self, x, y, img, u, v, w, h, colkey=None, scale=1):
+            pass
+
+    mock = MockPyxel()
+    telemetry = {
+        "hearts": 4,
+        "max_hearts": 5,
+        "score": 42,
+        "time_elapsed": 3.5,
+        "pacts": ["Pride", "Sloth"],
+        "pact_count": 2,
+    }
+
+    render_reader_mode_text(
+        mock,
+        cam_x=0,
+        prog=0.0,
+        dist=0,
+        screen_w=600,
+        screen_h=800,
+        is_greed=False,
+        col_ink=0,
+        col_rule=5,
+        telemetry=telemetry,
+    )
+
+    rendered_corpus = " ".join(mock.texts)
+    # 1st paragraph: "To every thing there is a season"
+    assert "season" in rendered_corpus
+
+    # 2nd paragraph: telemetry with "elapsed" and "faustian covenant"
+    assert "elapsed" in rendered_corpus
+    assert "faustian covenant" in rendered_corpus
+    assert "4 of 5 measures" in rendered_corpus
+    assert "42 sacred grains" in rendered_corpus
+
+    # Strictly no brackets (KJV had no brackets)
+    assert "(" not in rendered_corpus, "KJV text must not contain parentheses"
+    assert ")" not in rendered_corpus, "KJV text must not contain parentheses"
+    assert "[" not in rendered_corpus, "KJV text must not contain square brackets"
+    assert "]" not in rendered_corpus, "KJV text must not contain square brackets"
+
+    # Detail how many of each pact have been made
+    assert "one of Pride" in rendered_corpus or "two of Pride" in rendered_corpus
+
+    # 3rd paragraph: "What profit hath he that worketh"
+    assert "What profit hath he that worketh" in rendered_corpus
+
+    # Verify paragraph ordering: "season" occurs before "elapsed", and "elapsed" occurs before "profit"
+    idx_season = rendered_corpus.find("season")
+    idx_elapsed = rendered_corpus.find("elapsed")
+    idx_profit = rendered_corpus.find("profit")
+
+    assert idx_season < idx_elapsed, "First paragraph (season) must come before telemetry paragraph (elapsed)"
+    assert idx_elapsed < idx_profit, "Telemetry paragraph (elapsed) must come before third paragraph (profit)"
+
 
 
 

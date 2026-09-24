@@ -1,7 +1,7 @@
 # Grain of Doubt
 
 > **By Arian Prabowo**  
-> **Version:** v0.19.0  
+> **Version:** v1.0.0  
 > **PyWeek 42 Entry ("Borrowed Time")** — September 2026  
 > An endless retro downhill falling-hourglass arcade runner built with the **Pyxel** retro game engine.  
 > **Target Resolution:** 600 × 800 pixels (3:4 Portrait Aspect Ratio, Infinite Horizontal Arena).
@@ -20,8 +20,8 @@ You control a fragile hourglass falling through the neck of an infinite, crumbli
 Steer left or right to avoid falling glass shards while collecting glistening golden grains of sand.
 
 ### Chronos vs. Kairos (The Dual-Clock Engine)
-* **Chronos (8.0s descent):** Relentless kinetic tension. Steer left or right across an infinitely wide horizontal arena (±4.5 screen procedural generation horizon) to dodge oncoming glass shards while reaping cascading sand motes.
-* **Kairos (2.0s circuit breaker):** Every 8 seconds, normal time freezes. You are presented with **2 Faustian Bargain cards** drawn from the Seven Deadly Sins. You must choose within 2.0 seconds—if you hesitate, doubt shatters your vessel (*Paralyzed by Doubt: Kairos Expired*). A vertical side timer drains from top to bottom.
+* **Chronos (10.0s descent):** Relentless kinetic tension. Steer left or right across an infinitely wide horizontal arena (±4.5 screen procedural generation horizon) to dodge oncoming glass shards while reaping cascading sand motes.
+* **Kairos (10.0s circuit breaker):** Every 10.0 seconds, normal time freezes. You are presented with **2 Faustian Bargain cards** drawn from the Seven Deadly Sins. You have 10.0 seconds to choose (with an initial 1.0s safety lockout)—if you hesitate, doubt shatters your vessel (*Paralyzed by Doubt: Kairos Expired*). A vertical side timer drains from top to bottom.
   * **Input Re-press Protection:** Entering Kairos requires unpressing/releasing lateral steering first before choosing, preventing accidental card selection if holding arrows during Chronos.
 * **Faustian Bargains:** Every bargain grants an immediate survival boon at the cost of a permanent curse. Repeatedly choosing sins compounds their effects.
 
@@ -35,30 +35,20 @@ Steer left or right to avoid falling glass shards while collecting glistening go
 
 ---
 
-## 🎨 20 Divergent Aesthetic Themes (Available to All Players)
+## 🎨 10 Curated Divergent Aesthetic Themes (Available to All Players)
 
-You can freely cycle through **20 completely unique, divergent aesthetic themes** in real time—both directly on the **Title Screen (Home Page)** and during gameplay—using the `,` (previous theme) and `.` (next theme) keys:
+You can freely switch between **10 completely unique, maximally divergent aesthetic themes** in real time—both directly on the **Title Screen (Home Page)** and during gameplay—using the number keys `0` through `9`, or `,` (previous) and `.` (next):
 
-1. **SkiFree Sandfall (Dune Horizon)**: Continuous 2D procedural sand dune landscape with a **Topology Engine** (layered polygons rendered back-to-front; negative space geometry prohibiting stroke lines; inverse Z-depth upward velocity converging at supra-canvas horizon $Y_H = -140$; speed $>10\times$ faster at bottom than top), **Shadow Mapping** (intra-layer vertical linear gradients from dark crests to light bases), and **Atmospheric Scattering** (global luminosity scalar desaturating distal ridges into ambient desert haze).
-2. **Cosmic Chronometer**: Deep space midnight, concentric celestial orbits, astrolabe ticks, and starry void.
-3. **Abyssal Hourglass**: Stygian black ocean abyss, bioluminescent cyan ribbons, and deep-sea current pulses.
-4. **Shattered Mirror Chasm**: Iridescent lavender crystal chasm, reflecting diamond fractures, and prism facets.
-5. **Magma Caldera**: Volcanic caldera, basalt crags, obsidian riverbed, and bubbling liquid lava flumes.
-6. **Cartographer's Scroll**: Antique nautical map parchment, compass rhumb lines, and sea monster territorial borders.
-7. **Pro Mode (High Contrast Dark)**: Pure pitch-black canvas, 100% functional zero-noise clarity, static major (100px) and minor (25px) grid lines fixed to screen background, dual vertical Chronos countdown progress bars at extreme left and right borders (top to bottom), solid opaque HUD panels, and color-matched pact cards with uncluttered level advancement (WCAG AAA).
-8. **Pro Mode (High Contrast Light)**: Clinical white engineering canvas, static major (100px) and minor (25px) grid lines fixed to screen background, dual vertical Chronos countdown progress bars at extreme left and right borders (top to bottom), pitch-black obsidian shards, amber sand, and extreme luminance delta (>20:1 contrast).
-9. **Copper & Verdigris**: Steampunk weathered bronze, verdigris patina corrosion, and ticking brass gears.
-10. **Solar Flare**: Blinding coronal solar mass ejections, magnetic prominence arcs, and fiery plasma ribbons.
-11. **Monochrome Blueprint**: Engineering architectural drafting cyan blueprint with white millimeter grids.
-12. **Glacial Crevasse**: Sub-zero glacial ice sheet, deep blue crevasse crevasses, and permafrost frost needles.
-13. **Retro Terminal Matrix**: Phosphor green cathode-ray tube monitor with falling hexadecimal digital rain.
-14. **Reader Mode (E-Reader Dark)**: Digital e-reader interface displaying genuine **Ecclesiastes 3:1-22 (King James Version)** in double-sized font (`scale=2`, $8 \times 12$ px characters) formatted as continuous, un-indented prose. Floating arcade HUD panels are 100% suppressed; gameplay telemetry (Hearts, Score, Time, Pacts) is seamlessly disguised on Line 2 of the scripture. All gameplay entities (hourglass, triangle shards, sand grains) render at **30% alpha** (`pyxel.dither(0.30)`), appearing as subtle translucent watermarks beneath the prose.
-15. **Reader Mode (E-Reader Light)**: Warm cream parchment companion to Reader Mode. Double-sized Ecclesiastes 3 KJV text, Line 2 disguised telemetry, 100% suppressed floating HUD, and 30% alpha translucent gameplay elements.
-16. **Neon Noir Megacity**: Cyberpunk rainy skyscraper canyon, glowing magenta neon signs, and dark tarmac.
-17. **Liminal Vaporwave**: Pastel pink and cyan retro-futuristic wireframe perspective grid and digital horizon.
-18. **Chalkboard Theory**: Dark classroom slate chalkboard inscribed with theoretical physics equations and integrals.
-19. **Blood Moon Eclipse**: Total lunar eclipse crimson aura, cosmic corona rays, and dark blood dunes.
-20. **Zen Ink Wash (Sumi-e)**: Traditional Japanese washi parchment, black ink calligraphy brush strokes, and red cinnabar seal.
+0. **Desert Dunes**: Continuous 2D procedural sand dune landscape with a **Topology Engine** (layered polygons rendered back-to-front; negative space geometry prohibiting stroke lines; inverse Z-depth upward velocity converging at supra-canvas horizon $Y_H = -140$; speed $>10\times$ faster at bottom than top), **Shadow Mapping** (intra-layer vertical linear gradients from dark crests to light bases), **Atmospheric Scattering** (global luminosity scalar desaturating distal ridges into ambient desert haze), and a cosmic perspective glitch warning when Kairos is imminent.
+1. **Pro Mode (High Contrast Light)**: Clinical white engineering canvas, static major ($50\times 50$ px) and minor ($10\times 10$ px) blueprint drafting grid lines fixed to screen background, dual vertical Chronos countdown progress bars at extreme left and right borders (top to bottom), pitch-black obsidian shards, amber sand, and extreme luminance delta (>20:1 contrast).
+2. **Pro Mode (High Contrast Dark)**: Pure pitch-black canvas, 100% functional zero-noise clarity, static major ($50\times 50$ px) and minor ($10\times 10$ px) blueprint drafting grid lines fixed to screen background, dual vertical Chronos countdown progress bars at extreme left and right borders (top to bottom), solid opaque HUD panels, and color-matched pact cards with uncluttered level advancement (WCAG AAA).
+3. **Reader Mode (E-Reader Light)**: Warm cream parchment digital e-reader displaying genuine **Ecclesiastes 3:1-22 (King James Version)** in double-sized font (`scale=2`, $8 \times 12$ px characters) formatted as continuous, justified un-indented prose. Floating arcade HUD panels are 100% suppressed; gameplay telemetry is seamlessly disguised as an authentic scripture paragraph between verses 8 and 9 without modern brackets or parentheses. Shards render at **30% alpha** and sand/hourglass at **60% alpha** as subtle translucent watermarks.
+4. **Reader Mode (E-Reader Dark)**: Midnight slate companion to Reader Mode Light. Double-sized Ecclesiastes 3 KJV text, disguised KJV scripture telemetry paragraph, 100% suppressed floating HUD, and 30%/60% alpha translucent gameplay elements.
+5. **Monochrome Blueprint**: Engineering architectural drafting cyan/navy blueprint with white millimeter drafting grids and coordinate markers.
+6. **Magma Caldera**: Volcanic caldera, basalt crags, obsidian riverbed, and bubbling liquid lava flumes with glowing embers.
+7. **Retro Terminal Matrix**: Phosphor green cathode-ray tube monitor with falling hexadecimal digital glyph rain and scanline texture.
+8. **Zen Ink Wash (Sumi-e)**: Traditional Japanese washi parchment, black ink calligraphy brush strokes, and red cinnabar seal.
+9. **Liminal Vaporwave**: Pastel pink, periwinkle, and cyan retro-futuristic wireframe perspective grid and digital horizon.
 
 Each theme dynamically transforms the procedural background terrain as well as the complete color palettes of the player's hourglass, sand grains, and glass shards to ensure aesthetic harmony and sharp contrast!
 
@@ -71,14 +61,15 @@ Each theme dynamically transforms the procedural background terrain as well as t
 | :--- | :--- | :--- |
 | `A` / `D` or `Left` / `Right` | Lateral Steering | Steer hourglass horizontally (viscous damping coefficient: 0.82) |
 | Touch `< LEFT` / `RIGHT >` | Mobile Touch Steering | High-contrast on-screen buttons (visible on mobile only) or bottom screen tap |
-| `Left` / `Right` or Tap Card | Select Faustian Bargain | Steer left or right during Kairos to choose between the 2 bargain cards within 2.0s (requires fresh press after release) |
+| `Left` / `Right` or Tap Card | Select Faustian Bargain | Steer left or right during Kairos to choose between the 2 bargain cards within 10.0s (1.0s safety lockout; requires fresh press after release) |
 | `Space` / `Enter` or Tap Screen | Start / Restart | Start game or restart after a 2.0s post-mortem lockout (debounced) |
 | `X` | Return to Menu / Quit | In gameplay: return to Title Menu. On Title Menu: quit game (no-op in browser) |
-| `,` (Comma) | Previous Theme | Cycle backwards through all 20 divergent aesthetic themes (works on Title Screen and in-game) |
-| `.` (Period) | Next Theme | Cycle forward through all 20 divergent aesthetic themes (works on Title Screen and in-game) |
+| `0` - `9` | Direct Theme Select | Jump instantly to any of the 10 curated themes (0:Dunes, 1:Pro Light, 2:Pro Dark, 3:Reader Light, 4:Reader Dark, 5:Blueprint, 6:Caldera, 7:Terminal, 8:Sumi-e, 9:Vaporwave) |
+| `,` (Comma) | Previous Theme | Cycle backwards through all 10 curated themes (works on Title Screen and in-game) |
+| `.` (Period) | Next Theme | Cycle forward through all 10 curated themes (works on Title Screen and in-game) |
 | `~` / `` ` `` (Backtick) | Toggle Dev Mode | On-screen debug HUD, live telemetry, and shortcut cheats |
 | `I` (in Dev Mode) | Toggle God Mode | Invulnerability toggle (immune to glass shards and void collision) |
-| `B` (in Dev Mode) | Toggle GOFAI Bot | Autonomous kinematic AI playtesting agent (80% speed handicap, 20% bottom blind zone) |
+| `B` (in Dev Mode) | Toggle GOFAI Bot | Autonomous kinematic AI playtesting agent (human-like 2.0s deliberation delay, 80% speed handicap) |
 | `V` (in Dev Mode) | Toggle MP4 Recording | Lossless FFmpeg background canvas video recorder |
 | `1` - `7` (in Dev Mode) | Add Faustian Pact | Instant-apply sin pact level (1:Pride, 2:Greed, 3:Lust, 4:Envy, 5:Gluttony, 6:Wrath, 7:Sloth) |
 | `Q`, `W`, `E`, `R`, `T`, `Y`, `U` (in Dev Mode) | Reduce Faustian Pact | Decrement corresponding sin pact level (Q:Pride, W:Greed, E:Lust, R:Envy, T:Gluttony, Y:Wrath, U:Sloth) |
@@ -87,7 +78,7 @@ Each theme dynamically transforms the procedural background terrain as well as t
 
 ## 📜 Seven Deadly Faustian Bargains
 
-Every 10.0 seconds (300 frames), normal time flow stops and **Kairos** strikes. The player is presented with **two randomly chosen Faustian Bargains** in Catholic Gregorian canonical order. You have exactly 2.0 seconds (60 frames) to choose one, or your hourglass shatters instantly.
+Every 10.0 seconds (300 frames), normal time flow stops and **Kairos** strikes. The player is presented with **two randomly chosen Faustian Bargains** in Catholic Gregorian canonical order. You have exactly 10.0 seconds (300 frames) to choose one (with an initial 1.0s safety lockout), or your hourglass shatters instantly.
 
 *Exact mathematical values (where k ≥ 0 is the repeat pact count):*
 
@@ -210,7 +201,23 @@ python3 -m http.server 8000
 
 ## 📝 Changelog
 
-> Complete version history for every release from **v0.1.0** through **v0.19.0** is detailed below and in [CHANGELOG.md](CHANGELOG.md).
+> Complete version history for every release from **v0.1.0** through **v1.0.0** is detailed below and in [CHANGELOG.md](CHANGELOG.md).
+
+### v1.0.0 (September 2026)
+* **10 Curated Maximally Divergent Themes (`0..9`):**
+  * Streamlined roster to 10 ultra-distinct themes mapped to number keys `0` through `9`: Desert Dunes (0), Pro Mode Light (1), Pro Mode Dark (2), Reader Mode Light (3), Reader Mode Dark (4), Monochrome Blueprint (5), Magma Caldera (6), Retro Terminal Matrix (7), Zen Ink Wash (8), and Liminal Vaporwave (9).
+* **Reader Mode Ecclesiastes 3 KJV Scripture Telemetry:**
+  * Authentic 17th-century King James Bible style phrasing without modern annotations, brackets, or parentheses (*"and three faustian covenants have been made, to wit, two of Pride, and one of Sloth."*).
+  * Seamlessly positioned as the second paragraph between Ecclesiastes 3:1-8 and 3:9-13.
+  * Balanced gameplay visibility: glass shards rendered at 30% alpha (`pyxel.dither(0.30)`), sand grains and player hourglass at 60% alpha (`pyxel.dither(0.60)`).
+* **Dual-Clock 10.0s Cycles & 1.0s Input Safety Lockout:**
+  * Chronos descent duration set to 10.0 seconds; Kairos dilemma pause set to 10.0 seconds.
+  * Added 1.0-second input lockout upon entering Kairos time to eliminate misclicks from active steering.
+  * Bot playtester evaluates pacts with a realistic 2.0-second deliberation delay.
+* **Pro Mode Blueprint Grid & Visual Consistency:**
+  * Static major and minor blueprint drafting grid remaining fixed in world space.
+  * Theme-harmonized Kairos modal styling dynamically matching active theme palettes.
+  * Dune Horizon Kairos imminent warning glitch destroying perspective depth with flashing dunes.
 
 ### v0.19.0 (September 2026)
 * **Continuous 2D Procedural Sand Dunes Landscape (`sand_dunes_landscape.py` & Theme 0):**
