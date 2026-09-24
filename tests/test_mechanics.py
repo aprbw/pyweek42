@@ -1790,39 +1790,50 @@ def test_pro_mode_and_stealth_mode_themes():
     for sin in SinType:
         assert sin in SIN_CARD_COLORS
 
-    # Theme 0: Desert Dunes
+    # Theme 0: Dunes in the Cosmic Hourglass
     t0 = ALL_THEMES[0]
-    assert t0.name == "DESERT DUNES"
+    assert t0.name == "DUNES IN THE COSMIC HOURGLASS"
 
-    # Theme 1: Pro Mode High Contrast Light
+    # Theme 1: Pro Mode Light
     t1 = ALL_THEMES[1]
-    assert t1.name == "PRO MODE (HIGH CONTRAST LIGHT)"
+    assert t1.name == "PRO MODE LIGHT"
     assert t1.clear_color == 7  # Clinical white
     assert t1.sand.body == 9  # Amber
     assert t1.shard.facet == 0  # Pitch-black shard for maximum contrast
     assert t1.render_bg.__name__ == "bg_pro_mode_light"
 
-    # Theme 2: Pro Mode High Contrast Dark
+    # Theme 2: Pro Mode Dark
     t2 = ALL_THEMES[2]
-    assert t2.name == "PRO MODE (HIGH CONTRAST DARK)"
+    assert t2.name == "PRO MODE DARK"
     assert t2.clear_color == 0
     assert t2.sand.body == 10  # High-vis yellow
     assert t2.shard.facet == 12  # High-vis cyan
     assert t2.render_bg.__name__ == "bg_pro_mode_dark"
 
-    # Theme 3: Reader Mode E-Reader Light
+    # Theme 3: E-Reader Light
     t3 = ALL_THEMES[3]
-    assert t3.name == "READER MODE (E-READER LIGHT)"
+    assert t3.name == "E-READER LIGHT"
     assert t3.clear_color == 15  # Cream parchment
     assert t3.is_reader_mode is True
     assert t3.render_bg.__name__ in ("bg_reader_light", "bg_stealth_light")
 
-    # Theme 4: Reader Mode E-Reader Dark
+    # Theme 4: E-Reader Dark
     t4 = ALL_THEMES[4]
-    assert t4.name == "READER MODE (E-READER DARK)"
+    assert t4.name == "E-READER DARK"
     assert t4.clear_color == 0
     assert t4.is_reader_mode is True
     assert t4.render_bg.__name__ in ("bg_reader_dark", "bg_stealth_dark")
+
+    # Theme 5: Glacial Crevasse (Replaced Monochrome Blueprint)
+    t5 = ALL_THEMES[5]
+    assert t5.name == "GLACIAL CREVASSE"
+    assert t5.render_bg.__name__ == "bg_glacial_crevasse"
+
+    # Theme 9: Pastel Sakura (Cute girly pastel pink theme)
+    t9 = ALL_THEMES[9]
+    assert t9.name == "PASTEL SAKURA"
+    assert t9.clear_color == 14
+    assert t9.render_bg.__name__ == "bg_pastel_sakura"
 
     # Verify Ecclesiastes 3 KJV text
     assert len(ECCLESIASTES_3_KJV_LINES) >= 40
@@ -2345,6 +2356,142 @@ def test_lore_codex_state_transitions():
     # Transition back to TITLE
     app.state.current_state = GameState.TITLE
     assert app.state.current_state == GameState.TITLE
+
+
+def test_5x7_text_width_and_centering_math():
+    """Verify exact 5x7 character width calculations and horizontal centering."""
+    from main import get_text_width_5x7
+
+    # Formula: (len(s) * 6 - 1) * scale
+    # "GRAIN OF DOUBT": 14 chars -> (14 * 6 - 1) * 4 = 83 * 4 = 332
+    w_title = get_text_width_5x7("GRAIN OF DOUBT", scale=4)
+    assert w_title == 332
+    x_title = (600 - w_title) // 2
+    assert x_title == 134
+
+    # "BY ARIAN PRABOWO": 16 chars -> (16 * 6 - 1) * 2 = 95 * 2 = 190
+    w_author = get_text_width_5x7("BY ARIAN PRABOWO", scale=2)
+    assert w_author == 190
+    x_author = (600 - w_author) // 2
+    assert x_author == 205
+
+    # "[L] LORE & LEARN TO PLAY": 24 chars -> (24 * 6 - 1) * 2 = 143 * 2 = 286
+    w_lore = get_text_width_5x7("[L] LORE & LEARN TO PLAY", scale=2)
+    assert w_lore == 286
+    x_lore = (600 - w_lore) // 2
+    assert x_lore == 157
+
+
+def test_v111_title_screen_layout_and_elements():
+    """Verify title screen renders new 10 Themes header, prev/next controls, and clean layout."""
+    import main
+    from main import GrainOfDoubtApp
+
+    app = GrainOfDoubtApp(headless=True, dev_mode=False)
+    drawn_texts = []
+    orig_draw = main.draw_text_scaled
+    try:
+        main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2: drawn_texts.append(s)
+        app.draw_title_screen()
+
+        # Check logo and author
+        assert any("GRAIN OF DOUBT" in t for t in drawn_texts)
+        assert any("BY ARIAN PRABOWO" in t for t in drawn_texts)
+        assert any("[L] LORE & LEARN TO PLAY" in t for t in drawn_texts)
+
+        # Check 10 Themes section
+        assert any("10 THEMES" in t for t in drawn_texts)
+        assert not any("10 DIVERGENT THEMES" in t for t in drawn_texts)
+        assert any("[,] PREV   |   [.] NEXT" in t for t in drawn_texts)
+        assert not any("[0-9] SELECT" in t for t in drawn_texts)
+        assert any("ACTIVE [1/10]: DUNES IN THE COSMIC HOURGLASS" in t for t in drawn_texts)
+
+        # Check shortcuts
+        assert any("[L] LORE & LEARN TO PLAY   |   [X] QUIT" in t for t in drawn_texts)
+        assert not any("[SPACE] START" in t for t in drawn_texts)
+
+        # Check photosensitivity warning and start prompt
+        assert any("PHOTOSENSITIVITY WARNING:" in t for t in drawn_texts)
+        assert any("Switch to PRO MODE" in t for t in drawn_texts)
+        assert any("PRESS ARROWS OR TOUCH BUTTONS TO START" in t for t in drawn_texts)
+
+        # Dev mode dedicated box test
+        app.dev_mode = True
+        drawn_texts.clear()
+        app.draw_title_screen()
+        assert any("VERSION: v1.1.1 [DEV MODE]" in t for t in drawn_texts)
+        assert any("[I] GODMODE" in t for t in drawn_texts)
+    finally:
+        main.draw_text_scaled = orig_draw
+
+
+def test_multi_page_lore_navigation_and_content():
+    """Verify multi-page lore navigation (A/D, arrows, page limits, exit on last page, and p02 narrative without Ecclesiastes)."""
+    import main
+    from main import GrainOfDoubtApp
+    from engine.state import GameState
+
+    app = GrainOfDoubtApp(headless=True)
+    app.state.current_state = GameState.LORE
+    assert app.lore_page == 0
+    assert app.MAX_LORE_PAGES == 3
+
+    drawn_texts = []
+    orig_draw = main.draw_text_scaled
+    try:
+        main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2: drawn_texts.append(s)
+
+        # PAGE 0 (Page 1/3): Narrative Premise
+        app.lore_page = 0
+        drawn_texts.clear()
+        app.draw_lore_screen()
+        assert any("CODEX [1/3]" in t for t in drawn_texts)
+        assert any("PYWEEK 42 (SEP 2026)" in t for t in drawn_texts)
+        assert any("BORROWED TIME" in t for t in drawn_texts)
+        assert any("HOURGLASS-CEPTION" in t for t in drawn_texts)
+        assert any("UNSTOPPABLE DOWNWARD DESCENT" in t for t in drawn_texts)
+        assert any("GRAIN OF DOUBT" in t for t in drawn_texts)
+        # MUST NOT mention Ecclesiastes on lore screen
+        assert not any("ECCLESIASTES" in t.upper() for t in drawn_texts)
+
+        # PAGE 1 (Page 2/3): Chronos vs Kairos
+        app.lore_page = 1
+        drawn_texts.clear()
+        app.draw_lore_screen()
+        assert any("CODEX [2/3]" in t for t in drawn_texts)
+        assert any("CHRONOS" in t for t in drawn_texts)
+        assert any("KAIROS" in t for t in drawn_texts)
+        assert any("PREDATORY DEBT" in t for t in drawn_texts)
+        assert not any("ECCLESIASTES" in t.upper() for t in drawn_texts)
+
+        # PAGE 2 (Page 3/3): Faustian Covenants
+        app.lore_page = 2
+        drawn_texts.clear()
+        app.draw_lore_screen()
+        assert any("CODEX [3/3]" in t for t in drawn_texts)
+        assert any("SEVEN FAUSTIAN COVENANTS" in t for t in drawn_texts)
+        assert any("PRIDE (Pd)" in t for t in drawn_texts)
+        assert any("GREED (Gd)" in t for t in drawn_texts)
+        assert any("COMPOUNDING DECAY" in t for t in drawn_texts)
+        assert not any("ECCLESIASTES" in t.upper() for t in drawn_texts)
+    finally:
+        main.draw_text_scaled = orig_draw
+
+
+def test_theme_5_glacial_crevasse_and_theme_9_pastel_sakura():
+    """Verify Theme 5 is Glacial Crevasse and Theme 9 is Pastel Sakura with procedural renderers."""
+    from engine.themes import ALL_THEMES, get_theme
+
+    t5 = get_theme(5)
+    assert t5.name == "GLACIAL CREVASSE"
+    assert t5.render_bg is not None
+    assert t5.render_bg.__name__ == "bg_glacial_crevasse"
+
+    t9 = get_theme(9)
+    assert t9.name == "PASTEL SAKURA"
+    assert t9.clear_color == 14  # Blossom pink
+    assert t9.render_bg is not None
+    assert t9.render_bg.__name__ == "bg_pastel_sakura"
 
 
 

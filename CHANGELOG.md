@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.1.1] - 2026-09-24
+### Added
+- **Multi-Page Lore Codex (`GameState.LORE`)**:
+  - Expanded the in-game manual into an interactive 3-page codex derived from `p02.md` Section 2:
+    - **Page 1 (1/3)**: Narrative Premise (*Hourglass-ception* — a fragile hourglass falling through the cosmic neck of a shattered colossal hourglass), Unstoppable Downward Descent (SkiFree-style zero-stopping collapse), Why the title "Grain of Doubt" (physical sand units of time + English idiom for paralyzing hesitation during Faustian deals), and PyWeek 42 (September 2026, theme "Borrowed Time") competition context. (Strictly no mentions of Ecclesiastes).
+    - **Page 2 (2/3)**: Temporal Duality (Chronos 8.0s relentless kinematic flow vs. Kairos 2.0s circuit-breaker panic freeze), Borrowed Time as Predatory Debt (mandatory Faustian bargains trading future survival for immediate reprieve), and Kinematic Controls summary.
+    - **Page 3 (3/3)**: The Seven Faustian Covenants in Catholic canonical order (Pride, Greed, Lust, Envy, Gluttony, Wrath, Sloth) with color plaques and Boon vs. Curse breakdowns, Compounding Decay equations ($Boon \times 0.75^k$, $Curse \times 1.50^k$), and 10 Themes & Pro Mode accessibility tips.
+  - **Intuitive Page Navigation**:
+    - Press `[A]` or `[LEFT ARROW]` to turn to the previous page.
+    - Press `[D]` or `[RIGHT ARROW]` to turn to the next page.
+    - Pressing `[RIGHT]` / `[D]` on the last page (Page 3) exits directly back to the Title Screen.
+    - Pressing `[X]`, `[ESC]`, `[SPACE]`, `[RETURN]`, `[L]`, `[H]`, or touch screen returns to the Title Screen.
+- **Theme 5 Replacement: Glacial Crevasse (`engine/themes.py`)**:
+  - Replaced Monochrome Blueprint (which overlapped aesthetically with Pro Mode) with **Glacial Crevasse**: deep blue abyss with sheer meltwater streams, firn ice shelves, and crystalline frost motes.
+- **Theme 9 Replacement: Pastel Sakura (`engine/themes.py`)**:
+  - Replaced Liminal Vaporwave with **Pastel Sakura**: a cute, girly aesthetic with blossom pink canvas (`Color 14`), drifting cherry blossom petals swaying with organic sinusoidal drift, soft peach clouds, and twinkling fairy dust stars.
+- **Dedicated Dev Mode Plaque**:
+  - Separated Dev Mode controls into their own dedicated box at the bottom of the Title screen when active (`self.dev_mode = True`), keeping standard controls clean.
+
+### Changed
+- **Homepage Centering & Geometric Typography**:
+  - Mathematically aligned all Title screen headings using exact 5x7 font metrics formula $(len(s) \times 6 - 1) \times scale$:
+    - `"GRAIN OF DOUBT"` ($scale=4$, 332px wide $\to x=134$).
+    - `"PYWEEK 42 : BORROWED TIME"` ($scale=2$, 310px wide $\to x=145$).
+    - `"BY ARIAN PRABOWO"` ($scale=2$, 190px wide $\to x=205$).
+    - Gameplay subtitles and `[L] LORE & LEARN TO PLAY` button ($scale=2$, 286px wide $\to x=157$).
+- **Homepage 10 Themes & Controls Box Overhaul**:
+  - Header simplified to `"10 THEMES"` (removed "divergent", "pro", and "reader mode").
+  - Added clean 1-line vertical gap before the 10 Themes section.
+  - Streamlined theme controls to `[,] PREV   |   [.] NEXT` (removed `[0-9] SELECT` and counter from the top line).
+  - Consolidated theme indicator onto the active line: `ACTIVE [X/10]: <NAME>`.
+  - Added generous 1-line vertical gap before `"SHORTCUTS"`.
+  - Cleaned shortcut line: `[L] LORE & LEARN TO PLAY   |   [X] QUIT` (removed `[SPACE] START`).
+  - Tightened box height to $222$px ($Y=238..460$), eliminating bottom dead space.
+  - Relocated the Photosensitivity Warning & Pro Mode suggestion plaque directly above the blinking start prompt.
+- **Theme Names Simplified**:
+  - Theme 0: `DUNES IN THE COSMIC HOURGLASS` (was `DESERT DUNES`).
+  - Theme 1: `PRO MODE LIGHT` (removed "HIGH CONTRAST").
+  - Theme 2: `PRO MODE DARK` (removed "HIGH CONTRAST").
+  - Theme 3: `E-READER LIGHT` (was `READER MODE (E-READER LIGHT)`).
+  - Theme 4: `E-READER DARK` (was `READER MODE (E-READER DARK)`).
+- **Packaging Pipeline**:
+  - Updated `build.sh` to assemble `grain-of-doubt-1.1.1.zip`.
+
 ## [v1.1.0] - 2026-09-24
 ### Added
 - **Custom 5x7 Typography Engine (`engine/font5x7.py`)**:

@@ -515,12 +515,12 @@ def bg_pro_mode_light(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, 
         pyxel.line(x, 0, x, screen_h, col_major)
 
 
-def bg_glacial_crevasse(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool):
-    """Theme 12: Glacial Crevasse (Vertical meltwater torrents and sheer blue ice shelves)."""
+def bg_glacial_crevasse(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool, telemetry: Optional[dict] = None):
+    """Theme 5: Glacial Crevasse (Vertical meltwater torrents, sheer blue ice shelves, and crystalline frost motes)."""
     col_water = 8 if is_greed else 12
     col_shelf = 0 if is_greed else 6
 
-    # Sheer vertical meltwater streams
+    # Sheer vertical meltwater streams and ice spires
     start_x = int((cam_x - 30) // 30) * 30
     for wx in range(start_x, cam_x + screen_w + 30, 30):
         spd = 1.2 + 0.3 * ((wx * 31) % 4)
@@ -532,6 +532,14 @@ def bg_glacial_crevasse(pyxel, cam_x: int, prog: float, dist: int, screen_w: int
     for y in range(0, screen_h, 90):
         sy = (y - int(dist * 0.4)) % screen_h
         pyxel.line(cam_x, sy, cam_x + screen_w, sy, col_shelf)
+
+    # Shimmering crystalline frost crystals
+    for f_idx in range(16):
+        f_seed = f_idx * 53 + 17
+        fx = int(cam_x + (f_seed * 97) % screen_w)
+        fy = int((f_seed * 71 - dist * 0.7) % screen_h)
+        col_frost = 7 if (f_seed % 2 == 0) else 6
+        pyxel.pset(fx, fy, col_frost)
 
 
 def bg_retro_terminal_matrix(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool):
@@ -1251,15 +1259,86 @@ KAIROS_ZEN_INK_WASH = KairosPalette(
 )
 
 
+def bg_pastel_sakura(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool, telemetry: Optional[dict] = None):
+    """Theme 9: Pastel Sakura (Cute, girly blossom drift with floating cherry petals, soft pastel clouds, and twinkling stars)."""
+    # Floating cherry blossom petals drifting with gentle organic sinusoidal sway
+    num_petals = 28
+    for i in range(num_petals):
+        seed = i * 47 + 13
+        speed = 0.45 + 0.35 * ((seed % 7) / 7.0)
+        drift_amp = 16.0 + 10.0 * ((seed % 5) / 5.0)
+        drift_freq = 0.035 + 0.02 * ((seed % 3) / 3.0)
+
+        base_x = (seed * 83) % (screen_w + 100) - 50
+        sway = math.sin((dist * 0.04 + seed) * drift_freq) * drift_amp
+        px = int(cam_x + base_x + sway)
+
+        # Petals drift upward relative to camera descent
+        py = int((seed * 137 - dist * speed * 1.2) % (screen_h + 40)) - 20
+
+        # Colors: soft white 7, pale peach 15, ruby 8, or gold 10
+        c_petal = 7 if (seed % 3 == 0) else 15
+        c_core = 8 if (seed % 2 == 0) else 14
+        if is_greed:
+            c_petal = 2
+            c_core = 8
+
+        # Draw cute petal droplet (cross / diamond shaped)
+        pyxel.pset(px, py, c_core)
+        pyxel.pset(px - 1, py, c_petal)
+        pyxel.pset(px + 1, py, c_petal)
+        pyxel.pset(px, py - 1, c_petal)
+        pyxel.pset(px, py + 1, c_petal)
+        pyxel.pset(px - 1, py - 1, 7)
+
+    # Twinkling fairy sparkles
+    for s_idx in range(14):
+        s_seed = s_idx * 61 + 29
+        sx = int(cam_x + (s_seed * 107) % screen_w)
+        sy = int((s_seed * 79 - dist * 0.5) % screen_h)
+        twinkle = (pyxel.frame_count // 6 + s_idx) % 4
+        if twinkle == 0:
+            pyxel.pset(sx, sy, 7)
+        elif twinkle == 1:
+            pyxel.pset(sx, sy, 10)
+            pyxel.pset(sx + 1, sy, 7)
+            pyxel.pset(sx - 1, sy, 7)
+            pyxel.pset(sx, sy + 1, 7)
+            pyxel.pset(sx - 1, sy, 7)
+        elif twinkle == 2:
+            pyxel.pset(sx, sy, 15)
+
+    # Soft breeze streaks
+    for w_idx in range(4):
+        wy = int((w_idx * 210 - dist * 0.8) % screen_h)
+        col_wisp = 15 if (w_idx % 2 == 0) else 7
+        if is_greed:
+            col_wisp = 2
+        pyxel.line(cam_x + 30, wy, cam_x + screen_w - 30, wy - 24, col_wisp)
+
+
+KAIROS_PASTEL_SAKURA = KairosPalette(
+    modal_bg=14, dimmer=2, border_outer=7, border_inner=15,
+    header_title=7, header_sub=10,
+    timer_bar_bg=2, timer_bar_fill=10, timer_bar_border=7,
+    card_bg=2, card_bg_selected=14, card_border=15, card_border_selected=7,
+    badge_bg=15, badge_text=2, badge_bg_selected=7, badge_text_selected=14,
+    selected_btn_bg=7, selected_btn_text=14,
+    sin_title=7, sin_title_selected=10, level_text=10, divider=15,
+    pro_label=10, pro_text=7, con_label=8, con_text=15,
+    footer_text=7, footer_warn=10,
+)
+
+
 # =============================================================================
 # THEME REGISTRY
 # =============================================================================
 
 ALL_THEMES: List[Theme] = [
-    # 0. Desert Dunes (formerly SkiFree Sandfall)
+    # 0. Dunes in the Cosmic Hourglass (formerly Desert Dunes / SkiFree Sandfall)
     Theme(
         id=0,
-        name="DESERT DUNES",
+        name="DUNES IN THE COSMIC HOURGLASS",
         clear_color=15,
         greed_clear_color=2,
         sand=SandPalette(body=10, border=4, glint=7, shadow=4, fat_body=10, fat_border=4, fat_glint=7),
@@ -1268,10 +1347,10 @@ ALL_THEMES: List[Theme] = [
         render_bg=bg_sand_dunes_landscape,
         kairos=KAIROS_SKIFREE_SANDFALL,
     ),
-    # 1. Pro Mode (High Contrast Light)
+    # 1. Pro Mode Light
     Theme(
         id=1,
-        name="PRO MODE (HIGH CONTRAST LIGHT)",
+        name="PRO MODE LIGHT",
         clear_color=7,
         greed_clear_color=7,
         sand=SandPalette(body=9, border=0, glint=10, shadow=0, fat_body=9, fat_border=0, fat_glint=10),
@@ -1280,10 +1359,10 @@ ALL_THEMES: List[Theme] = [
         render_bg=bg_pro_mode_light,
         kairos=KAIROS_PRO_MODE_LIGHT,
     ),
-    # 2. Pro Mode (High Contrast Dark)
+    # 2. Pro Mode Dark
     Theme(
         id=2,
-        name="PRO MODE (HIGH CONTRAST DARK)",
+        name="PRO MODE DARK",
         clear_color=0,
         greed_clear_color=0,
         sand=SandPalette(body=10, border=0, glint=7, shadow=0, fat_body=10, fat_border=0, fat_glint=7),
@@ -1292,10 +1371,10 @@ ALL_THEMES: List[Theme] = [
         render_bg=bg_pro_mode_dark,
         kairos=KAIROS_PRO_MODE_DARK,
     ),
-    # 3. Reader Mode (E-Reader Light)
+    # 3. E-Reader Light
     Theme(
         id=3,
-        name="READER MODE (E-READER LIGHT)",
+        name="E-READER LIGHT",
         clear_color=15,
         greed_clear_color=15,
         sand=SandPalette(body=9, border=4, glint=10, shadow=4, fat_body=9, fat_border=4, fat_glint=10),
@@ -1305,10 +1384,10 @@ ALL_THEMES: List[Theme] = [
         kairos=KAIROS_READER_MODE_LIGHT,
         is_reader_mode=True,
     ),
-    # 4. Reader Mode (E-Reader Dark)
+    # 4. E-Reader Dark
     Theme(
         id=4,
-        name="READER MODE (E-READER DARK)",
+        name="E-READER DARK",
         clear_color=0,
         greed_clear_color=0,
         sand=SandPalette(body=10, border=0, glint=7, shadow=0, fat_body=10, fat_border=0, fat_glint=7),
@@ -1318,17 +1397,17 @@ ALL_THEMES: List[Theme] = [
         kairos=KAIROS_READER_MODE_DARK,
         is_reader_mode=True,
     ),
-    # 5. Monochrome Blueprint
+    # 5. Glacial Crevasse (Replaced Monochrome Blueprint)
     Theme(
         id=5,
-        name="MONOCHROME BLUEPRINT",
+        name="GLACIAL CREVASSE",
         clear_color=1,
         greed_clear_color=0,
-        sand=SandPalette(body=7, border=1, glint=12, shadow=0, fat_body=7, fat_border=1, fat_glint=12),
-        shard=ShardPalette(facet=7, border=1, glint=12, shadow=0, fat_facet=7, fat_border=7),
-        hourglass=HourglassPalette(caps=12, cap_hl=7, cap_rivet=7, glass_walls=12, waist_neck=7, sand_a=7, sand_b=12, shadow=0),
-        render_bg=bg_monochrome_blueprint,
-        kairos=KAIROS_MONOCHROME_BLUEPRINT,
+        sand=SandPalette(body=6, border=1, glint=7, shadow=5, fat_body=6, fat_border=1, fat_glint=7),
+        shard=ShardPalette(facet=7, border=6, glint=12, shadow=5, fat_facet=7, fat_border=12),
+        hourglass=HourglassPalette(caps=6, cap_hl=7, cap_rivet=12, glass_walls=7, waist_neck=12, sand_a=6, sand_b=7, shadow=5),
+        render_bg=bg_glacial_crevasse,
+        kairos=KAIROS_GLACIAL_CREVASSE,
     ),
     # 6. Magma Caldera
     Theme(
@@ -1366,17 +1445,17 @@ ALL_THEMES: List[Theme] = [
         render_bg=bg_zen_ink_wash,
         kairos=KAIROS_ZEN_INK_WASH,
     ),
-    # 9. Liminal Vaporwave
+    # 9. Pastel Sakura (Replaced Liminal Vaporwave with cute girly pastel pink theme)
     Theme(
         id=9,
-        name="LIMINAL VAPORWAVE",
+        name="PASTEL SAKURA",
         clear_color=14,
         greed_clear_color=2,
-        sand=SandPalette(body=10, border=1, glint=7, shadow=1, fat_body=10, fat_border=1, fat_glint=7),
-        shard=ShardPalette(facet=12, border=1, glint=7, shadow=1, fat_facet=12, fat_border=0),
-        hourglass=HourglassPalette(caps=1, cap_hl=12, cap_rivet=7, glass_walls=12, waist_neck=14, sand_a=10, sand_b=12, shadow=1),
-        render_bg=bg_liminal_vaporwave,
-        kairos=KAIROS_LIMINAL_VAPORWAVE,
+        sand=SandPalette(body=10, border=14, glint=7, shadow=2, fat_body=10, fat_border=14, fat_glint=7),
+        shard=ShardPalette(facet=8, border=7, glint=15, shadow=2, fat_facet=8, fat_border=7),
+        hourglass=HourglassPalette(caps=7, cap_hl=15, cap_rivet=10, glass_walls=7, waist_neck=14, sand_a=10, sand_b=15, shadow=2),
+        render_bg=bg_pastel_sakura,
+        kairos=KAIROS_PASTEL_SAKURA,
     ),
 ]
 

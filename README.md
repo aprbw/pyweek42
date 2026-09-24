@@ -1,7 +1,7 @@
 # Grain of Doubt
 
 > **By Arian Prabowo**  
-> **Version:** v1.1.0  
+> **Version:** v1.1.1  
 > **PyWeek 42 Entry ("Borrowed Time")** — September 2026  
 > An endless retro downhill falling-hourglass arcade runner built with the **Pyxel** retro game engine.  
 > **Target Resolution:** 600 × 800 pixels (3:4 Portrait Aspect Ratio, Infinite Horizontal Arena).  
@@ -40,16 +40,16 @@ Steer left or right to avoid falling glass shards while collecting glistening go
 
 You can freely switch between **10 completely unique, maximally divergent aesthetic themes** in real time—both directly on the **Title Screen (Home Page)** and during gameplay—using the number keys `0` through `9`, or `,` (previous) and `.` (next):
 
-0. **Desert Dunes**: Continuous 2D procedural sand dune landscape with a **Topology Engine** (layered polygons rendered back-to-front; negative space geometry prohibiting stroke lines; inverse Z-depth upward velocity converging at supra-canvas horizon $Y_H = -140$; speed $>10\times$ faster at bottom than top), **Shadow Mapping** (intra-layer vertical linear gradients from dark crests to light bases), **Atmospheric Scattering** (global luminosity scalar desaturating distal ridges into ambient desert haze), and a cosmic perspective glitch warning when Kairos is imminent.
-1. **Pro Mode (High Contrast Light)**: Clinical white engineering canvas, relative background grid motion (1.6x scroll speed so hazards fall down relative to grid), dual vertical Chronos countdown progress bars at extreme left and right borders (top to bottom), pitch-black obsidian shards, amber sand, and extreme luminance delta (>20:1 contrast). Zero drop shadows.
-2. **Pro Mode (High Contrast Dark)**: Pure pitch-black canvas, relative background grid motion (1.6x scroll speed so hazards fall down relative to grid), dual vertical Chronos countdown progress bars at extreme left and right borders (top to bottom), solid opaque HUD panels, and vibrant Cyan (`Color 12`) unselected pact list (WCAG AAA). Zero drop shadows.
-3. **Reader Mode (E-Reader Light)**: Warm cream parchment digital e-reader displaying genuine **Ecclesiastes 3:1-22 (King James Version)** in double-sized font (`scale=2`, $8 \times 12$ px characters) formatted as continuous, justified un-indented prose. Floating arcade HUD panels are 100% suppressed; gameplay telemetry is seamlessly disguised as an authentic scripture paragraph between verses 8 and 9 without modern brackets or parentheses. Shards render at **30% alpha** and sand/hourglass at **60% alpha** as subtle translucent watermarks.
-4. **Reader Mode (E-Reader Dark)**: Midnight slate companion to Reader Mode Light. Double-sized Ecclesiastes 3 KJV text, disguised KJV scripture telemetry paragraph, 100% suppressed floating HUD, and 30%/60% alpha translucent gameplay elements.
-5. **Monochrome Blueprint**: Engineering architectural drafting cyan/navy blueprint with white millimeter drafting grids and coordinate markers.
+0. **Dunes in the Cosmic Hourglass**: Continuous 2D procedural sand dune landscape with a **Topology Engine** (layered polygons rendered back-to-front; negative space geometry prohibiting stroke lines; inverse Z-depth upward velocity converging at supra-canvas horizon $Y_H = -140$; speed $>10\times$ faster at bottom than top), **Shadow Mapping** (intra-layer vertical linear gradients from dark crests to light bases), **Atmospheric Scattering** (global luminosity scalar desaturating distal ridges into ambient desert haze), and a cosmic perspective glitch warning when Kairos is imminent.
+1. **Pro Mode Light**: Clinical white engineering canvas, relative background grid motion (1.6x scroll speed so hazards fall down relative to grid), dual vertical Chronos countdown progress bars at extreme left and right borders (top to bottom), pitch-black obsidian shards, amber sand, and extreme luminance delta (>20:1 contrast). Zero drop shadows.
+2. **Pro Mode Dark**: Pure pitch-black canvas, relative background grid motion (1.6x scroll speed so hazards fall down relative to grid), dual vertical Chronos countdown progress bars at extreme left and right borders (top to bottom), solid opaque HUD panels, and vibrant Cyan (`Color 12`) unselected pact list (WCAG AAA). Zero drop shadows.
+3. **E-Reader Light**: Warm cream parchment digital e-reader displaying genuine **Ecclesiastes 3:1-22 (King James Version)** in double-sized font (`scale=2`, $8 \times 12$ px characters) formatted as continuous, justified un-indented prose. Floating arcade HUD panels are 100% suppressed; gameplay telemetry is seamlessly disguised as an authentic scripture paragraph between verses 8 and 9 without modern brackets or parentheses. Shards render at **30% alpha** and sand/hourglass at **60% alpha** as subtle translucent watermarks.
+4. **E-Reader Dark**: Midnight slate companion to E-Reader Light. Double-sized Ecclesiastes 3 KJV text, disguised KJV scripture telemetry paragraph, 100% suppressed floating HUD, and 30%/60% alpha translucent gameplay elements.
+5. **Glacial Crevasse**: Deep sub-zero glacial chasm with sheer vertical meltwater streams, horizontal firn ice strata, and shimmering crystalline frost motes.
 6. **Magma Caldera**: Volcanic caldera, basalt crags, obsidian riverbed, and bubbling liquid lava flumes with glowing embers.
 7. **Retro Terminal Matrix**: Phosphor green cathode-ray tube monitor with falling hexadecimal digital glyph rain and scanline texture.
 8. **Zen Ink Wash (Sumi-e)**: Traditional Japanese washi parchment, black ink calligraphy brush strokes, and red cinnabar seal.
-9. **Liminal Vaporwave**: Pastel pink, periwinkle, and cyan retro-futuristic wireframe perspective grid and digital horizon.
+9. **Pastel Sakura**: Cute, girly pastel pink aesthetic with cherry blossom petals drifting with organic sinusoidal sway, soft peach clouds, and twinkling fairy stars.
 
 Each theme dynamically transforms the procedural background terrain as well as the complete color palettes of the player's hourglass, sand grains, and glass shards to ensure aesthetic harmony and sharp contrast!
 
@@ -62,10 +62,10 @@ Each theme dynamically transforms the procedural background terrain as well as t
 | `A` / `D` or `Left` / `Right` | Lateral Steering | Steer hourglass horizontally (viscous damping coefficient: 0.82) |
 | Touch `< LEFT` / `RIGHT >` | Mobile Touch Steering | High-contrast on-screen buttons (visible on mobile only) or bottom screen tap |
 | `Left` / `Right` or Tap Card | Select Faustian Bargain | Steer left or right during Kairos to choose between the 2 bargain cards within 10.0s (1.0s safety lockout; requires fresh press after release) |
-| `L` / `H` | Lore & Codex Screen | Open full narrative and gameplay manual sub-screen from Title Screen |
+| `L` / `H` | Lore & Learn to Play Codex | Open 3-page interactive codex (Narrative, Dual-Clock Engine, Seven Covenants). Navigate with `A`/`D` or arrows; press `Right` on last page or `X` to return |
 | `Space` / `Enter` or Tap Screen | Start / Restart | Start game or restart after a 2.0s post-mortem lockout (debounced) |
-| `X` | Return to Menu / Quit | In gameplay: return to Title Menu. On Title Menu: quit game (no-op in browser) |
-| `0` - `9` | Direct Theme Select | Jump instantly to any of the 10 curated themes (0:Dunes, 1:Pro Light, 2:Pro Dark, 3:Reader Light, 4:Reader Dark, 5:Blueprint, 6:Caldera, 7:Terminal, 8:Sumi-e, 9:Vaporwave) |
+| `X` | Return to Menu / Quit | In gameplay or Lore screen: return to Title Menu. On Title Menu: quit game (no-op in browser) |
+| `0` - `9` | Direct Theme Select | Jump instantly to any of the 10 curated themes (0:Dunes, 1:Pro Light, 2:Pro Dark, 3:E-Reader Light, 4:E-Reader Dark, 5:Glacial, 6:Caldera, 7:Terminal, 8:Sumi-e, 9:Pastel Sakura) |
 | `,` (Comma) | Previous Theme | Cycle backwards through all 10 curated themes (works on Title Screen and in-game) |
 | `.` (Period) | Next Theme | Cycle forward through all 10 curated themes (works on Title Screen and in-game) |
 | `~` / `` ` `` (Backtick) | Toggle Dev Mode | On-screen debug HUD, live telemetry, and shortcut cheats |

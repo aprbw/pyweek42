@@ -30,9 +30,9 @@ echo "5. Optimizing HTML for mobile browser execution..."
 .venv/bin/python optimize_web.py
 cp grain_of_doubt.html index.html
 
-echo "6. Creating official PyWeek source distribution zip (grain-of-doubt-1.1.0.zip)..."
-ZIP_NAME="grain-of-doubt-1.1.0.zip"
-DIR_NAME="grain-of-doubt-1.1.0"
+echo "6. Creating official PyWeek source distribution zip (grain-of-doubt-1.1.1.zip)..."
+ZIP_NAME="grain-of-doubt-1.1.1.zip"
+DIR_NAME="grain-of-doubt-1.1.1"
 rm -rf grain-of-doubt-*.zip "$DIR_NAME"
 mkdir -p "$DIR_NAME"
 cp -r run_game.py main.py sand_dunes_landscape.py engine tests requirements.txt README.md CHANGELOG.md p03.md p04.md LICENSE.md build.sh run.sh playtest_bot.py optimize_web.py "$DIR_NAME/"
