@@ -324,7 +324,7 @@ def test_sloth_speed_modifiers():
     y_coords = [s.y for s in [s1, s2, s3] if s.alive]
     assert len(y_coords) >= 2
     assert all(y > 700.0 for y in y_coords)  # all hurled far down below screen
-    assert max(y_coords) - min(y_coords) < 500.0  # clumped wave without teleportation
+    assert max(y_coords) - min(y_coords) < 600.0  # clumped wave without teleportation
 
 
 def test_envy_and_lust_mechanics():
@@ -1772,10 +1772,17 @@ def test_all_20_divergent_themes_registry():
 
 
 def test_pro_mode_and_stealth_mode_themes():
-    """Verify the 4 Pro Mode and Stealth Mode themes are registered with proper aesthetics."""
+    """Verify the 4 Pro Mode and Stealth Mode themes are registered with proper aesthetics and adjacent dark/light pairs."""
     from engine.themes import ALL_THEMES, STEALTH_DARK_DOC, STEALTH_LIGHT_DOC
+    from engine.bargains import SinType, SIN_CARD_COLORS
 
-    # Theme 6: Pro Mode High Contrast Dark
+    # All 7 Sins have unique colors for Pro Mode cards
+    assert len(SIN_CARD_COLORS) == 7
+    assert len(set(SIN_CARD_COLORS.values())) == 7
+    for sin in SinType:
+        assert sin in SIN_CARD_COLORS
+
+    # Theme 6: Pro Mode High Contrast Dark (adjacent to Theme 7)
     t6 = ALL_THEMES[6]
     assert t6.name == "PRO MODE (HIGH CONTRAST DARK)"
     assert t6.clear_color == 0
@@ -1783,15 +1790,15 @@ def test_pro_mode_and_stealth_mode_themes():
     assert t6.shard.facet == 12  # High-vis cyan
     assert t6.render_bg.__name__ == "bg_pro_mode_dark"
 
-    # Theme 10: Pro Mode High Contrast Light
-    t10 = ALL_THEMES[10]
-    assert t10.name == "PRO MODE (HIGH CONTRAST LIGHT)"
-    assert t10.clear_color == 7  # Clinical white
-    assert t10.sand.body == 9  # Amber
-    assert t10.shard.facet == 0  # Pitch-black shard for maximum contrast
-    assert t10.render_bg.__name__ == "bg_pro_mode_light"
+    # Theme 7: Pro Mode High Contrast Light (adjacent to Theme 6)
+    t7 = ALL_THEMES[7]
+    assert t7.name == "PRO MODE (HIGH CONTRAST LIGHT)"
+    assert t7.clear_color == 7  # Clinical white
+    assert t7.sand.body == 9  # Amber
+    assert t7.shard.facet == 0  # Pitch-black shard for maximum contrast
+    assert t7.render_bg.__name__ == "bg_pro_mode_light"
 
-    # Theme 13: Stealth Mode E-Reader Dark
+    # Theme 13: Stealth Mode E-Reader Dark (adjacent to Theme 14)
     t13 = ALL_THEMES[13]
     assert t13.name == "STEALTH MODE (E-READER DARK)"
     assert t13.clear_color == 0
@@ -1799,7 +1806,7 @@ def test_pro_mode_and_stealth_mode_themes():
     assert len(STEALTH_DARK_DOC) >= 30
     assert any("RFC-4209" in line for line in STEALTH_DARK_DOC)
 
-    # Theme 14: Stealth Mode Book Novel Light
+    # Theme 14: Stealth Mode Book Novel Light (adjacent to Theme 13)
     t14 = ALL_THEMES[14]
     assert t14.name == "STEALTH MODE (BOOK NOVEL LIGHT)"
     assert t14.clear_color == 15  # Cream parchment

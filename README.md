@@ -45,11 +45,11 @@ In **Dev Mode** (toggle with `` ` ``), you can freely cycle through **20 complet
 4. **Shattered Mirror Chasm**: Iridescent lavender crystal chasm, reflecting diamond fractures, and prism facets.
 5. **Magma Caldera**: Volcanic caldera, basalt crags, obsidian riverbed, and bubbling liquid lava flumes.
 6. **Cartographer's Scroll**: Antique nautical map parchment, compass rhumb lines, and sea monster territorial borders.
-7. **Pro Mode (High Contrast Dark)**: Pure pitch-black canvas, 100% functional zero-noise clarity, side telemetry depth rulers, and high-visibility color-blind safe palettes (WCAG AAA).
-8. **Copper & Verdigris**: Steampunk weathered bronze, verdigris patina corrosion, and ticking brass gears.
-9. **Solar Flare**: Blinding coronal solar mass ejections, magnetic prominence arcs, and fiery plasma ribbons.
-10. **Monochrome Blueprint**: Engineering architectural drafting cyan blueprint with white millimeter grids.
-11. **Pro Mode (High Contrast Light)**: Clinical white engineering drafting grid, black obsidian shards, high-contrast amber sand, and extreme luminance delta (>20:1 contrast).
+7. **Pro Mode (High Contrast Dark)**: Pure pitch-black canvas, 100% functional zero-noise clarity, static major (100px) and minor (25px) grid lines fixed to screen background, color-matched pact cards with uncluttered level advancement, and high-visibility color-blind safe palettes (WCAG AAA).
+8. **Pro Mode (High Contrast Light)**: Clinical white engineering canvas, static major (100px) and minor (25px) grid lines fixed to screen background, pitch-black obsidian shards, amber sand, and extreme luminance delta (>20:1 contrast).
+9. **Copper & Verdigris**: Steampunk weathered bronze, verdigris patina corrosion, and ticking brass gears.
+10. **Solar Flare**: Blinding coronal solar mass ejections, magnetic prominence arcs, and fiery plasma ribbons.
+11. **Monochrome Blueprint**: Engineering architectural drafting cyan blueprint with white millimeter grids.
 12. **Glacial Crevasse**: Sub-zero glacial ice sheet, deep blue crevasse crevasses, and permafrost frost needles.
 13. **Retro Terminal Matrix**: Phosphor green cathode-ray tube monitor with falling hexadecimal digital rain.
 14. **Stealth Mode (E-Reader Dark)**: Formatted computer science specification / RFC documentation scrolling in dark mode terminal, disguised as an academic technical paper.
@@ -220,11 +220,11 @@ python3 -m http.server 8000
     4. *Shattered Mirror Chasm*: Iridescent violet prism corridors, silver quartz dust, and fractured facets.
     5. *Magma Caldera*: Volcanic obsidian crags, molten basalt flumes, glowing embers, and fiery core.
     6. *Cartographer's Scroll*: Aged sepia parchment, nautical rhumb lines, and compass bearings.
-    7. *Pro Mode (High Contrast Dark)*: High-contrast pure black background, side telemetry depth rulers, and color-blind safe palettes (WCAG AAA).
-    8. *Copper & Verdigris*: Oxidized green patinas, hammered bronze gears, and industrial copper rivets.
-    9. *Solar Flare*: Blinding orange and yellow coronal mass ejections and solar prominence arches.
-    10. *Monochrome Blueprint*: Navy architectural technical blueprint with white drafting grid lines and measurement callouts.
-    11. *Pro Mode (High Contrast Light)*: Clinical white engineering drafting grid, pitch-black obsidian shards, amber sand, and extreme luminance delta.
+    7. *Pro Mode (High Contrast Dark)*: High-contrast pure black background, static major/minor grid lines, and color-blind safe palettes (WCAG AAA).
+    8. *Pro Mode (High Contrast Light)*: Clinical white engineering drafting grid, static major/minor grid lines, pitch-black obsidian shards, and amber sand.
+    9. *Copper & Verdigris*: Oxidized green patinas, hammered bronze gears, and industrial copper rivets.
+    10. *Solar Flare*: Blinding orange and yellow coronal mass ejections and solar prominence arches.
+    11. *Monochrome Blueprint*: Navy architectural technical blueprint with white drafting grid lines and measurement callouts.
     12. *Glacial Crevasse*: Sub-zero ice shelf, vertical fissure crevasses, and permafrost ice needles.
     13. *Retro Terminal Matrix*: Monochrome green CRT phosphor terminal, falling digital glyph matrix rain, and scanlines.
     14. *Stealth Mode (E-Reader Dark)*: Formatted computer science specification / RFC documentation scrolling in dark mode terminal, disguised as a technical paper.

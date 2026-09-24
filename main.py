@@ -18,7 +18,7 @@ except ImportError:
 
 from engine.state import GameState, StateManager
 from engine.entities import EntityManager, HourglassPlayer, SandGrain, GlassShard
-from engine.bargains import BargainManager, SinType, BARGAIN_REGISTRY
+from engine.bargains import BargainManager, SinType, BARGAIN_REGISTRY, SIN_CARD_COLORS
 from engine.audio import AudioManager
 from engine.bot import PlayTestingBot, BotConfig
 from engine.video import VideoRecorder
@@ -143,12 +143,13 @@ def draw_text_scaled(x: int, y: int, s: str, col: int, scale: int = 1, img_bank:
         return
     w = len(s) * 4 + 4
     h = 8
-    pyxel.images[img_bank].cls(0)
+    bg_key = 1 if col == 0 else 0
+    pyxel.images[img_bank].cls(bg_key)
     pyxel.images[img_bank].text(0, 0, s, col)
     # Offset blt position so the scaled output starts exactly at (x, y)
     blt_x = x + int(w * (scale - 1) / 2)
     blt_y = y + int(h * (scale - 1) / 2)
-    pyxel.blt(blt_x, blt_y, img_bank, 0, 0, w, h, colkey=0, scale=scale)
+    pyxel.blt(blt_x, blt_y, img_bank, 0, 0, w, h, colkey=bg_key, scale=scale)
 
 
 CANONICAL_SINS: List[SinType] = [
@@ -1033,7 +1034,10 @@ class GrainOfDoubtApp:
             sin_lbl = sin.name.lower()
             line_txt = f"{idx+1}. {sin_lbl:<10} {k}"
             col = 10 if k > 0 else 5
-            draw_text_scaled(pacts_box_x + 8, row_y, line_txt, col, scale=2)
+            # Draw color swatch matching the background of the pact card
+            sin_col = SIN_CARD_COLORS.get(sin, 1)
+            pyxel.rect(pacts_box_x + 5, row_y + 2, 4, 11, sin_col)
+            draw_text_scaled(pacts_box_x + 12, row_y, line_txt, col, scale=2)
 
         # Minimal Status Badges when active (drawn below hearts at top left)
         badge_y = 44
@@ -1122,15 +1126,22 @@ class GrainOfDoubtApp:
 
         col_labels = ["< STEER LEFT <", "> STEER RIGHT >"]
 
+        theme = get_theme(self.current_theme_index)
+        is_pro_mode = theme.name.startswith("PRO MODE")
+
         for i, (sin, defn, k) in enumerate(self.active_options):
             cx = start_x + i * (col_w + col_gap)
             is_selected = (i == self.selected_card_index)
 
-            # Card background & frame
-            bg_col = 1 if not is_selected else 5
-            border_col = 10 if (is_selected and (pyxel.frame_count // 3) % 2 == 0) else (6 if is_selected else 1)
+            # Card background & frame: in Pro Mode, color-match each pact to its unique signature color
+            if is_pro_mode:
+                bg_col = SIN_CARD_COLORS.get(sin, 1)
+                border_col = 10 if (is_selected and (pyxel.frame_count // 3) % 2 == 0) else (7 if is_selected else 0)
+            else:
+                bg_col = 1 if not is_selected else 5
+                border_col = 10 if (is_selected and (pyxel.frame_count // 3) % 2 == 0) else (6 if is_selected else 1)
 
-            if sin == SinType.GLUTTONY:
+            if sin == SinType.GLUTTONY and not is_pro_mode:
                 # Gluttony: card intentionally bulges and bends the frame outward around the oversized title!
                 bulge_x = 22
                 y_t1 = col_y + 34
@@ -1176,7 +1187,7 @@ class GrainOfDoubtApp:
                     pyxel.rectb(cx + 1, col_y + 1, col_w - 2, col_h - 2, 10)
 
             # Directional badge (justified center)
-            badge_col = 8 if is_selected else 1
+            badge_col = 8 if is_selected else (0 if is_pro_mode else 1)
             pyxel.rect(cx + 14, col_y + 12, col_w - 28, 28, badge_col)
             badge_lbl = col_labels[i]
             badge_w = (len(badge_lbl) * 4 - 1) * 2
@@ -1186,101 +1197,122 @@ class GrainOfDoubtApp:
             max_sin_len = max(len(d.name) for d in BARGAIN_REGISTRY.values())
             title_scale = max(1, int((col_w - 11) / (max_sin_len * 4 - 1)))
             name = defn.name.upper()
-            if sin == SinType.GLUTTONY:
+            if sin == SinType.GLUTTONY and not is_pro_mode:
                 # Make Gluttony so big it gets out of the frame a little bit (looks intentional)
                 title_scale = 8
             title_w = (len(name) * 4 - 1) * title_scale
             center_x = cx + col_w // 2
             title_x = center_x - title_w // 2
-            draw_text_scaled(title_x, col_y + 46, name, 10 if is_selected else 7, scale=title_scale)
+            title_col = 10 if is_selected else (0 if (is_pro_mode and sin == SinType.LUST) else 7)
+            draw_text_scaled(title_x, col_y + 46, name, title_col, scale=title_scale)
 
             # Level indicator (justified center below title)
             lvl_str = f"LEVEL: {k}"
             lvl_w = (len(lvl_str) * 4 - 1) * 2
             lvl_x = center_x - lvl_w // 2
-            draw_text_scaled(lvl_x, col_y + 88, lvl_str, 9, scale=2)
+            lvl_col = 10 if is_selected else (0 if (is_pro_mode and sin == SinType.LUST) else 9)
+            draw_text_scaled(lvl_x, col_y + 88, lvl_str, lvl_col, scale=2)
 
-            # Visual divider
-            pyxel.line(cx + 14, col_y + 106, cx + col_w - 14, col_y + 106, 6)
+            if is_pro_mode:
+                # Pro mode: "no description of the pact required"
+                # Pure, uncluttered functional presentation: level advancement indicator & selection
+                next_lvl_str = f"-> LEVEL {k + 1} <-"
+                next_lvl_w = (len(next_lvl_str) * 4 - 1) * 3
+                draw_text_scaled(center_x - next_lvl_w // 2, col_y + 180, next_lvl_str, 10 if is_selected else (0 if sin == SinType.LUST else 7), scale=3)
 
-            # Boon section
-            draw_text_scaled(cx + 16, col_y + 120, "PRO (NOW):", 11, scale=2)
-            if sin == SinType.PRIDE:
-                group_name = ["Pairs", "Triplets", "Quadruplets", "Quintuplets"][min(3, k)]
-                draw_text_scaled(cx + 16, col_y + 144, "Sand Clusters", 7, scale=2)
-                draw_text_scaled(cx + 16, col_y + 168, f"{group_name} (+{k+1} grains)", 11, scale=2)
-            elif sin == SinType.ENVY:
-                next_k = k + 1
-                k_eff = next_k + 2
-                outer_preview = int(1200.0 * (0.8 ** k_eff))
-                mega_r = outer_preview * 2
-                draw_text_scaled(cx + 16, col_y + 144, "Tidal Pull (2.0s)", 7, scale=2)
-                draw_text_scaled(cx + 16, col_y + 168, f"Pull {mega_r}px Radius", 11, scale=2)
-            elif sin == SinType.GREED:
-                draw_text_scaled(cx + 16, col_y + 144, "Score Multiplier", 7, scale=2)
-                draw_text_scaled(cx + 16, col_y + 168, "x110% per sand", 11, scale=2)
-            elif sin == SinType.SLOTH:
-                draw_text_scaled(cx + 16, col_y + 144, "Lazy Reprieve", 7, scale=2)
-                draw_text_scaled(cx + 16, col_y + 168, "Hurl Hazards Down (2s)", 11, scale=2)
-            elif sin == SinType.LUST:
-                draw_text_scaled(cx + 16, col_y + 144, "Sand Magnet", 7, scale=2)
-                draw_text_scaled(cx + 16, col_y + 168, f"{100 + k * 50}px (Permanent)", 11, scale=2)
-            elif sin == SinType.GLUTTONY:
-                next_k = k + 1
-                next_fat = (1.0 - (0.90 ** next_k)) * 100.0
-                draw_text_scaled(cx + 16, col_y + 144, "Fat Grains (3x Pts)", 7, scale=2)
-                draw_text_scaled(cx + 16, col_y + 168, f"{next_fat:.1f}% Fat (10x Area)", 11, scale=2)
-            elif sin == SinType.WRATH:
-                draw_text_scaled(cx + 16, col_y + 144, "Wrath Explosion", 7, scale=2)
-                draw_text_scaled(cx + 16, col_y + 168, "Blast 1200px Radius", 11, scale=2)
+                # Selection status button at bottom
+                if is_selected:
+                    pyxel.rect(cx + 14, col_y + col_h - 48, col_w - 28, 34, 10)
+                    sel_lbl = "SELECTED"
+                    sel_w = (len(sel_lbl) * 4 - 1) * 2
+                    draw_text_scaled(center_x - sel_w // 2, col_y + col_h - 40, sel_lbl, 0, scale=2)
+                else:
+                    pyxel.rectb(cx + 14, col_y + col_h - 48, col_w - 28, 34, 0 if sin == SinType.LUST else 7)
+                    btn_lbl = "STEER TO CHOOSE"
+                    btn_w = (len(btn_lbl) * 4 - 1) * 2
+                    draw_text_scaled(center_x - btn_w // 2, col_y + col_h - 40, btn_lbl, 0 if sin == SinType.LUST else 7, scale=2)
             else:
-                draw_text_scaled(cx + 16, col_y + 144, f"+{defn.boon_name}", 7, scale=2)
-                draw_text_scaled(cx + 16, col_y + 168, f"{defn.boon_base} {defn.boon_unit}", 11, scale=2)
+                # Visual divider
+                pyxel.line(cx + 14, col_y + 106, cx + col_w - 14, col_y + 106, 6)
 
-            # Visual divider
-            pyxel.line(cx + 14, col_y + 206, cx + col_w - 14, col_y + 206, 2)
+                # Boon section
+                draw_text_scaled(cx + 16, col_y + 120, "PRO (NOW):", 11, scale=2)
+                if sin == SinType.PRIDE:
+                    group_name = ["Pairs", "Triplets", "Quadruplets", "Quintuplets"][min(3, k)]
+                    draw_text_scaled(cx + 16, col_y + 144, "Sand Clusters", 7, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 168, f"{group_name} (+{k+1} grains)", 11, scale=2)
+                elif sin == SinType.ENVY:
+                    next_k = k + 1
+                    k_eff = next_k + 2
+                    outer_preview = int(1200.0 * (0.8 ** k_eff))
+                    mega_r = outer_preview * 2
+                    draw_text_scaled(cx + 16, col_y + 144, "Tidal Pull (2.0s)", 7, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 168, f"Pull {mega_r}px Radius", 11, scale=2)
+                elif sin == SinType.GREED:
+                    draw_text_scaled(cx + 16, col_y + 144, "Score Multiplier", 7, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 168, "x110% per sand", 11, scale=2)
+                elif sin == SinType.SLOTH:
+                    draw_text_scaled(cx + 16, col_y + 144, "Lazy Reprieve", 7, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 168, "Hurl Hazards Down (2s)", 11, scale=2)
+                elif sin == SinType.LUST:
+                    draw_text_scaled(cx + 16, col_y + 144, "Sand Magnet", 7, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 168, f"{100 + k * 50}px (Permanent)", 11, scale=2)
+                elif sin == SinType.GLUTTONY:
+                    next_k = k + 1
+                    next_fat = (1.0 - (0.90 ** next_k)) * 100.0
+                    draw_text_scaled(cx + 16, col_y + 144, "Fat Grains (3x Pts)", 7, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 168, f"{next_fat:.1f}% Fat (10x Area)", 11, scale=2)
+                elif sin == SinType.WRATH:
+                    draw_text_scaled(cx + 16, col_y + 144, "Wrath Explosion", 7, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 168, "Blast 1200px Radius", 11, scale=2)
+                else:
+                    draw_text_scaled(cx + 16, col_y + 144, f"+{defn.boon_name}", 7, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 168, f"{defn.boon_base} {defn.boon_unit}", 11, scale=2)
 
-            # Curse section
-            draw_text_scaled(cx + 16, col_y + 220, "CON (FOREVER):", 8, scale=2)
-            if sin == SinType.PRIDE:
-                draw_text_scaled(cx + 16, col_y + 244, "Descent Speed", 7, scale=2)
-                draw_text_scaled(cx + 16, col_y + 268, "+25% Fall Velocity", 8, scale=2)
-            elif sin == SinType.GREED:
-                draw_text_scaled(cx + 16, col_y + 244, "Borrowed Time", 7, scale=2)
-                draw_text_scaled(cx + 16, col_y + 268, "10-18s (LETHAL END)", 8, scale=2)
-            elif sin == SinType.ENVY:
-                next_k = k + 1
-                k_eff = next_k + 2
-                outer_preview = int(1200.0 * (0.8 ** k_eff))
-                inner_preview = int(1000.0 * (0.8 ** (k_eff + 1)))
-                draw_text_scaled(cx + 16, col_y + 244, "Vignette Vision", 7, scale=2)
-                draw_text_scaled(cx + 16, col_y + 268, f"{outer_preview}/{inner_preview} px", 8, scale=2)
-            elif sin == SinType.SLOTH:
-                drag = 0.20 * (1.5 ** k) * 100
-                draw_text_scaled(cx + 16, col_y + 244, "Lateral Drag", 7, scale=2)
-                draw_text_scaled(cx + 16, col_y + 268, f"-{drag:.0f}% Steering (Wave)", 8, scale=2)
-            elif sin == SinType.LUST:
-                draw_text_scaled(cx + 16, col_y + 244, "Hazard Magnet", 7, scale=2)
-                draw_text_scaled(cx + 16, col_y + 268, f"{100 + k * 50}px (Permanent)", 8, scale=2)
-            elif sin == SinType.GLUTTONY:
-                next_k = k + 1
-                next_fat = (1.0 - (0.90 ** next_k)) * 100.0
-                draw_text_scaled(cx + 16, col_y + 244, "Fat Glass Shards", 7, scale=2)
-                draw_text_scaled(cx + 16, col_y + 268, f"{next_fat:.1f}% Fat (10x Area)", 8, scale=2)
-            elif sin == SinType.WRATH:
-                draw_text_scaled(cx + 16, col_y + 244, "Zero Yield", 7, scale=2)
-                draw_text_scaled(cx + 16, col_y + 268, "10.0s Zero Yield", 8, scale=2)
-            else:
-                draw_text_scaled(cx + 16, col_y + 244, f"-{defn.curse_name}", 7, scale=2)
-                draw_text_scaled(cx + 16, col_y + 268, f"{defn.curse_base} {defn.curse_unit}", 8, scale=2)
+                # Visual divider
+                pyxel.line(cx + 14, col_y + 206, cx + col_w - 14, col_y + 206, 2)
 
-            # Compounding note
-            draw_text_scaled(cx + 16, col_y + 350, "COMPOUNDS PER PACT", 6, scale=2)
+                # Curse section
+                draw_text_scaled(cx + 16, col_y + 220, "CON (FOREVER):", 8, scale=2)
+                if sin == SinType.PRIDE:
+                    draw_text_scaled(cx + 16, col_y + 244, "Descent Speed", 7, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 268, "+25% Fall Velocity", 8, scale=2)
+                elif sin == SinType.GREED:
+                    draw_text_scaled(cx + 16, col_y + 244, "Borrowed Time", 7, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 268, "10-18s (LETHAL END)", 8, scale=2)
+                elif sin == SinType.ENVY:
+                    next_k = k + 1
+                    k_eff = next_k + 2
+                    outer_preview = int(1200.0 * (0.8 ** k_eff))
+                    inner_preview = int(1000.0 * (0.8 ** (k_eff + 1)))
+                    draw_text_scaled(cx + 16, col_y + 244, "Vignette Vision", 7, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 268, f"{outer_preview}/{inner_preview} px", 8, scale=2)
+                elif sin == SinType.SLOTH:
+                    drag = 0.20 * (1.5 ** k) * 100
+                    draw_text_scaled(cx + 16, col_y + 244, "Lateral Drag", 7, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 268, f"-{drag:.0f}% Steering (Wave)", 8, scale=2)
+                elif sin == SinType.LUST:
+                    draw_text_scaled(cx + 16, col_y + 244, "Hazard Magnet", 7, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 268, f"{100 + k * 50}px (Permanent)", 8, scale=2)
+                elif sin == SinType.GLUTTONY:
+                    next_k = k + 1
+                    next_fat = (1.0 - (0.90 ** next_k)) * 100.0
+                    draw_text_scaled(cx + 16, col_y + 244, "Fat Glass Shards", 7, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 268, f"{next_fat:.1f}% Fat (10x Area)", 8, scale=2)
+                elif sin == SinType.WRATH:
+                    draw_text_scaled(cx + 16, col_y + 244, "Zero Yield", 7, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 268, "10.0s Zero Yield", 8, scale=2)
+                else:
+                    draw_text_scaled(cx + 16, col_y + 244, f"-{defn.curse_name}", 7, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 268, f"{defn.curse_base} {defn.curse_unit}", 8, scale=2)
 
-            # Selection status
-            if is_selected:
-                pyxel.rect(cx + 14, col_y + col_h - 48, col_w - 28, 34, 10)
-                draw_text_scaled(cx + 52, col_y + col_h - 40, "SELECTED", 0, scale=2)
+                # Compounding note
+                draw_text_scaled(cx + 16, col_y + 350, "COMPOUNDS PER PACT", 6, scale=2)
+
+                # Selection status
+                if is_selected:
+                    pyxel.rect(cx + 14, col_y + col_h - 48, col_w - 28, 34, 10)
+                    draw_text_scaled(cx + 52, col_y + col_h - 40, "SELECTED", 0, scale=2)
 
         # Footer instructions
         draw_text_scaled(modal_x + 50, modal_y + modal_h - 44, "STEER LEFT OR RIGHT TO SELECT", 7, scale=2)

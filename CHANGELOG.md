@@ -16,11 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     4. *Shattered Mirror Chasm*: Iridescent violet prism corridors, silver quartz dust, and fractured facets.
     5. *Magma Caldera*: Volcanic obsidian crags, molten basalt flumes, glowing embers, and fiery core.
     6. *Cartographer's Scroll*: Aged sepia parchment, nautical rhumb lines, and compass bearings.
-    7. *Pro Mode (High Contrast Dark)*: High-contrast pure black background, side telemetry depth rulers, and color-blind safe palettes (WCAG AAA).
-    8. *Copper & Verdigris*: Oxidized green patinas, hammered bronze gears, and industrial copper rivets.
-    9. *Solar Flare*: Blinding orange and yellow coronal mass ejections and solar prominence arches.
-    10. *Monochrome Blueprint*: Navy architectural technical blueprint with white drafting grid lines and measurement callouts.
-    11. *Pro Mode (High Contrast Light)*: Clinical white engineering drafting grid, pitch-black obsidian shards, amber sand, and extreme luminance delta.
+    7. *Pro Mode (High Contrast Dark)*: High-contrast pure black background, static major/minor grid lines fixed to screen background, and color-blind safe palettes (WCAG AAA).
+    8. *Pro Mode (High Contrast Light)*: Clinical white engineering drafting grid, static major/minor grid lines fixed to screen background, pitch-black obsidian shards, amber sand, and extreme luminance delta.
+    9. *Copper & Verdigris*: Oxidized green patinas, hammered bronze gears, and industrial copper rivets.
+    10. *Solar Flare*: Blinding orange and yellow coronal mass ejections and solar prominence arches.
+    11. *Monochrome Blueprint*: Navy architectural technical blueprint with white drafting grid lines and measurement callouts.
     12. *Glacial Crevasse*: Sub-zero ice shelf, vertical fissure crevasses, and permafrost ice needles.
     13. *Retro Terminal Matrix*: Monochrome green CRT phosphor terminal, falling digital glyph matrix rain, and scanlines.
     14. *Stealth Mode (E-Reader Dark)*: Formatted computer science specification / RFC documentation scrolling in dark mode terminal, disguised as a technical paper.

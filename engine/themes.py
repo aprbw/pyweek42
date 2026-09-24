@@ -227,37 +227,23 @@ def bg_cartographers_scroll(pyxel, cam_x: int, prog: float, dist: int, screen_w:
 
 
 def bg_pro_mode_dark(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool):
-    """Theme 7: Pro Mode High Contrast Dark (Functional, WCAG AAA contrast, zero noise)."""
-    col_ruler = 8 if is_greed else 5
-    col_dot = 2 if is_greed else 1
-    col_tick_maj = 8 if is_greed else 7
-    col_tick_min = 8 if is_greed else 5
+    """Theme 7: Pro Mode High Contrast Dark (Functional, static CAD grid, zero noise)."""
+    col_minor = 2 if is_greed else 1   # Faint navy / dark purple
+    col_major = 8 if is_greed else 5   # Crisp dark grey
 
-    # Side telemetry depth rulers (left and right)
-    ruler_spacing = 20
-    y_off = int(dist * 0.5) % ruler_spacing
-    left_x = cam_x + 16
-    right_x = cam_x + screen_w - 16
+    # Minor grid lines (every 25px) - completely static to screen back, not following descent
+    for x in range(0, screen_w + 1, 25):
+        if x % 100 != 0:
+            pyxel.line(cam_x + x, 0, cam_x + x, screen_h, col_minor)
+    for y in range(0, screen_h + 1, 25):
+        if y % 100 != 0:
+            pyxel.line(cam_x, y, cam_x + screen_w, y, col_minor)
 
-    pyxel.line(left_x, 0, left_x, screen_h, col_ruler)
-    pyxel.line(right_x, 0, right_x, screen_h, col_ruler)
-
-    for y in range(-ruler_spacing, screen_h + ruler_spacing, ruler_spacing):
-        sy = y - y_off
-        is_major = ((y + int(dist * 0.5)) // ruler_spacing) % 5 == 0
-        tick_len = 8 if is_major else 4
-        c_tick = col_tick_maj if is_major else col_tick_min
-        pyxel.line(left_x, sy, left_x + tick_len, sy, c_tick)
-        pyxel.line(right_x - tick_len, sy, right_x, sy, c_tick)
-
-    # Minimal reference grid dots every 100px (100% clean, no visual noise)
-    grid_sz = 100
-    start_gx = int(cam_x // grid_sz) * grid_sz
-    y_grid_off = int(dist * 0.5) % grid_sz
-    for gx in range(start_gx, cam_x + screen_w + grid_sz, grid_sz):
-        for gy in range(-grid_sz, screen_h + grid_sz, grid_sz):
-            sy = gy - y_grid_off
-            pyxel.pset(gx, sy, col_dot)
+    # Major grid lines (every 100px) - completely static to screen back
+    for x in range(0, screen_w + 1, 100):
+        pyxel.line(cam_x + x, 0, cam_x + x, screen_h, col_major)
+    for y in range(0, screen_h + 1, 100):
+        pyxel.line(cam_x, y, cam_x + screen_w, y, col_major)
 
 
 def bg_copper_and_verdigris(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool):
@@ -323,40 +309,23 @@ def bg_monochrome_blueprint(pyxel, cam_x: int, prog: float, dist: int, screen_w:
 
 
 def bg_pro_mode_light(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool):
-    """Theme 11: Pro Mode High Contrast Light (Clinical technical grid, high luminance, pure functional)."""
-    col_grid = 8 if is_greed else 6
-    col_ruler = 8 if is_greed else 0
-    col_tick_maj = 8 if is_greed else 0
-    col_tick_min = 8 if is_greed else 5
+    """Theme 8: Pro Mode High Contrast Light (Clinical technical grid, high luminance, pure functional)."""
+    col_minor = 2 if is_greed else 6   # Light grey
+    col_major = 8 if is_greed else 5   # Darker slate grey
 
-    # Technical graph drafting grid lines
-    grid_sz = 50
-    start_gx = int(cam_x // grid_sz) * grid_sz
-    y_grid_off = int(dist * 0.5) % grid_sz
+    # Minor grid lines (every 25px) - completely static to screen back, not following descent
+    for x in range(0, screen_w + 1, 25):
+        if x % 100 != 0:
+            pyxel.line(cam_x + x, 0, cam_x + x, screen_h, col_minor)
+    for y in range(0, screen_h + 1, 25):
+        if y % 100 != 0:
+            pyxel.line(cam_x, y, cam_x + screen_w, y, col_minor)
 
-    for gx in range(start_gx, cam_x + screen_w + grid_sz, grid_sz):
-        pyxel.line(gx, 0, gx, screen_h, col_grid)
-
-    for gy in range(-grid_sz, screen_h + grid_sz, grid_sz):
-        sy = gy - y_grid_off
-        pyxel.line(cam_x, sy, cam_x + screen_w, sy, col_grid)
-
-    # Left & right depth calibration ruler
-    ruler_spacing = 20
-    y_off = int(dist * 0.5) % ruler_spacing
-    left_x = cam_x + 16
-    right_x = cam_x + screen_w - 16
-
-    pyxel.line(left_x, 0, left_x, screen_h, col_ruler)
-    pyxel.line(right_x, 0, right_x, screen_h, col_ruler)
-
-    for y in range(-ruler_spacing, screen_h + ruler_spacing, ruler_spacing):
-        sy = y - y_off
-        is_major = ((y + int(dist * 0.5)) // ruler_spacing) % 5 == 0
-        tick_len = 8 if is_major else 4
-        c_tick = col_tick_maj if is_major else col_tick_min
-        pyxel.line(left_x, sy, left_x + tick_len, sy, c_tick)
-        pyxel.line(right_x - tick_len, sy, right_x, sy, c_tick)
+    # Major grid lines (every 100px) - completely static to screen back
+    for x in range(0, screen_w + 1, 100):
+        pyxel.line(cam_x + x, 0, cam_x + x, screen_h, col_major)
+    for y in range(0, screen_h + 1, 100):
+        pyxel.line(cam_x, y, cam_x + screen_w, y, col_major)
 
 
 def bg_glacial_crevasse(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool):
@@ -737,9 +706,20 @@ ALL_THEMES: List[Theme] = [
         hourglass=HourglassPalette(caps=7, cap_hl=7, cap_rivet=0, glass_walls=12, waist_neck=7, sand_a=10, sand_b=7, shadow=0),
         render_bg=bg_pro_mode_dark,
     ),
-    # 8. Copper & Verdigris
+    # 8. Pro Mode (High Contrast Light)
     Theme(
         id=7,
+        name="PRO MODE (HIGH CONTRAST LIGHT)",
+        clear_color=7,
+        greed_clear_color=7,
+        sand=SandPalette(body=9, border=0, glint=10, shadow=0, fat_body=9, fat_border=0, fat_glint=10),
+        shard=ShardPalette(facet=0, border=0, glint=5, shadow=0, fat_facet=8, fat_border=0),
+        hourglass=HourglassPalette(caps=0, cap_hl=5, cap_rivet=0, glass_walls=1, waist_neck=0, sand_a=9, sand_b=10, shadow=5),
+        render_bg=bg_pro_mode_light,
+    ),
+    # 9. Copper & Verdigris
+    Theme(
+        id=8,
         name="COPPER & VERDIGRIS",
         clear_color=4,
         greed_clear_color=2,
@@ -748,9 +728,9 @@ ALL_THEMES: List[Theme] = [
         hourglass=HourglassPalette(caps=4, cap_hl=9, cap_rivet=10, glass_walls=3, waist_neck=7, sand_a=9, sand_b=10, shadow=0),
         render_bg=bg_copper_and_verdigris,
     ),
-    # 9. Solar Flare
+    # 10. Solar Flare
     Theme(
-        id=8,
+        id=9,
         name="SOLAR FLARE",
         clear_color=9,
         greed_clear_color=2,
@@ -759,9 +739,9 @@ ALL_THEMES: List[Theme] = [
         hourglass=HourglassPalette(caps=8, cap_hl=10, cap_rivet=7, glass_walls=7, waist_neck=10, sand_a=7, sand_b=10, shadow=8),
         render_bg=bg_solar_flare,
     ),
-    # 10. Monochrome Blueprint
+    # 11. Monochrome Blueprint
     Theme(
-        id=9,
+        id=10,
         name="MONOCHROME BLUEPRINT",
         clear_color=1,
         greed_clear_color=0,
@@ -769,17 +749,6 @@ ALL_THEMES: List[Theme] = [
         shard=ShardPalette(facet=7, border=1, glint=12, shadow=0, fat_facet=8, fat_border=7),
         hourglass=HourglassPalette(caps=12, cap_hl=7, cap_rivet=7, glass_walls=12, waist_neck=7, sand_a=7, sand_b=12, shadow=0),
         render_bg=bg_monochrome_blueprint,
-    ),
-    # 11. Pro Mode (High Contrast Light)
-    Theme(
-        id=10,
-        name="PRO MODE (HIGH CONTRAST LIGHT)",
-        clear_color=7,
-        greed_clear_color=7,
-        sand=SandPalette(body=9, border=0, glint=10, shadow=0, fat_body=9, fat_border=0, fat_glint=10),
-        shard=ShardPalette(facet=0, border=0, glint=5, shadow=0, fat_facet=8, fat_border=0),
-        hourglass=HourglassPalette(caps=0, cap_hl=5, cap_rivet=0, glass_walls=1, waist_neck=0, sand_a=9, sand_b=10, shadow=5),
-        render_bg=bg_pro_mode_light,
     ),
     # 12. Glacial Crevasse
     Theme(

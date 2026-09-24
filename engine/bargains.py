@@ -15,6 +15,18 @@ class SinType(Enum):
     LUST = auto()
 
 
+# Unique signature color for each Faustian Pact / Bargain Card
+SIN_CARD_COLORS: Dict[SinType, int] = {
+    SinType.PRIDE: 2,       # Imperial Purple
+    SinType.GREED: 9,       # Amber Gold
+    SinType.LUST: 14,       # Hot Passion Pink
+    SinType.ENVY: 3,        # Dark Emerald Green
+    SinType.GLUTTONY: 4,    # Clay / Earthy Brown
+    SinType.WRATH: 8,       # Crimson Blood Red
+    SinType.SLOTH: 1,       # Midnight Navy Blue
+}
+
+
 @dataclass
 class BargainDefinition:
     sin: SinType
