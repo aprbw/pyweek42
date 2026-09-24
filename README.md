@@ -45,15 +45,15 @@ In **Dev Mode** (toggle with `` ` ``), you can freely cycle through **20 complet
 4. **Shattered Mirror Chasm**: Iridescent lavender crystal chasm, reflecting diamond fractures, and prism facets.
 5. **Magma Caldera**: Volcanic caldera, basalt crags, obsidian riverbed, and bubbling liquid lava flumes.
 6. **Cartographer's Scroll**: Antique nautical map parchment, compass rhumb lines, and sea monster territorial borders.
-7. **Bioluminescent Trench**: Oceanic trench with undulating sea kelp fronds and shimmering glowing plankton.
+7. **Pro Mode (High Contrast Dark)**: Pure pitch-black canvas, 100% functional zero-noise clarity, side telemetry depth rulers, and high-visibility color-blind safe palettes (WCAG AAA).
 8. **Copper & Verdigris**: Steampunk weathered bronze, verdigris patina corrosion, and ticking brass gears.
 9. **Solar Flare**: Blinding coronal solar mass ejections, magnetic prominence arcs, and fiery plasma ribbons.
 10. **Monochrome Blueprint**: Engineering architectural drafting cyan blueprint with white millimeter grids.
-11. **Twilight Mirage**: Dusty mauve desert, sunset horizon gradient, and purple desert mirage winds.
+11. **Pro Mode (High Contrast Light)**: Clinical white engineering drafting grid, black obsidian shards, high-contrast amber sand, and extreme luminance delta (>20:1 contrast).
 12. **Glacial Crevasse**: Sub-zero glacial ice sheet, deep blue crevasse crevasses, and permafrost frost needles.
 13. **Retro Terminal Matrix**: Phosphor green cathode-ray tube monitor with falling hexadecimal digital rain.
-14. **Haunted Mausoleum**: Dark gothic stone crypt, ectoplasmic spirit wisps, and crumbling gargoyle masonry.
-15. **Autumn Windstorm**: Russet forest floor, spiraling autumn leaves, and gusting wind vortex squalls.
+14. **Stealth Mode (E-Reader Dark)**: Formatted computer science specification / RFC documentation scrolling in dark mode terminal, disguised as an academic technical paper.
+15. **Stealth Mode (Book Novel Light)**: Antique book page layout with warm cream paper, classical novel prose chapters on borrowed time, margins, and letterpress typography.
 16. **Neon Noir Megacity**: Cyberpunk rainy skyscraper canyon, glowing magenta neon signs, and dark tarmac.
 17. **Liminal Vaporwave**: Pastel pink and cyan retro-futuristic wireframe perspective grid and digital horizon.
 18. **Chalkboard Theory**: Dark classroom slate chalkboard inscribed with theoretical physics equations and integrals.
@@ -220,15 +220,15 @@ python3 -m http.server 8000
     4. *Shattered Mirror Chasm*: Iridescent violet prism corridors, silver quartz dust, and fractured facets.
     5. *Magma Caldera*: Volcanic obsidian crags, molten basalt flumes, glowing embers, and fiery core.
     6. *Cartographer's Scroll*: Aged sepia parchment, nautical rhumb lines, and compass bearings.
-    7. *Bioluminescent Trench*: Abyssal ocean floor with undulating kelp fronds and cyan plankton.
+    7. *Pro Mode (High Contrast Dark)*: High-contrast pure black background, side telemetry depth rulers, and color-blind safe palettes (WCAG AAA).
     8. *Copper & Verdigris*: Oxidized green patinas, hammered bronze gears, and industrial copper rivets.
     9. *Solar Flare*: Blinding orange and yellow coronal mass ejections and solar prominence arches.
     10. *Monochrome Blueprint*: Navy architectural technical blueprint with white drafting grid lines and measurement callouts.
-    11. *Twilight Mirage*: Dusty magenta dunes, fading sunset horizon, and purple dusk wind streaks.
+    11. *Pro Mode (High Contrast Light)*: Clinical white engineering drafting grid, pitch-black obsidian shards, amber sand, and extreme luminance delta.
     12. *Glacial Crevasse*: Sub-zero ice shelf, vertical fissure crevasses, and permafrost ice needles.
     13. *Retro Terminal Matrix*: Monochrome green CRT phosphor terminal, falling digital glyph matrix rain, and scanlines.
-    14. *Haunted Mausoleum*: Ancient stone crypt masonry, ectoplasmic spirit orbs, and gothic arches.
-    15. *Autumn Windstorm*: Swirling russet leaves, wind vortices, and rustic bronze hourglass.
+    14. *Stealth Mode (E-Reader Dark)*: Formatted computer science specification / RFC documentation scrolling in dark mode terminal, disguised as a technical paper.
+    15. *Stealth Mode (Book Novel Light)*: Antique book page layout with warm cream paper, classical novel prose chapters on borrowed time, and margins.
     16. *Neon Noir Megacity*: Rain-slicked cyber metropolis, neon signage, and vertical skyscraper silhouettes.
     17. *Liminal Vaporwave*: Dreamlike pink and periwinkle wireframe grid with neon aesthetic.
     18. *Chalkboard Theory*: Dark slate academic chalkboard with sketched physical equations and calculus integrals.

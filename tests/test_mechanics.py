@@ -1771,6 +1771,43 @@ def test_all_20_divergent_themes_registry():
         assert get_theme(idx + 20).id == idx
 
 
+def test_pro_mode_and_stealth_mode_themes():
+    """Verify the 4 Pro Mode and Stealth Mode themes are registered with proper aesthetics."""
+    from engine.themes import ALL_THEMES, STEALTH_DARK_DOC, STEALTH_LIGHT_DOC
+
+    # Theme 6: Pro Mode High Contrast Dark
+    t6 = ALL_THEMES[6]
+    assert t6.name == "PRO MODE (HIGH CONTRAST DARK)"
+    assert t6.clear_color == 0
+    assert t6.sand.body == 10  # High-vis yellow
+    assert t6.shard.facet == 12  # High-vis cyan
+    assert t6.render_bg.__name__ == "bg_pro_mode_dark"
+
+    # Theme 10: Pro Mode High Contrast Light
+    t10 = ALL_THEMES[10]
+    assert t10.name == "PRO MODE (HIGH CONTRAST LIGHT)"
+    assert t10.clear_color == 7  # Clinical white
+    assert t10.sand.body == 9  # Amber
+    assert t10.shard.facet == 0  # Pitch-black shard for maximum contrast
+    assert t10.render_bg.__name__ == "bg_pro_mode_light"
+
+    # Theme 13: Stealth Mode E-Reader Dark
+    t13 = ALL_THEMES[13]
+    assert t13.name == "STEALTH MODE (E-READER DARK)"
+    assert t13.clear_color == 0
+    assert t13.render_bg.__name__ == "bg_stealth_dark"
+    assert len(STEALTH_DARK_DOC) >= 30
+    assert any("RFC-4209" in line for line in STEALTH_DARK_DOC)
+
+    # Theme 14: Stealth Mode Book Novel Light
+    t14 = ALL_THEMES[14]
+    assert t14.name == "STEALTH MODE (BOOK NOVEL LIGHT)"
+    assert t14.clear_color == 15  # Cream parchment
+    assert t14.render_bg.__name__ == "bg_stealth_light"
+    assert len(STEALTH_LIGHT_DOC) >= 30
+    assert any("CHAPTER IV" in line for line in STEALTH_LIGHT_DOC)
+
+
 def test_all_20_themes_render_without_error():
     """Verify that all 20 themes render cleanly across CHRONOS, KAIROS, and Greed states."""
     import pyxel

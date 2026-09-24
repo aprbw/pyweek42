@@ -10,26 +10,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [v0.19.0] - 2026-09-24
 ### Added
 - **20 Divergent Aesthetic Themes**: Introduced 20 completely unique, cohesive aesthetic themes accessible in real time:
-  1. *SkiFree Sandfall*: Golden rushing braided dunes, amber shadows, sunlit crests, and spray motes.
-  2. *Cosmic Chronometer*: Deep midnight space, concentric planetary orbits, astrolabe celestial ticks.
-  3. *Abyssal Hourglass*: Pitch black void, bioluminescent indigo trails, and crystalline glints.
-  4. *Shattered Mirror Chasm*: Iridescent violet prism corridors, silver quartz dust, and fractured facets.
-  5. *Magma Caldera*: Volcanic obsidian crags, molten basalt flumes, glowing embers, and fiery core.
-  6. *Cartographer's Scroll*: Aged sepia parchment, nautical rhumb lines, and compass bearings.
-  7. *Bioluminescent Trench*: Abyssal ocean floor with undulating kelp fronds and cyan plankton.
-  8. *Copper & Verdigris*: Oxidized green patinas, hammered bronze gears, and industrial copper rivets.
-  9. *Solar Flare*: Blinding orange and yellow coronal mass ejections and solar prominence arches.
-  10. *Monochrome Blueprint*: Navy architectural technical blueprint with white drafting grid lines and measurement callouts.
-  11. *Twilight Mirage*: Dusty magenta dunes, fading sunset horizon, and purple dusk wind streaks.
-  12. *Glacial Crevasse*: Sub-zero ice shelf, vertical fissure crevasses, and permafrost ice needles.
-  13. *Retro Terminal Matrix*: Monochrome green CRT phosphor terminal, falling digital glyph matrix rain, and scanlines.
-  14. *Haunted Mausoleum*: Ancient stone crypt masonry, ectoplasmic spirit orbs, and gothic arches.
-  15. *Autumn Windstorm*: Swirling russet leaves, wind vortices, and rustic bronze hourglass.
-  16. *Neon Noir Megacity*: Rain-slicked cyber metropolis, neon signage, and vertical skyscraper silhouettes.
-  17. *Liminal Vaporwave*: Dreamlike pink and periwinkle wireframe grid with neon aesthetic.
-  18. *Chalkboard Theory*: Dark slate academic chalkboard with sketched physical equations and calculus integrals.
-  19. *Blood Moon Eclipse*: Crimson lunar halo, eclipse corona rays, and dark sanguine dunes.
-  20. *Zen Ink Wash (Sumi-e)*: Minimalist Japanese parchment, black ink wash brush strokes, and red artisan seal.
+    1. *SkiFree Sandfall*: Golden rushing braided dunes, amber shadows, sunlit crests, and spray motes.
+    2. *Cosmic Chronometer*: Deep midnight space, concentric planetary orbits, astrolabe celestial ticks.
+    3. *Abyssal Hourglass*: Pitch black void, bioluminescent indigo trails, and crystalline glints.
+    4. *Shattered Mirror Chasm*: Iridescent violet prism corridors, silver quartz dust, and fractured facets.
+    5. *Magma Caldera*: Volcanic obsidian crags, molten basalt flumes, glowing embers, and fiery core.
+    6. *Cartographer's Scroll*: Aged sepia parchment, nautical rhumb lines, and compass bearings.
+    7. *Pro Mode (High Contrast Dark)*: High-contrast pure black background, side telemetry depth rulers, and color-blind safe palettes (WCAG AAA).
+    8. *Copper & Verdigris*: Oxidized green patinas, hammered bronze gears, and industrial copper rivets.
+    9. *Solar Flare*: Blinding orange and yellow coronal mass ejections and solar prominence arches.
+    10. *Monochrome Blueprint*: Navy architectural technical blueprint with white drafting grid lines and measurement callouts.
+    11. *Pro Mode (High Contrast Light)*: Clinical white engineering drafting grid, pitch-black obsidian shards, amber sand, and extreme luminance delta.
+    12. *Glacial Crevasse*: Sub-zero ice shelf, vertical fissure crevasses, and permafrost ice needles.
+    13. *Retro Terminal Matrix*: Monochrome green CRT phosphor terminal, falling digital glyph matrix rain, and scanlines.
+    14. *Stealth Mode (E-Reader Dark)*: Formatted computer science specification / RFC documentation scrolling in dark mode terminal, disguised as a technical paper.
+    15. *Stealth Mode (Book Novel Light)*: Antique book page layout with warm cream paper, classical novel prose chapters on borrowed time, and margins.
+    16. *Neon Noir Megacity*: Rain-slicked cyber metropolis, neon signage, and vertical skyscraper silhouettes.
+    17. *Liminal Vaporwave*: Dreamlike pink and periwinkle wireframe grid with neon aesthetic.
+    18. *Chalkboard Theory*: Dark slate academic chalkboard with sketched physical equations and calculus integrals.
+    19. *Blood Moon Eclipse*: Crimson lunar halo, eclipse corona rays, and dark sanguine dunes.
+    20. *Zen Ink Wash (Sumi-e)*: Minimalist Japanese parchment, black ink wash brush strokes, and red artisan seal.
 - **Harmonious Entity & Palettes System**:
   - Each theme defines bespoke palettes for sand grains (body, outline, center glint, drop shadow, fat grain styling), glass shards (translucent facet, outline, specular glint, drop shadow, fat shard styling), and player hourglass (caps, cap highlights, rivets, glass walls, waist neck, and dual-tone bulb sands).
 - **Real-Time Theme Switching in Dev Mode**:

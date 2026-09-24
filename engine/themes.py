@@ -226,26 +226,38 @@ def bg_cartographers_scroll(pyxel, cam_x: int, prog: float, dist: int, screen_w:
         pyxel.line(cam_x, sy, cam_x + screen_w, sy, col_grid)
 
 
-def bg_bioluminescent_trench(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool):
-    """Theme 7: Bioluminescent Trench (Underwater seafoam geothermal vents & marine snow)."""
-    col_vent = 8 if is_greed else 11
-    col_snow = 14 if is_greed else 6
+def bg_pro_mode_dark(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool):
+    """Theme 7: Pro Mode High Contrast Dark (Functional, WCAG AAA contrast, zero noise)."""
+    col_ruler = 8 if is_greed else 5
+    col_dot = 2 if is_greed else 1
+    col_tick_maj = 8 if is_greed else 7
+    col_tick_min = 8 if is_greed else 5
 
-    # Geothermal vent plumes rising up
-    start_v = int((cam_x - 40) // 90) * 90
-    for vx in range(start_v, cam_x + screen_w + 40, 90):
-        for seg in range(0, screen_h, 16):
-            sy = (seg - int(dist * 1.35)) % screen_h
-            drift = int(8 * math.sin(sy * 0.018 + vx))
-            pyxel.pset(vx + drift, sy, col_vent)
-            pyxel.pset(vx + drift + 1, sy + 1, col_vent)
+    # Side telemetry depth rulers (left and right)
+    ruler_spacing = 20
+    y_off = int(dist * 0.5) % ruler_spacing
+    left_x = cam_x + 16
+    right_x = cam_x + screen_w - 16
 
-    # Floating marine snow motes
-    for i in range(18):
-        h = (cam_x + i * 83) ^ int(dist * 0.8)
-        mx = cam_x + (h % screen_w)
-        my = (i * 45 - int(dist * 0.9)) % screen_h
-        pyxel.pset(mx, my, col_snow)
+    pyxel.line(left_x, 0, left_x, screen_h, col_ruler)
+    pyxel.line(right_x, 0, right_x, screen_h, col_ruler)
+
+    for y in range(-ruler_spacing, screen_h + ruler_spacing, ruler_spacing):
+        sy = y - y_off
+        is_major = ((y + int(dist * 0.5)) // ruler_spacing) % 5 == 0
+        tick_len = 8 if is_major else 4
+        c_tick = col_tick_maj if is_major else col_tick_min
+        pyxel.line(left_x, sy, left_x + tick_len, sy, c_tick)
+        pyxel.line(right_x - tick_len, sy, right_x, sy, c_tick)
+
+    # Minimal reference grid dots every 100px (100% clean, no visual noise)
+    grid_sz = 100
+    start_gx = int(cam_x // grid_sz) * grid_sz
+    y_grid_off = int(dist * 0.5) % grid_sz
+    for gx in range(start_gx, cam_x + screen_w + grid_sz, grid_sz):
+        for gy in range(-grid_sz, screen_h + grid_sz, grid_sz):
+            sy = gy - y_grid_off
+            pyxel.pset(gx, sy, col_dot)
 
 
 def bg_copper_and_verdigris(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool):
@@ -310,23 +322,41 @@ def bg_monochrome_blueprint(pyxel, cam_x: int, prog: float, dist: int, screen_w:
             pyxel.line(cam_x + 10, sy - 4, cam_x + 10, sy + 4, col_line)
 
 
-def bg_twilight_mirage(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool):
-    """Theme 11: Twilight Mirage (Lavender dune waves and violet dusk horizons)."""
-    col_dune = 8 if is_greed else 13
-    col_haze = 0 if is_greed else 14
+def bg_pro_mode_light(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool):
+    """Theme 11: Pro Mode High Contrast Light (Clinical technical grid, high luminance, pure functional)."""
+    col_grid = 8 if is_greed else 6
+    col_ruler = 8 if is_greed else 0
+    col_tick_maj = 8 if is_greed else 0
+    col_tick_min = 8 if is_greed else 5
 
-    spacing = 110
-    y_off = int(dist * 0.55) % spacing
-    for base_y in range(-spacing, screen_h + spacing, spacing):
-        sy = base_y - y_off
-        prev_x = cam_x
-        prev_y = sy + int(20 * math.sin((cam_x + base_y) * 0.01))
-        for x in range(cam_x + 6, cam_x + screen_w + 6, 6):
-            cur_y = sy + int(20 * math.sin((x + base_y) * 0.01))
-            pyxel.line(prev_x, prev_y, x, cur_y, col_dune)
-            if x % 16 == 0:
-                pyxel.pset(x, cur_y + 1, col_haze)
-            prev_x, prev_y = x, cur_y
+    # Technical graph drafting grid lines
+    grid_sz = 50
+    start_gx = int(cam_x // grid_sz) * grid_sz
+    y_grid_off = int(dist * 0.5) % grid_sz
+
+    for gx in range(start_gx, cam_x + screen_w + grid_sz, grid_sz):
+        pyxel.line(gx, 0, gx, screen_h, col_grid)
+
+    for gy in range(-grid_sz, screen_h + grid_sz, grid_sz):
+        sy = gy - y_grid_off
+        pyxel.line(cam_x, sy, cam_x + screen_w, sy, col_grid)
+
+    # Left & right depth calibration ruler
+    ruler_spacing = 20
+    y_off = int(dist * 0.5) % ruler_spacing
+    left_x = cam_x + 16
+    right_x = cam_x + screen_w - 16
+
+    pyxel.line(left_x, 0, left_x, screen_h, col_ruler)
+    pyxel.line(right_x, 0, right_x, screen_h, col_ruler)
+
+    for y in range(-ruler_spacing, screen_h + ruler_spacing, ruler_spacing):
+        sy = y - y_off
+        is_major = ((y + int(dist * 0.5)) // ruler_spacing) % 5 == 0
+        tick_len = 8 if is_major else 4
+        c_tick = col_tick_maj if is_major else col_tick_min
+        pyxel.line(left_x, sy, left_x + tick_len, sy, c_tick)
+        pyxel.line(right_x - tick_len, sy, right_x, sy, c_tick)
 
 
 def bg_glacial_crevasse(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool):
@@ -367,38 +397,168 @@ def bg_retro_terminal_matrix(pyxel, cam_x: int, prog: float, dist: int, screen_w
         pyxel.line(cam_x, y, cam_x + screen_w, y, 0)
 
 
-def bg_haunted_mausoleum(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool):
-    """Theme 14: Haunted Mausoleum (Gothic fluted marble cathedral columns & arch traceries)."""
-    col_arch = 8 if is_greed else 6
-    col_shade = 0 if is_greed else 1
+STEALTH_DARK_DOC = [
+    "[ RFC-4209: SPECIFICATION OF TEMPORAL FLOW & STATE COMPACTION ]",
+    "Status: Informational / Standards Track                      Category: Core Systems",
+    "================================================================================",
+    "",
+    "1. INTRODUCTION AND MATHEMATICAL FOUNDATIONS",
+    "The discrete temporal engine operates on non-inertial phase-space coordinates.",
+    "Let S(t) = {x(t), y(t), v_x(t), v_y(t)} represent the state of an active grain.",
+    "Under uniform gravitational drift g = 9.81 m/s^2, the Lagrangian reduces to:",
+    "      L(x, v, t) = 0.5 * m * |v|^2 - U(x, t) + lambda(t) * Phi(x)",
+    "where Phi(x) defines the hyperbolic throat boundaries of the vessel manifold.",
+    "",
+    "2. THE ENTROPY-MOMENTUM BALANCE LEMMA",
+    "Theorem 2.1 (Entropic Debt Invariance):",
+    "In any closed chronological continuum, borrowed time must be repaid with parity.",
+    "Any cumulative phase variance Delta_T > 0 generates localized micro-fractures,",
+    "projected into coordinate space as high-reflectance crystalline shards.",
+    "",
+    "Proof: Integrating total phase divergence over spatial domain Omega:",
+    "      oint_{dOmega} J_temporal . n dA = -d/dt (System_Entropy)",
+    "As d/dt(Entropy) approaches singularity, boundary elasticity drops to zero.",
+    "",
+    "3. PSEUDOCODE: GRANULAR TRAJECTORY PROPAGATION",
+    "function propagate_grain(grain: StateVector, dt: float, field: FlowField):",
+    "    grain.vy <- clamp(grain.vy + GRAVITY * dt, -TERMINAL_VELOCITY, TERMINAL_VELOCITY)",
+    "    grain.vx <- grain.vx * DAMPING_FACTOR + grain.steering_force * LATERAL_IMPULSE",
+    "    if detect_boundary_collision(grain.x, grain.y, field.neck_profile):",
+    "        grain.vx <- -grain.vx * RESTITUTION_COEFFICIENT",
+    "        emit_collision_telemetry(grain.id, grain.energy)",
+    "    yield grain",
+    "end function",
+    "",
+    "4. RELATIVISTIC KAIROS DILATION",
+    "During Kairos events, subjective frame delta tau scales inversely with velocity.",
+    "Sub-luminal drift provides granular resolution for precision lateral steering.",
+    "Warning: Engaging Greed state triggers irreversible boundary decay cascades.",
+    "",
+    "5. EMPIRICAL BENCHMARK OBSERVATIONS",
+    "Run Count: 10,000 automated cycles across 20 divergent topological domains.",
+    "Mean survival depth: 1,428 units. Maximum debt repayment recorded: 99.8%.",
+    "System status: NOMINAL. Memory footprint: 48.2 KB. Garbage collection: IDLE.",
+    "Thread 0: RUNNING. Thread 1: STREAMING. Cache line hit rate: 99.4%.",
+    "",
+    "6. APPENDIX A: SYSTEM PARAMETERS & CONSTANTS",
+    "  * GRAVITY_ACCEL   = 0.35 px/frame^2",
+    "  * TERMINAL_FALL   = 8.50 px/frame",
+    "  * RESTITUTION     = 0.42 (semi-elastic glass collision)",
+    "  * SHARD_COLLISION = TRUE (instantaneous damage callback)",
+    "  * GREED_MULTIPLIER= 2.00x score / 1.50x peril",
+    "",
+    "7. ERROR RECOVERY & BOUNDARY RESTORATION",
+    "In event of catastrophic shard impact, state reverts to last stable checkpoint.",
+    "Entropy penalty is amortized over remaining sand reservoir volume.",
+    "All telemetry logs are mirrored to local persistent storage.",
+    "",
+    "--------------------------------------------------------------------------------",
+    "// END OF RFC-4209 SECTION // CONTINUOUS SCROLL ACTIVE // ALL SYSTEMS NOMINAL //",
+    "",
+]
 
-    col_spacing = 130
-    start_x = int((cam_x - 40) // col_spacing) * col_spacing
-    for cx in range(start_x, cam_x + screen_w + 40, col_spacing):
-        pyxel.line(cx, 0, cx, screen_h, col_arch)
-        pyxel.line(cx + 1, 0, cx + 1, screen_h, col_shade)
-        # Gothic arch ribs
-        for y in range(0, screen_h, 160):
-            sy = (y - int(dist * 0.5)) % screen_h
-            pyxel.line(cx, sy, cx + 30, sy - 30, col_arch)
-            pyxel.line(cx + col_spacing, sy, cx + col_spacing - 30, sy - 30, col_arch)
+
+def bg_stealth_dark(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool):
+    """Theme 14: Stealth Mode E-Reader Dark (Terminal documentation / paper reading disguise)."""
+    col_text = 8 if is_greed else 5
+    col_head = 8 if is_greed else 6
+    col_decor = 8 if is_greed else 1
+
+    line_spacing = 18
+    total_h = len(STEALTH_DARK_DOC) * line_spacing
+    scroll_y = int(dist * 0.4) % total_h
+
+    # IDE / E-reader margin gutters
+    pyxel.line(cam_x + 18, 0, cam_x + 18, screen_h, col_decor)
+    pyxel.line(cam_x + screen_w - 18, 0, cam_x + screen_w - 18, screen_h, col_decor)
+
+    # Render continuous technical text
+    text_x = cam_x + 24
+    for idx, line in enumerate(STEALTH_DARK_DOC):
+        sy = (idx * line_spacing - scroll_y) % total_h
+        if -16 <= sy <= screen_h + 16:
+            c = col_head if (line.startswith("[") or (len(line) > 2 and line[0].isdigit() and line[1] == ".")) else col_text
+            pyxel.text(text_x, sy, line, c)
 
 
-def bg_autumn_windstorm(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool):
-    """Theme 15: Autumn Windstorm (Swirling amber leaves, cedar boughs, gust vectors)."""
-    col_leaf = 8 if is_greed else 9
-    col_gold = 10
-    col_gust = 0 if is_greed else 7
+STEALTH_LIGHT_DOC = [
+    "CHAPTER IV",
+    "THE ARCHITECTURE OF BORROWED SECONDS",
+    "",
+    "The sand did not fall as water falls, with heedless and unbroken grace.",
+    "It fell grain by solitary grain, each tiny sphere a fragment of an hour",
+    "measured out and spent before the sun had risen over the eastern cliffs.",
+    "In the dim stillness between two heartbeats, a single mote hesitated,",
+    "catching the golden daylight that filtered through the narrow glass neck.",
+    "",
+    "To borrow time, as the old horologists of Alexandria were fond of noting,",
+    "is to enter into an irrevocable covenant with the inevitable.",
+    "One does not truly possess the hours stolen from tomorrow; one merely",
+    "delays the reckoning, carrying the mounting weight upon slender glass walls.",
+    "",
+    "\"Look down,\" she whispered, leaning over the carved brass balustrade.",
+    "\"Do you see the shards gleaming among the drifts of dark quartz dust?",
+    "Those are the memories that could not survive the narrow constriction.\"",
+    "Every glass must narrow at its waist; that is the law of its design.",
+    "Without that choke, there would be no count, no rhythm, no urgency.",
+    "There would be only eternity, flat and barren as an untracked dune.",
+    "",
+    "He watched the amber stream accelerate, pulled downward by an unyielding",
+    "tether that no prayer could sever. The air in the chamber grew dense",
+    "with the dry scent of powdered stone and ancient afternoon sunbeams.",
+    "To steer through this torrent was not a matter of strength, but of quiet",
+    "submission to the flow, leaning gently into the eddies where the sand",
+    "parted, ever mindful of the sharp edges waiting in the shadow.",
+    "",
+    "A second struck. Then another. The count resumed its steady pace.",
+    "And in that quiet descent, the debt was paid in full.",
+    "",
+    "- = - = - = - = - = - = - = - = - = - = - = - = - = - = - = - = -",
+    "",
+    "CHAPTER V",
+    "THE WEIGHT OF THE LOWER CHAMBER",
+    "",
+    "When the upper bulb has emptied, the world does not end.",
+    "It simply waits for a patient hand to turn the world upside down.",
+    "Every fall is merely the prelude to the great inversion.",
+    "Yet until that turning comes, the downward journey is all that remains.",
+    "We gather the scattered grains, each one a promise kept against the dark.",
+    "The walls tremble as the wind rises outside the tower.",
+    "Still the glass holds. Still the amber river flows unbroken.",
+    "",
+    "The shadow of the gnomon shifts across the marble floor.",
+    "No breath is wasted. Every grain recovered is an extra heartbeat.",
+    "",
+    "- = - = - = - = - = - = - = - = - = - = - = - = - = - = - = - = -",
+    "",
+    "[ Continued on page 86 ... ]",
+    "",
+]
 
-    for i in range(25):
-        h = (cam_x + i * 79) ^ int(dist * 0.7)
-        lx = cam_x + (h % screen_w)
-        ly = (i * 35 - int(dist * 1.25)) % screen_h
-        # Little 2x2 leaf cluster
-        pyxel.pset(lx, ly, col_leaf if i % 2 == 0 else col_gold)
-        pyxel.pset(lx + 1, ly + 1, col_leaf)
-        if i % 4 == 0:
-            pyxel.line(lx, ly, lx + 8, ly - 3, col_gust)
+
+def bg_stealth_light(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool):
+    """Theme 15: Stealth Mode Book Novel Light (Antique paper novel / literary prose reading disguise)."""
+    col_ink = 8 if is_greed else 0
+    col_rule = 8 if is_greed else 4
+    col_chapter = 8 if is_greed else 4
+
+    line_spacing = 19
+    total_h = len(STEALTH_LIGHT_DOC) * line_spacing
+    scroll_y = int(dist * 0.4) % total_h
+
+    # Page margins (book layout)
+    margin_l = cam_x + 28
+    margin_r = cam_x + screen_w - 28
+    pyxel.line(margin_l, 0, margin_l, screen_h, col_rule)
+    pyxel.line(margin_r, 0, margin_r, screen_h, col_rule)
+
+    # Render literary text lines
+    text_x = cam_x + 36
+    for idx, line in enumerate(STEALTH_LIGHT_DOC):
+        sy = (idx * line_spacing - scroll_y) % total_h
+        if -16 <= sy <= screen_h + 16:
+            c = col_chapter if (line.startswith("CHAPTER") or line.startswith("THE ARCHITECTURE") or line.startswith("THE WEIGHT")) else col_ink
+            pyxel.text(text_x, sy, line, c)
 
 
 def bg_neon_noir_megacity(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool):
@@ -566,16 +726,16 @@ ALL_THEMES: List[Theme] = [
         hourglass=HourglassPalette(caps=4, cap_hl=9, cap_rivet=10, glass_walls=4, waist_neck=7, sand_a=9, sand_b=10, shadow=4),
         render_bg=bg_cartographers_scroll,
     ),
-    # 7. Bioluminescent Trench
+    # 7. Pro Mode (High Contrast Dark)
     Theme(
         id=6,
-        name="BIOLUMINESCENT TRENCH",
+        name="PRO MODE (HIGH CONTRAST DARK)",
         clear_color=0,
-        greed_clear_color=2,
-        sand=SandPalette(body=11, border=3, glint=7, shadow=0, fat_body=11, fat_border=3, fat_glint=7),
-        shard=ShardPalette(facet=1, border=11, glint=7, shadow=0, fat_facet=8, fat_border=7),
-        hourglass=HourglassPalette(caps=3, cap_hl=11, cap_rivet=7, glass_walls=12, waist_neck=7, sand_a=11, sand_b=12, shadow=0),
-        render_bg=bg_bioluminescent_trench,
+        greed_clear_color=0,
+        sand=SandPalette(body=10, border=0, glint=7, shadow=0, fat_body=10, fat_border=0, fat_glint=7),
+        shard=ShardPalette(facet=12, border=0, glint=7, shadow=0, fat_facet=8, fat_border=7),
+        hourglass=HourglassPalette(caps=7, cap_hl=7, cap_rivet=0, glass_walls=12, waist_neck=7, sand_a=10, sand_b=7, shadow=0),
+        render_bg=bg_pro_mode_dark,
     ),
     # 8. Copper & Verdigris
     Theme(
@@ -610,16 +770,16 @@ ALL_THEMES: List[Theme] = [
         hourglass=HourglassPalette(caps=12, cap_hl=7, cap_rivet=7, glass_walls=12, waist_neck=7, sand_a=7, sand_b=12, shadow=0),
         render_bg=bg_monochrome_blueprint,
     ),
-    # 11. Twilight Mirage
+    # 11. Pro Mode (High Contrast Light)
     Theme(
         id=10,
-        name="TWILIGHT MIRAGE",
-        clear_color=2,
-        greed_clear_color=0,
-        sand=SandPalette(body=10, border=2, glint=14, shadow=0, fat_body=10, fat_border=2, fat_glint=14),
-        shard=ShardPalette(facet=14, border=2, glint=7, shadow=0, fat_facet=8, fat_border=7),
-        hourglass=HourglassPalette(caps=2, cap_hl=14, cap_rivet=7, glass_walls=13, waist_neck=7, sand_a=10, sand_b=14, shadow=0),
-        render_bg=bg_twilight_mirage,
+        name="PRO MODE (HIGH CONTRAST LIGHT)",
+        clear_color=7,
+        greed_clear_color=7,
+        sand=SandPalette(body=9, border=0, glint=10, shadow=0, fat_body=9, fat_border=0, fat_glint=10),
+        shard=ShardPalette(facet=0, border=0, glint=5, shadow=0, fat_facet=8, fat_border=0),
+        hourglass=HourglassPalette(caps=0, cap_hl=5, cap_rivet=0, glass_walls=1, waist_neck=0, sand_a=9, sand_b=10, shadow=5),
+        render_bg=bg_pro_mode_light,
     ),
     # 12. Glacial Crevasse
     Theme(
@@ -643,27 +803,27 @@ ALL_THEMES: List[Theme] = [
         hourglass=HourglassPalette(caps=3, cap_hl=11, cap_rivet=7, glass_walls=3, waist_neck=11, sand_a=11, sand_b=3, shadow=0),
         render_bg=bg_retro_terminal_matrix,
     ),
-    # 14. Haunted Mausoleum
+    # 14. Stealth Mode (E-Reader Dark)
     Theme(
         id=13,
-        name="HAUNTED MAUSOLEUM",
-        clear_color=5,
-        greed_clear_color=2,
-        sand=SandPalette(body=15, border=0, glint=7, shadow=0, fat_body=15, fat_border=0, fat_glint=7),
-        shard=ShardPalette(facet=0, border=5, glint=7, shadow=0, fat_facet=8, fat_border=7),
-        hourglass=HourglassPalette(caps=0, cap_hl=6, cap_rivet=7, glass_walls=5, waist_neck=7, sand_a=15, sand_b=7, shadow=0),
-        render_bg=bg_haunted_mausoleum,
+        name="STEALTH MODE (E-READER DARK)",
+        clear_color=0,
+        greed_clear_color=0,
+        sand=SandPalette(body=10, border=0, glint=7, shadow=0, fat_body=10, fat_border=0, fat_glint=7),
+        shard=ShardPalette(facet=8, border=0, glint=7, shadow=0, fat_facet=8, fat_border=7),
+        hourglass=HourglassPalette(caps=5, cap_hl=6, cap_rivet=7, glass_walls=6, waist_neck=12, sand_a=10, sand_b=7, shadow=0),
+        render_bg=bg_stealth_dark,
     ),
-    # 15. Autumn Windstorm
+    # 15. Stealth Mode (Book Novel Light)
     Theme(
         id=14,
-        name="AUTUMN WINDSTORM",
-        clear_color=4,
-        greed_clear_color=2,
-        sand=SandPalette(body=10, border=4, glint=7, shadow=0, fat_body=10, fat_border=4, fat_glint=7),
-        shard=ShardPalette(facet=4, border=0, glint=9, shadow=0, fat_facet=8, fat_border=0),
-        hourglass=HourglassPalette(caps=4, cap_hl=9, cap_rivet=10, glass_walls=9, waist_neck=7, sand_a=10, sand_b=9, shadow=0),
-        render_bg=bg_autumn_windstorm,
+        name="STEALTH MODE (BOOK NOVEL LIGHT)",
+        clear_color=15,
+        greed_clear_color=15,
+        sand=SandPalette(body=9, border=4, glint=10, shadow=4, fat_body=9, fat_border=4, fat_glint=10),
+        shard=ShardPalette(facet=8, border=4, glint=7, shadow=4, fat_facet=8, fat_border=0),
+        hourglass=HourglassPalette(caps=4, cap_hl=9, cap_rivet=10, glass_walls=0, waist_neck=7, sand_a=9, sand_b=10, shadow=4),
+        render_bg=bg_stealth_light,
     ),
     # 16. Neon Noir Megacity
     Theme(
