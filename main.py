@@ -594,12 +594,15 @@ class GrainOfDoubtApp:
             "pacts": active_pacts,
         }
 
+        # Compute descent distance (continuous falling distance in-game, gentle drift on title)
+        dist = int(self.state.distance) if self.state.distance > 0 else int(pyxel.frame_count * 3.0)
+
         # Render procedural background for active theme
         theme.render(
             pyxel,
             cam_x=cam_x,
             prog=prog,
-            dist=int(self.entities.player.y),
+            dist=dist,
             screen_w=self.SCREEN_WIDTH,
             screen_h=self.SCREEN_HEIGHT,
             is_greed=self.state.greed_active,

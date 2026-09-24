@@ -70,61 +70,70 @@ class Theme:
 
 def bg_sand_dunes_landscape(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool, telemetry: Optional[dict] = None):
     """Continuous 2D procedural landscape of undulating sand dunes.
-    Topology Engine: Layered negative space curves, supra-canvas horizon projection, inverse Z-depth velocity.
-    Shadow Mapping: Localized vertical linear gradients within wave geometries (dark superior, light inferior).
+    Topology Engine: Layered negative space curves, supra-canvas horizon projection, continuous upward perspective motion.
+    Shadow Mapping: Localized vertical linear gradients within wave geometries (dark superior crest, light inferior base).
     Atmospheric Scattering: Distal layers bleach optically into desaturated ambient haze, proximal retain saturation.
+    Seamless Infinite Arena: Generates and draws directly across world coordinates matching cam_x.
     """
     horizon_y = -140
-    num_layers = 16
-    u_min = 1.0 / (screen_h - horizon_y + 100)
-    u_max = 1.0 / max(10, (25 - horizon_y))
-    step_u = (u_max - u_min) / float(num_layers)
-    u_range = u_max - u_min
-    speed_u = 0.000006
+    C = 1200.0
+    delta_z = 0.42
+    speed_z = 0.003
+
+    z_near = C / (screen_h - horizon_y + 120.0)  # ~ 1.132
+    z_far = C / (-30.0 - horizon_y)              # ~ 10.91
+
+    # As dist increases, travel_z increases, causing all dunes to move UP towards the horizon
+    travel_z = dist * speed_z
+    min_d = int(math.floor((travel_z - z_far) / delta_z))
+    max_d = int(math.ceil((travel_z - z_near) / delta_z))
 
     layers = []
-    for k in range(num_layers):
-        u = u_min + ((k * step_u + dist * speed_u) % u_range)
-        y_base = horizon_y + 1.0 / u
-        layers.append((y_base, k))
+    for d in range(min_d, max_d + 1):
+        z = travel_z - d * delta_z
+        if z <= 0.2:
+            continue
+        y = horizon_y + C / z
+        layers.append((d, z, y))
 
-    layers.sort(key=lambda item: item[0])
+    # Sort layers back-to-front: furthest away (smallest Y, largest Z) to closest (largest Y, smallest Z)
+    layers.sort(key=lambda item: item[2])
 
     step_x = 2
-    x_samples = list(range(0, screen_w + step_x, step_x))
-    curve_profiles = []
+    start_x = int(cam_x // step_x) * step_x
+    x_samples = list(range(start_x, start_x + screen_w + step_x, step_x))
     total_span_y = float(screen_h - horizon_y)
 
-    for y_base, k in layers:
+    curve_profiles = []
+    for d, z, y_base in layers:
         s = max(0.0, min(1.0, (y_base - horizon_y) / total_span_y))
-        amp = 85.0 * (s ** 1.35)
+        amp = 90.0 * (s ** 1.30)
 
-        k1 = 0.007 + 0.010 * (1.0 - s)
-        k2 = 0.016 + 0.018 * (1.0 - s)
-        k3 = 0.035 + 0.025 * (1.0 - s)
+        k1 = 0.006 + 0.010 * (1.0 - s)
+        k2 = 0.015 + 0.018 * (1.0 - s)
+        k3 = 0.032 + 0.025 * (1.0 - s)
 
-        phi1 = k * 2.39996 + 0.4
-        phi2 = k * 4.12345 + 1.1
-        phi3 = k * 1.71828
+        phi1 = (d * 2.39996 + 0.4) % (2 * math.pi)
+        phi2 = (d * 4.12345 + 1.1) % (2 * math.pi)
+        phi3 = (d * 1.71828) % (2 * math.pi)
 
         y_curve = {}
-        for x in x_samples:
-            xw = cam_x + x
+        for xw in x_samples:
             w1 = math.sin(k1 * xw + phi1)
             w2 = math.sin(k2 * xw + phi2) * 0.38
             w3 = math.cos(k3 * xw + phi3) * 0.14
-            y_curve[x] = int(y_base - amp * (w1 + w2 + w3))
+            y_curve[xw] = int(y_base - amp * (w1 + w2 + w3))
 
-        curve_profiles.append((y_base, s, k, y_curve))
+        curve_profiles.append((y_base, s, d, y_curve))
 
     num_profiles = len(curve_profiles)
     for i in range(num_profiles):
-        y_base, s, k, y_curve = curve_profiles[i]
+        y_base, s, d, y_curve = curve_profiles[i]
         next_curve = curve_profiles[i + 1][3] if (i + 1 < num_profiles) else None
 
-        for x in x_samples:
-            y_top = max(0, min(screen_h, y_curve[x]))
-            y_bot = screen_h if next_curve is None else max(0, min(screen_h, next_curve[x]))
+        for xw in x_samples:
+            y_top = max(0, min(screen_h, y_curve[xw]))
+            y_bot = screen_h if next_curve is None else max(y_top, min(screen_h, next_curve[xw]))
             if y_bot <= y_top:
                 continue
 
@@ -135,7 +144,7 @@ def bg_sand_dunes_landscape(pyxel, cam_x: int, prog: float, dist: int, screen_w:
                     c_top, c_mid, c_bot = 0, 2, 8
                     t1 = int(y_top + span * 0.25)
                     t2 = int(y_top + span * 0.65)
-                elif s > 0.32:
+                elif s > 0.30:
                     c_top, c_mid, c_bot = 2, 8, 14
                     t1 = int(y_top + span * 0.28)
                     t2 = int(y_top + span * 0.70)
@@ -152,7 +161,7 @@ def bg_sand_dunes_landscape(pyxel, cam_x: int, prog: float, dist: int, screen_w:
                     c_top, c_mid, c_bot = 4, 9, 10
                     t1 = int(y_top + span * 0.22)
                     t2 = int(y_top + span * 0.62)
-                elif s > 0.32:
+                elif s > 0.30:
                     c_top, c_mid, c_bot = 9, 10, 15
                     t1 = int(y_top + span * 0.26)
                     t2 = int(y_top + span * 0.68)
@@ -161,12 +170,14 @@ def bg_sand_dunes_landscape(pyxel, cam_x: int, prog: float, dist: int, screen_w:
                     t1 = int(y_top + span * 0.32)
                     t2 = int(y_top + span * 0.72)
 
+            # Draw at world coordinate xw (Pyxel camera automatically offsets by cam_x to fill viewport)
             if t1 > y_top:
-                pyxel.rect(x, y_top, step_x, t1 - y_top, c_top)
+                pyxel.rect(xw, y_top, step_x, t1 - y_top, c_top)
             if t2 > t1:
-                pyxel.rect(x, t1, step_x, t2 - t1, c_mid)
+                pyxel.rect(xw, t1, step_x, t2 - t1, c_mid)
             if y_bot > t2:
-                pyxel.rect(x, t2, step_x, y_bot - t2, c_bot)
+                pyxel.rect(xw, t2, step_x, y_bot - t2, c_bot)
+
 
 
 def bg_skifree_sandfall(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool, telemetry: Optional[dict] = None):

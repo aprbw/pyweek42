@@ -1948,8 +1948,19 @@ def test_sand_dunes_landscape_script_and_topology_engine():
     assert sim.horizon_y < 0, "Horizon must be supra-canvas (above canvas)"
     assert sim.num_layers >= 12
 
+    # Verify upward perspective motion: as dist increases, each dune moves UP towards the horizon (Y decreases)
+    # Z(D, dist) = dist * speed_z - D * delta_z; Y = horizon_y + C / Z
+    dune_d = 0
+    travel_z1 = 100 * 0.003
+    travel_z2 = 500 * 0.003
+    z1 = travel_z1 - dune_d * 0.42
+    z2 = travel_z2 - dune_d * 0.42
+    y1 = sim.horizon_y + 1200.0 / z1
+    y2 = sim.horizon_y + 1200.0 / z2
+    assert y2 < y1, f"Dunes must move UP (Y decreases) as dist increases: y1={y1:.1f}, y2={y2:.1f}"
+
     # Verify translation velocity factor: bottom (Y=800) vs top (Y=50)
-    # dY/du = (Y - horizon_y)^2
+    # dY/dt = -(v/C) * (Y - horizon_y)^2
     vel_bottom = (800 - sim.horizon_y) ** 2
     vel_top = (50 - sim.horizon_y) ** 2
     assert vel_bottom > vel_top * 10, f"Bottom must translate >10x faster than top (perspective convergence). Ratio: {vel_bottom/vel_top:.1f}"

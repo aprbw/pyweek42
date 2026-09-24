@@ -35,9 +35,10 @@ except ImportError:
 SCREEN_WIDTH = 600
 SCREEN_HEIGHT = 800
 DEFAULT_HORIZON_Y = -140   # Supra-canvas horizon point (above canvas)
-NUM_LAYERS = 16            # Discrete depth layers
-SPEED_U = 0.000006         # Inverse-depth translation velocity
-MAX_AMPLITUDE = 85.0       # Maximum wave peak-to-trough amplitude in foreground
+PROJECTION_C = 1200.0      # Perspective scaling constant
+DELTA_Z = 0.42             # Discrete depth spacing in world space
+SPEED_Z = 0.003            # Perspective translation velocity along Z
+MAX_AMPLITUDE = 90.0       # Maximum wave peak-to-trough amplitude in foreground
 SAMPLE_STEP_X = 2          # Horizontal curve sampling step (px)
 
 
@@ -49,13 +50,12 @@ class SandDunesLandscape:
         screen_w: int = SCREEN_WIDTH,
         screen_h: int = SCREEN_HEIGHT,
         horizon_y: int = DEFAULT_HORIZON_Y,
-        num_layers: int = NUM_LAYERS,
         headless: bool = False,
     ):
         self.screen_w = screen_w
         self.screen_h = screen_h
         self.horizon_y = horizon_y
-        self.num_layers = num_layers
+        self.num_layers = 25
         self.headless = headless
 
         # Simulation telemetry
@@ -65,16 +65,6 @@ class SandDunesLandscape:
         self.lateral_speed = 0.0
         self.is_paused = False
         self.scattering_mode = 0  # 0: Standard desert haze, 1: High noon bleaching, 2: Sunset glow
-
-        # Precompute depth bounds in inverse space (u = 1 / (Y - horizon_y))
-        # At canvas bottom (plus margin): u_min
-        # Near horizon (above canvas top): u_max
-        self._recompute_depth_bounds()
-
-    def _recompute_depth_bounds(self):
-        self.u_min = 1.0 / (self.screen_h - self.horizon_y + 100)
-        self.u_max = 1.0 / max(10, (25 - self.horizon_y))
-        self.step_u = (self.u_max - self.u_min) / float(self.num_layers)
 
     def update(self):
         """Advance procedural simulation frame."""
@@ -96,10 +86,8 @@ class SandDunesLandscape:
             # Horizon altitude tuning (PageUp / PageDown or U / J)
             if pyxel.btnp(pyxel.KEY_U):
                 self.horizon_y -= 10
-                self._recompute_depth_bounds()
             if pyxel.btnp(pyxel.KEY_J):
                 self.horizon_y = min(-20, self.horizon_y + 10)
-                self._recompute_depth_bounds()
 
             # Pause toggle (Space)
             if pyxel.btnp(pyxel.KEY_SPACE):
@@ -133,7 +121,7 @@ class SandDunesLandscape:
           - Constructs layered polygons from back to front (distal to proximal).
           - No explicit stroke lines; structural forms defined entirely via negative space.
           - Y-axis coordinates projected converging at supra-canvas horizon_y.
-          - Modulates translation velocity and amplitude inversely against Z-depth.
+          - Upward translation velocity and amplitude modulated inversely against Z-depth.
         SHADOW MAPPING:
           - Localized vertical linear gradients within sequential wave geometries.
           - Low-luminosity superior bounding coordinate, high-luminosity inferior.
@@ -141,58 +129,70 @@ class SandDunesLandscape:
           - Global luminosity scalar linked to Z-depth.
           - Distal layers bleach into ambient desert haze; proximal layers retain full saturation.
         """
-        # Collect active depth layers
-        layers: List[Tuple[float, int]] = []
-        u_range = self.u_max - self.u_min
-        for k in range(self.num_layers):
-            u = self.u_min + ((k * self.step_u + dist * SPEED_U) % u_range)
-            y_base = self.horizon_y + 1.0 / u
-            layers.append((y_base, k))
+        horizon_y = self.horizon_y
+        C = PROJECTION_C
+        delta_z = DELTA_Z
+        speed_z = SPEED_Z
+
+        z_near = C / (self.screen_h - horizon_y + 120.0)
+        z_far = C / (-30.0 - horizon_y)
+
+        travel_z = dist * speed_z
+        min_d = int(math.floor((travel_z - z_far) / delta_z))
+        max_d = int(math.ceil((travel_z - z_near) / delta_z))
+
+        layers: List[Tuple[int, float, float]] = []
+        for d in range(min_d, max_d + 1):
+            z = travel_z - d * delta_z
+            if z <= 0.2:
+                continue
+            y = horizon_y + C / z
+            layers.append((d, z, y))
 
         # Sort back-to-front (distal/top to proximal/bottom)
-        layers.sort(key=lambda item: item[0])
+        layers.sort(key=lambda item: item[2])
 
-        x_samples = list(range(0, self.screen_w + SAMPLE_STEP_X, SAMPLE_STEP_X))
+        start_x = int(cam_x // SAMPLE_STEP_X) * SAMPLE_STEP_X
+        x_samples = list(range(start_x, start_x + self.screen_w + SAMPLE_STEP_X, SAMPLE_STEP_X))
         curve_profiles = []
 
-        total_span_y = float(self.screen_h - self.horizon_y)
+        total_span_y = float(self.screen_h - horizon_y)
 
-        for y_base, k in layers:
+        for d, z, y_base in layers:
             # Normalized proximity scalar s: 0.0 at horizon (distal), 1.0 at canvas bottom (proximal)
-            s = max(0.0, min(1.0, (y_base - self.horizon_y) / total_span_y))
+            s = max(0.0, min(1.0, (y_base - horizon_y) / total_span_y))
 
             # Amplitude scales with proximity: proximal has maximum amplitude; distal has minimum
-            amp = MAX_AMPLITUDE * (s ** 1.35)
+            amp = MAX_AMPLITUDE * (s ** 1.30)
 
             # Spatial frequency scales inversely: distal layers have dense fine ripples; proximal have broad waves
-            k1 = 0.007 + 0.010 * (1.0 - s)
-            k2 = 0.016 + 0.018 * (1.0 - s)
-            k3 = 0.035 + 0.025 * (1.0 - s)
+            k1 = 0.006 + 0.010 * (1.0 - s)
+            k2 = 0.015 + 0.018 * (1.0 - s)
+            k3 = 0.032 + 0.025 * (1.0 - s)
 
-            phi1 = k * 2.39996 + 0.4
-            phi2 = k * 4.12345 + 1.1
-            phi3 = k * 1.71828
+            phi1 = (d * 2.39996 + 0.4) % (2 * math.pi)
+            phi2 = (d * 4.12345 + 1.1) % (2 * math.pi)
+            phi3 = (d * 1.71828) % (2 * math.pi)
 
             y_curve: Dict[int, int] = {}
-            for x in x_samples:
-                xw = cam_x + x
+            for xw in x_samples:
                 # Asymmetric compound harmonic wave (windward dune face)
                 w1 = math.sin(k1 * xw + phi1)
                 w2 = math.sin(k2 * xw + phi2) * 0.38
                 w3 = math.cos(k3 * xw + phi3) * 0.14
-                y_curve[x] = int(y_base - amp * (w1 + w2 + w3))
+                y_curve[xw] = int(y_base - amp * (w1 + w2 + w3))
 
-            curve_profiles.append((y_base, s, k, y_curve))
+            curve_profiles.append((y_base, s, d, y_curve))
 
         # Draw layers back-to-front (Painter's algorithm; forms defined purely by negative space)
         num_profiles = len(curve_profiles)
         for i in range(num_profiles):
-            y_base, s, k, y_curve = curve_profiles[i]
+            y_base, s, d, y_curve = curve_profiles[i]
             next_curve = curve_profiles[i + 1][3] if (i + 1 < num_profiles) else None
 
-            for x in x_samples:
-                y_top = max(0, min(self.screen_h, y_curve[x]))
-                y_bot = self.screen_h if next_curve is None else max(0, min(self.screen_h, next_curve[x]))
+            for xw in x_samples:
+                y_top = max(0, min(self.screen_h, y_curve[xw]))
+                y_bot = self.screen_h if next_curve is None else max(y_top, min(self.screen_h, next_curve[xw]))
 
                 if y_bot <= y_top:
                     continue
@@ -207,7 +207,7 @@ class SandDunesLandscape:
                         c_top, c_mid, c_bot = 0, 2, 8
                         t1 = int(y_top + span * 0.25)
                         t2 = int(y_top + span * 0.65)
-                    elif s > 0.32:
+                    elif s > 0.30:
                         c_top, c_mid, c_bot = 2, 8, 14
                         t1 = int(y_top + span * 0.28)
                         t2 = int(y_top + span * 0.70)
@@ -233,7 +233,7 @@ class SandDunesLandscape:
                         c_top, c_mid, c_bot = 4, 9, 10
                         t1 = int(y_top + span * 0.22)
                         t2 = int(y_top + span * 0.62)
-                    elif s > 0.32:
+                    elif s > 0.30:
                         c_top, c_mid, c_bot = 9, 10, 15
                         t1 = int(y_top + span * 0.26)
                         t2 = int(y_top + span * 0.68)
@@ -242,31 +242,34 @@ class SandDunesLandscape:
                         t1 = int(y_top + span * 0.32)
                         t2 = int(y_top + span * 0.72)
 
-                # Zone 1: Superior bounding crest (shadow mapping)
+                # Draw at world coordinate xw (Pyxel camera automatically offsets by cam_x)
                 if t1 > y_top:
-                    pyxel_mod.rect(x, y_top, SAMPLE_STEP_X, t1 - y_top, c_top)
-                # Zone 2: Mid-slope body
+                    pyxel_mod.rect(xw, y_top, SAMPLE_STEP_X, t1 - y_top, c_top)
                 if t2 > t1:
-                    pyxel_mod.rect(x, t1, SAMPLE_STEP_X, t2 - t1, c_mid)
-                # Zone 3: Inferior bounding base (sunlit highlight)
+                    pyxel_mod.rect(xw, t1, SAMPLE_STEP_X, t2 - t1, c_mid)
                 if y_bot > t2:
-                    pyxel_mod.rect(x, t2, SAMPLE_STEP_X, y_bot - t2, c_bot)
+                    pyxel_mod.rect(xw, t2, SAMPLE_STEP_X, y_bot - t2, c_bot)
 
     def draw(self):
         """Render complete landscape frame."""
         # Sky background matches atmospheric bleaching threshold
         pyxel.cls(15 if self.scattering_mode != 1 else 7)
 
+        # Set world camera
+        pyxel.camera(self.cam_x, 0)
+
         # Render layered negative-space dunes
         self.render_dunes(pyxel, self.cam_x, self.dist)
 
-        # HUD overlay (interactive instructions)
+        # Reset camera for HUD overlay (interactive instructions)
+        pyxel.camera(0, 0)
         if not self.headless:
             pyxel.rect(10, 10, 580, 50, 0)
             pyxel.rectb(10, 10, 580, 50, 10)
             pyxel.text(18, 16, "CONTINUOUS 2D PROCEDURAL SAND DUNES LANDSCAPE", 10)
             pyxel.text(18, 28, f"HORIZON Y: {self.horizon_y}px | SPEED: {self.drift_speed:.1f} | CAM X: {int(self.cam_x)} | MODE: {self.scattering_mode}", 7)
             pyxel.text(18, 40, "[A/D] PAN CAMERA   [W/S] SPEED   [U/J] HORIZON   [P] HAZE MODE   [C] SNAP", 9)
+
 
 
 def run_standalone():
