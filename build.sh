@@ -30,12 +30,12 @@ echo "5. Optimizing HTML for mobile browser execution..."
 .venv/bin/python optimize_web.py
 cp grain_of_doubt.html index.html
 
-echo "6. Creating official PyWeek source distribution zip (grain-of-doubt-1.0.0.zip)..."
-ZIP_NAME="grain-of-doubt-1.0.0.zip"
-DIR_NAME="grain-of-doubt-1.0.0"
+echo "6. Creating official PyWeek source distribution zip (grain-of-doubt-1.1.0.zip)..."
+ZIP_NAME="grain-of-doubt-1.1.0.zip"
+DIR_NAME="grain-of-doubt-1.1.0"
 rm -rf grain-of-doubt-*.zip "$DIR_NAME"
 mkdir -p "$DIR_NAME"
-cp -r run_game.py main.py sand_dunes_landscape.py engine tests requirements.txt README.md CHANGELOG.md p03.md LICENSE.md build.sh run.sh playtest_bot.py optimize_web.py "$DIR_NAME/"
+cp -r run_game.py main.py sand_dunes_landscape.py engine tests requirements.txt README.md CHANGELOG.md p03.md p04.md LICENSE.md build.sh run.sh playtest_bot.py optimize_web.py "$DIR_NAME/"
 find "$DIR_NAME" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 find "$DIR_NAME" -name "*.pyc" -delete 2>/dev/null || true
 find "$DIR_NAME" -name "*.mp4" -delete 2>/dev/null || true

@@ -6,6 +6,7 @@ and theme registry for real-time switching via comma (',') and period ('.') in D
 import math
 from dataclasses import dataclass
 from typing import Callable, List, Optional
+from engine.font5x7 import draw_text_5x7
 
 
 @dataclass
@@ -392,17 +393,18 @@ def bg_pro_mode_dark(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, s
     step_minor = 25
     step_major = 100
 
-    # Horizontal grid lines moving UP at falling descent speed (dist)
-    start_minor_wy = int((dist - step_minor) // step_minor) * step_minor
-    end_wy = dist + screen_h + step_major
+    # Horizontal grid lines moving UP at 1.6x descent speed so hazards fall DOWN relative to background
+    dist_bg = int(dist * 1.6)
+    start_minor_wy = int((dist_bg - step_minor) // step_minor) * step_minor
+    end_wy = dist_bg + screen_h + step_major
     for wy in range(start_minor_wy, end_wy + 1, step_minor):
         if wy % step_major != 0:
-            sy = wy - dist
+            sy = wy - dist_bg
             pyxel.line(cam_x - 40, sy, cam_x + screen_w + 40, sy, col_minor)
 
-    start_major_wy = int((dist - step_major) // step_major) * step_major
+    start_major_wy = int((dist_bg - step_major) // step_major) * step_major
     for wy in range(start_major_wy, end_wy + 1, step_major):
-        sy = wy - dist
+        sy = wy - dist_bg
         pyxel.line(cam_x - 40, sy, cam_x + screen_w + 40, sy, col_major)
 
     # Vertical grid lines anchored to fixed world X coordinates (staying in place like monochrome blueprint)
@@ -487,17 +489,18 @@ def bg_pro_mode_light(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, 
     step_minor = 25
     step_major = 100
 
-    # Horizontal grid lines moving UP at falling descent speed (dist)
-    start_minor_wy = int((dist - step_minor) // step_minor) * step_minor
-    end_wy = dist + screen_h + step_major
+    # Horizontal grid lines moving UP at 1.6x descent speed so hazards fall DOWN relative to background
+    dist_bg = int(dist * 1.6)
+    start_minor_wy = int((dist_bg - step_minor) // step_minor) * step_minor
+    end_wy = dist_bg + screen_h + step_major
     for wy in range(start_minor_wy, end_wy + 1, step_minor):
         if wy % step_major != 0:
-            sy = wy - dist
+            sy = wy - dist_bg
             pyxel.line(cam_x - 40, sy, cam_x + screen_w + 40, sy, col_minor)
 
-    start_major_wy = int((dist - step_major) // step_major) * step_major
+    start_major_wy = int((dist_bg - step_major) // step_major) * step_major
     for wy in range(start_major_wy, end_wy + 1, step_major):
-        sy = wy - dist
+        sy = wy - dist_bg
         pyxel.line(cam_x - 40, sy, cam_x + screen_w + 40, sy, col_major)
 
     # Vertical grid lines anchored to fixed world X coordinates (staying in place like monochrome blueprint)
@@ -716,17 +719,10 @@ ECCLESIASTES_3_KJV_LINES = [
 
 
 def draw_text_scaled_helper(pyxel, x: int, y: int, s: str, col: int, scale: int = 2, img_bank: int = 2):
-    """Render scaled typography using dedicated image bank without texture corruption."""
-    if not s:
+    """Render scaled typography using dedicated 5x7 font engine."""
+    if not s or pyxel is None:
         return
-    w = min(256, len(s) * 4 + 4)
-    h = 8
-    bg_key = 1 if col == 0 else 0
-    pyxel.images[img_bank].cls(bg_key)
-    pyxel.images[img_bank].text(0, 0, s, col)
-    blt_x = x + int(w * (scale - 1) / 2)
-    blt_y = y + int(h * (scale - 1) / 2)
-    pyxel.blt(blt_x, blt_y, img_bank, 0, 0, w, h, colkey=bg_key, scale=scale)
+    draw_text_5x7(pyxel, x, y, s, col, scale=scale, img_bank=img_bank)
 
 
 def render_reader_mode_text(

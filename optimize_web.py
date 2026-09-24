@@ -18,17 +18,22 @@ for fname in ['grain_of_doubt.html', 'index.html']:
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Grain of Doubt - PyWeek 42</title>
 <style>
+  :root, html, body {
+    -moz-text-size-adjust: 100% !important;
+    -webkit-text-size-adjust: 100% !important;
+    text-size-adjust: 100% !important;
+  }
   :root {
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
     --safe-left: env(safe-area-inset-left, 0px);
     --safe-right: env(safe-area-inset-right, 0px);
-    --avail-w: calc(100vw - var(--safe-left) - var(--safe-right) - 32px);
-    --avail-h: calc(100vh - var(--safe-top) - var(--safe-bottom) - 32px);
+    --avail-w: calc(100vw - var(--safe-left) - var(--safe-right) - 24px);
+    --avail-h: calc(100vh - var(--safe-top) - var(--safe-bottom) - 24px);
   }
   @supports (height: 100dvh) {
     :root {
-      --avail-h: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 32px);
+      --avail-h: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 24px);
     }
   }
   :root {
@@ -83,8 +88,8 @@ for fname in ['grain_of_doubt.html', 'index.html']:
     height: 100% !important;
     max-width: 100% !important;
     max-height: 100% !important;
-    object-fit: contain !important;
     image-rendering: pixelated !important;
+    image-rendering: crisp-edges !important;
     touch-action: none !important;
     -webkit-touch-callout: none !important;
     -webkit-user-select: none !important;
@@ -146,9 +151,15 @@ function fitScreen() {
   const canvasEl = document.getElementById('canvas');
   if (!screenEl) return;
 
+  try {
+    window.scrollTo(0, 0);
+  } catch (err) {}
+
   const vv = window.visualViewport;
-  const vw = vv ? vv.width : window.innerWidth;
-  const vh = vv ? vv.height : window.innerHeight;
+  const docW = document.documentElement.clientWidth || window.innerWidth;
+  const docH = document.documentElement.clientHeight || window.innerHeight;
+  const vw = vv ? Math.min(vv.width, docW, window.innerWidth) : Math.min(docW, window.innerWidth);
+  const vh = vv ? Math.min(vv.height, docH, window.innerHeight) : Math.min(docH, window.innerHeight);
 
   // Safe area metrics
   const rootStyle = getComputedStyle(document.documentElement);
@@ -157,9 +168,9 @@ function fitScreen() {
   const safeLeft = parseFloat(rootStyle.getPropertyValue('--safe-left')) || 0;
   const safeRight = parseFloat(rootStyle.getPropertyValue('--safe-right')) || 0;
 
-  // 16px lateral cushion, 20px vertical cushion + safe area insets
-  const availW = Math.max(100, vw - safeLeft - safeRight - 32);
-  const availH = Math.max(100, vh - safeTop - safeBottom - 32);
+  // 12px lateral cushion, 12px vertical cushion + safe area insets
+  const availW = Math.max(100, vw - safeLeft - safeRight - 24);
+  const availH = Math.max(100, vh - safeTop - safeBottom - 24);
 
   let targetW = Math.min(availW, availH * 3 / 4);
   let targetH = targetW * 4 / 3;

@@ -7,6 +7,7 @@ class GameState(Enum):
     CHRONOS = auto()
     KAIROS = auto()
     GAMEOVER = auto()
+    LORE = auto()
 
 
 class StateManager:

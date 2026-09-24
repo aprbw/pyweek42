@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.1.0] - 2026-09-24
+### Added
+- **Custom 5x7 Typography Engine (`engine/font5x7.py`)**:
+  - Implemented spacious 5-pixel character width font covering all 95 printable ASCII glyphs (32..126).
+  - Characters 'W' and 'w' feature full 5-pixel wide glyphs and are never squished.
+  - High-performance direct pixel rendering via `pyxel.pset` / `pyxel.rect` with zero buffer limitations and 100% cross-platform compatibility across Desktop and WebAssembly.
+- **Pro Mode 3-Line Kairos Cards**:
+  - Redesigned Kairos Dilemma cards in Pro Mode into a high-density, ultra-clean 3-line format:
+    - Line 1: 2-letter sin abbreviation (1st capitalized, 2nd lowercase, e.g. `Pd` for Pride, `Gd` for Greed, `Lt` for Lust, `Ey` for Envy, `Gy` for Gluttony, `Wh` for Wrath, `Sh` for Sloth) in 3x huge font (`scale=6`).
+    - Line 2: Full sin name written in standard font (`scale=2`).
+    - Line 3: Level number alone without the word "level" in 3x huge font (`scale=6`).
+  - **Wrath Card Contrast Fix**: Font color rendered in crisp white (`Color 7`) against red background (`Color 8`) for WCAG AAA contrast compliance.
+- **Reader Mode Justified KJV Kairos Dilemmas**:
+  - In Reader Mode, cards display the covenant title like usual, followed by an authentic King James Version narrative paragraph describing boon and curse with justified text alignment without bullet points.
+- **Lore & How to Play Codex Screen (`GameState.LORE`)**:
+  - Added dedicated sub-screen accessible from the Title screen via `[L]` or `[H]` keys.
+  - Documents the narrative premise (Ecclesiastes 3), Chronos vs Kairos architecture, the Seven Faustian Covenants, and accessibility tips.
+- **Photosensitivity / Epilepsy Warning Plaque**:
+  - Added high-contrast warning plaque on Title screen directing players to Pro Mode (Themes 2 & 3) for calm monochrome blueprint graphics.
+
+### Changed
+- **Relative Background Kinematics (Pro Mode)**:
+  - Background grid scrolls upward at $1.6\times$ scroll speed (`dist_bg = int(dist * 1.6)`).
+  - Hazards and sand grains moving at $1.0\times$ speed visually travel downward relative to the grid ($0.6\times$ speed) while the player falls downward even faster ($1.6\times$ speed), keeping screen-space gameplay and mechanics 100% identical.
+- **Pro Mode Shard Drop Shadow Suppression**:
+  - Shard drop shadows are strictly suppressed in Pro Mode Light and Dark for clean monochrome blueprint aesthetics.
+- **Pro Mode Dark Pact Board Text Color**:
+  - Unselected pact text ($k=0$) drawn in bright Cyan (`Color 12`) so text never blends into dark background grid lines.
+- **HUD Box Alignment & Clutter Elimination**:
+  - Eliminated overlap between Time container (`x=225, w=150`) and Score container (`x=390, w=200`), removing the vertical border line dividing score text.
+  - Removed cluttering HUD badges (`WRATH: ZERO YIELD` and `TIDAL PULL`).
+- **Hardware Dither Transparency (`pyxel.dither`)**:
+  - Applied `pyxel.dither(0.70)` to Developer Overlay, Pact Sealed banner, and Theme banner.
+  - Applied `pyxel.dither(0.60)` to Mobile touch arcade buttons.
+- **Firefox on Android Mobile Viewport Optimization**:
+  - Added `-moz-text-size-adjust: 100% !important;` to disable automatic text-size inflation.
+  - Removed canvas `object-fit: contain` to eliminate Firefox Android canvas cropping bugs.
+  - Dynamically clamped `fitScreen()` against `visualViewport`, client width, and high `devicePixelRatio`.
+
 ## [v1.0.0] - 2026-09-24
 ### Added
 - **Curated 10 Maximally Divergent Themes (`0..9`)**:

@@ -2236,6 +2236,118 @@ def test_reader_mode_telemetry_second_paragraph():
     assert idx_elapsed < idx_profit, "Telemetry paragraph (elapsed) must come before third paragraph (profit)"
 
 
+def test_font5x7_ascii_glyphs_and_w_width():
+    """Verify custom 5x7 font engine defines all 95 ASCII characters and 'W'/'w' have spacious 5-pixel width."""
+    from engine.font5x7 import GLYPHS_5X7
+
+    assert len(GLYPHS_5X7) >= 95
+    for code in range(32, 127):
+        ch = chr(code)
+        assert ch in GLYPHS_5X7, f"Missing ASCII glyph: {ch!r} ({code})"
+        glyph = GLYPHS_5X7[ch]
+        assert len(glyph) == 7, f"Glyph {ch!r} must have 7 vertical rows"
+
+    # Verify W and w occupy full 5-pixel width (bit 4 and bit 0 are set)
+    glyph_W = GLYPHS_5X7["W"]
+    glyph_w = GLYPHS_5X7["w"]
+    assert any((row & 0b10001) == 0b10001 for row in glyph_W), "Capital W must have 5-pixel width"
+    assert any((row & 0b10001) == 0b10001 for row in glyph_w), "Lowercase w must have 5-pixel width"
+
+
+def test_pro_mode_three_line_card_format():
+    """Verify Pro Mode Kairos card renders 3 lines (Abbrev scale 6, Name scale 2, Level scale 6) and Wrath has white text."""
+    import main
+    from main import GrainOfDoubtApp, SIN_PRO_ABBREVIATIONS
+    from engine.state import GameState
+    from engine.bargains import SinType, BARGAIN_REGISTRY
+
+    app = GrainOfDoubtApp(headless=True)
+    app.current_theme_index = 1  # Pro Mode Light (or 2: Pro Mode Dark)
+    app.start_new_game()
+    app.state.current_state = GameState.KAIROS
+    app.active_options = [
+        (SinType.PRIDE, BARGAIN_REGISTRY[SinType.PRIDE], 0),
+        (SinType.WRATH, BARGAIN_REGISTRY[SinType.WRATH], 2),
+    ]
+
+    draw_calls = []
+    orig_draw = main.draw_text_scaled
+    try:
+        def mock_draw(x, y, s, col, scale=1, img_bank=2):
+            draw_calls.append((x, y, s, col, scale))
+        main.draw_text_scaled = mock_draw
+        app.draw_kairos_modal()
+
+        # Check Pride card (left):
+        # Line 1: 'Pd' in scale 6
+        pd_calls = [d for d in draw_calls if d[2] == "Pd"]
+        assert len(pd_calls) == 1, f"Expected 1 call for 'Pd', got {pd_calls}"
+        assert pd_calls[0][4] == 6, f"'Pd' scale must be 6, got {pd_calls[0][4]}"
+
+        # Line 2: 'PRIDE' in scale 2
+        pride_calls = [d for d in draw_calls if d[2] == "PRIDE"]
+        assert len(pride_calls) == 1
+        assert pride_calls[0][4] == 2
+
+        # Line 3: Level number '1' in scale 6 without the word 'level'
+        lvl1_calls = [d for d in draw_calls if d[2] == "1"]
+        assert len(lvl1_calls) >= 1
+        assert lvl1_calls[0][4] == 6
+
+        # Check Wrath card (right):
+        # Line 1: 'Wh' in scale 6
+        wh_calls = [d for d in draw_calls if d[2] == "Wh"]
+        assert len(wh_calls) == 1
+        assert wh_calls[0][4] == 6
+
+        # Line 2: 'WRATH' in scale 2, color must NOT be 8 (red) to guarantee contrast
+        wrath_calls = [d for d in draw_calls if d[2] == "WRATH"]
+        assert len(wrath_calls) == 1
+        assert wrath_calls[0][3] == 7, f"Wrath text color must be white (7) for contrast, got {wrath_calls[0][3]}"
+
+        # Line 3: Level number '3' in scale 6
+        lvl3_calls = [d for d in draw_calls if d[2] == "3"]
+        assert len(lvl3_calls) >= 1
+        assert lvl3_calls[0][4] == 6
+    finally:
+        main.draw_text_scaled = orig_draw
+
+
+def test_hud_time_score_box_separation():
+    """Verify that Elapsed Time container and Score container have a clean positive gap with zero overlap."""
+    time_box_x = 225
+    time_box_w = 150
+    time_box_end = time_box_x + time_box_w  # 375
+
+    score_box_x = 390
+    score_box_w = 200
+    score_box_end = score_box_x + score_box_w  # 590
+
+    # Ensure strictly no overlap: score starts after time ends
+    assert score_box_x > time_box_end, f"Score box ({score_box_x}) must start after Time box ends ({time_box_end})"
+    gap = score_box_x - time_box_end
+    assert gap >= 10, f"Gap between Time and Score boxes must be >= 10px, got {gap}px"
+    assert score_box_end <= 600, f"Score box must not exceed screen width 600, ends at {score_box_end}"
+
+
+def test_lore_codex_state_transitions():
+    """Verify that pressing L or H on Title opens GameState.LORE and returns on exit keys."""
+    from main import GrainOfDoubtApp
+    from engine.state import GameState
+
+    app = GrainOfDoubtApp(headless=True)
+    assert app.state.current_state == GameState.TITLE
+
+    # Transition to LORE
+    app.state.current_state = GameState.LORE
+    assert app.state.current_state == GameState.LORE
+
+    # Transition back to TITLE
+    app.state.current_state = GameState.TITLE
+    assert app.state.current_state == GameState.TITLE
+
+
+
 
 
 

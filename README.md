@@ -1,10 +1,11 @@
 # Grain of Doubt
 
 > **By Arian Prabowo**  
-> **Version:** v1.0.0  
+> **Version:** v1.1.0  
 > **PyWeek 42 Entry ("Borrowed Time")** — September 2026  
 > An endless retro downhill falling-hourglass arcade runner built with the **Pyxel** retro game engine.  
-> **Target Resolution:** 600 × 800 pixels (3:4 Portrait Aspect Ratio, Infinite Horizontal Arena).
+> **Target Resolution:** 600 × 800 pixels (3:4 Portrait Aspect Ratio, Infinite Horizontal Arena).  
+> **Game Design Document:** [p04.md](file:///Users/z3540725/My%20Drive/personal/2026%2009%2022%20PyWeek%2042%20Borrowed%20Time/p04.md)
 
 **PLAY! https://aprbw.github.io/pyweek42/index.html**
 
@@ -40,8 +41,8 @@ Steer left or right to avoid falling glass shards while collecting glistening go
 You can freely switch between **10 completely unique, maximally divergent aesthetic themes** in real time—both directly on the **Title Screen (Home Page)** and during gameplay—using the number keys `0` through `9`, or `,` (previous) and `.` (next):
 
 0. **Desert Dunes**: Continuous 2D procedural sand dune landscape with a **Topology Engine** (layered polygons rendered back-to-front; negative space geometry prohibiting stroke lines; inverse Z-depth upward velocity converging at supra-canvas horizon $Y_H = -140$; speed $>10\times$ faster at bottom than top), **Shadow Mapping** (intra-layer vertical linear gradients from dark crests to light bases), **Atmospheric Scattering** (global luminosity scalar desaturating distal ridges into ambient desert haze), and a cosmic perspective glitch warning when Kairos is imminent.
-1. **Pro Mode (High Contrast Light)**: Clinical white engineering canvas, static major ($50\times 50$ px) and minor ($10\times 10$ px) blueprint drafting grid lines fixed to screen background, dual vertical Chronos countdown progress bars at extreme left and right borders (top to bottom), pitch-black obsidian shards, amber sand, and extreme luminance delta (>20:1 contrast).
-2. **Pro Mode (High Contrast Dark)**: Pure pitch-black canvas, 100% functional zero-noise clarity, static major ($50\times 50$ px) and minor ($10\times 10$ px) blueprint drafting grid lines fixed to screen background, dual vertical Chronos countdown progress bars at extreme left and right borders (top to bottom), solid opaque HUD panels, and color-matched pact cards with uncluttered level advancement (WCAG AAA).
+1. **Pro Mode (High Contrast Light)**: Clinical white engineering canvas, relative background grid motion (1.6x scroll speed so hazards fall down relative to grid), dual vertical Chronos countdown progress bars at extreme left and right borders (top to bottom), pitch-black obsidian shards, amber sand, and extreme luminance delta (>20:1 contrast). Zero drop shadows.
+2. **Pro Mode (High Contrast Dark)**: Pure pitch-black canvas, relative background grid motion (1.6x scroll speed so hazards fall down relative to grid), dual vertical Chronos countdown progress bars at extreme left and right borders (top to bottom), solid opaque HUD panels, and vibrant Cyan (`Color 12`) unselected pact list (WCAG AAA). Zero drop shadows.
 3. **Reader Mode (E-Reader Light)**: Warm cream parchment digital e-reader displaying genuine **Ecclesiastes 3:1-22 (King James Version)** in double-sized font (`scale=2`, $8 \times 12$ px characters) formatted as continuous, justified un-indented prose. Floating arcade HUD panels are 100% suppressed; gameplay telemetry is seamlessly disguised as an authentic scripture paragraph between verses 8 and 9 without modern brackets or parentheses. Shards render at **30% alpha** and sand/hourglass at **60% alpha** as subtle translucent watermarks.
 4. **Reader Mode (E-Reader Dark)**: Midnight slate companion to Reader Mode Light. Double-sized Ecclesiastes 3 KJV text, disguised KJV scripture telemetry paragraph, 100% suppressed floating HUD, and 30%/60% alpha translucent gameplay elements.
 5. **Monochrome Blueprint**: Engineering architectural drafting cyan/navy blueprint with white millimeter drafting grids and coordinate markers.
@@ -52,7 +53,6 @@ You can freely switch between **10 completely unique, maximally divergent aesthe
 
 Each theme dynamically transforms the procedural background terrain as well as the complete color palettes of the player's hourglass, sand grains, and glass shards to ensure aesthetic harmony and sharp contrast!
 
-
 ---
 
 ## 🎮 Controls
@@ -62,6 +62,7 @@ Each theme dynamically transforms the procedural background terrain as well as t
 | `A` / `D` or `Left` / `Right` | Lateral Steering | Steer hourglass horizontally (viscous damping coefficient: 0.82) |
 | Touch `< LEFT` / `RIGHT >` | Mobile Touch Steering | High-contrast on-screen buttons (visible on mobile only) or bottom screen tap |
 | `Left` / `Right` or Tap Card | Select Faustian Bargain | Steer left or right during Kairos to choose between the 2 bargain cards within 10.0s (1.0s safety lockout; requires fresh press after release) |
+| `L` / `H` | Lore & Codex Screen | Open full narrative and gameplay manual sub-screen from Title Screen |
 | `Space` / `Enter` or Tap Screen | Start / Restart | Start game or restart after a 2.0s post-mortem lockout (debounced) |
 | `X` | Return to Menu / Quit | In gameplay: return to Title Menu. On Title Menu: quit game (no-op in browser) |
 | `0` - `9` | Direct Theme Select | Jump instantly to any of the 10 curated themes (0:Dunes, 1:Pro Light, 2:Pro Dark, 3:Reader Light, 4:Reader Dark, 5:Blueprint, 6:Caldera, 7:Terminal, 8:Sumi-e, 9:Vaporwave) |

@@ -23,6 +23,7 @@ from engine.audio import AudioManager
 from engine.bot import PlayTestingBot, BotConfig
 from engine.video import VideoRecorder
 from engine.themes import ALL_THEMES, get_theme, Theme, SandPalette, ShardPalette, HourglassPalette
+from engine.font5x7 import draw_text_5x7
 
 
 def render_vignette(px: float, py: float, radius: float, screen_w: int = 600, screen_h: int = 800, pyxel_module=None, inner_radius: float = None):
@@ -135,21 +136,99 @@ def render_vignette(px: float, py: float, radius: float, screen_w: int = 600, sc
 
 
 def draw_text_scaled(x: int, y: int, s: str, col: int, scale: int = 1, img_bank: int = 2):
-    """Draw text with integer scaling factor using offscreen buffer."""
-    if pyxel is None:
+    """Draw text with spacious 5x7 typography and integer scaling factor."""
+    if pyxel is None or not s:
         return
-    if scale <= 1:
-        pyxel.text(x, y, s, col)
-        return
-    w = len(s) * 4 + 4
-    h = 8
-    bg_key = 1 if col == 0 else 0
-    pyxel.images[img_bank].cls(bg_key)
-    pyxel.images[img_bank].text(0, 0, s, col)
-    # Offset blt position so the scaled output starts exactly at (x, y)
-    blt_x = x + int(w * (scale - 1) / 2)
-    blt_y = y + int(h * (scale - 1) / 2)
-    pyxel.blt(blt_x, blt_y, img_bank, 0, 0, w, h, colkey=bg_key, scale=scale)
+    draw_text_5x7(pyxel, x, y, s, col, scale=scale, img_bank=img_bank)
+
+
+SIN_PRO_ABBREVIATIONS: dict[SinType, str] = {
+    SinType.PRIDE: "Pd",
+    SinType.GREED: "Gd",
+    SinType.LUST: "Lt",
+    SinType.ENVY: "Ey",
+    SinType.GLUTTONY: "Gy",
+    SinType.WRATH: "Wh",
+    SinType.SLOTH: "Sh",
+}
+
+KJV_SIN_PARAGRAPHS: dict[SinType, str] = {
+    SinType.PRIDE: (
+        "The proud heart shall reap of the golden dust in bountiful clusters, "
+        "yet for every grain thou takest, thy descent through the void shall "
+        "wax twenty and five parts swifter, till none may stay thy fall."
+    ),
+    SinType.GREED: (
+        "Lo, the covetous shall multiply his substance tenfold for a season, "
+        "yet is his life counted upon borrowed time: when the appointed measure "
+        "of seconds hath expired, thy soul is straightway required of thee."
+    ),
+    SinType.LUST: (
+        "Thy vessel shall draw unto itself the golden sands of the deep with an "
+        "unyielding hunger; yet by the same token shall every jagged shard of "
+        "glass be drawn likewise to pierce thy fragile walls."
+    ),
+    SinType.ENVY: (
+        "A great tidal pull shall rise up for a moment, gathering every distant "
+        "grain into thy bosom; howbeit, the shadow of darkness shall draw near, "
+        "and thy sight shall be narrowed into the valley of gloom."
+    ),
+    SinType.GLUTTONY: (
+        "Thou shalt feast upon great and fat grains yielding threefold measure "
+        "unto thy score; yet shall the shards of glass grow likewise monstrous "
+        "and heavy, that thy path be choked with peril."
+    ),
+    SinType.WRATH: (
+        "In thine anger a mighty detonation shall burst forth, driving far away "
+        "both shard and sand in a great tempest; yet in the quiet that followeth, "
+        "all thy labor shall yield zero harvest for a time."
+    ),
+    SinType.SLOTH: (
+        "Thou shalt cast down thy burdens into the deep, and the perils of this "
+        "hour shall be hurled beneath thee; yet a spirit of heaviness shall drag "
+        "upon thy steering, that thou canst scarce turn aside."
+    ),
+}
+
+
+def draw_justified_paragraph(x: int, y: int, width: int, text: str, col: int, scale: int = 1, line_spacing: int = 12):
+    """Draw text paragraph justified flush to left and right margins."""
+    words = text.split()
+    lines = []
+    cur_line = []
+    char_w = 6 * scale
+
+    for w in words:
+        test_line = cur_line + [w]
+        line_len = sum(len(word) for word in test_line) * char_w + (len(test_line) - 1) * char_w
+        if line_len <= width or not cur_line:
+            cur_line.append(w)
+        else:
+            lines.append(cur_line)
+            cur_line = [w]
+    if cur_line:
+        lines.append(cur_line)
+
+    cur_y = y
+    for line_idx, line_words in enumerate(lines):
+        is_last_line = (line_idx == len(lines) - 1) or len(line_words) == 1
+        if is_last_line:
+            draw_text_scaled(x, cur_y, " ".join(line_words), col, scale=scale)
+        else:
+            total_chars_w = sum(len(w) for w in line_words) * char_w
+            num_slots = len(line_words) - 1
+            total_space = width - total_chars_w
+            base_slot_space = total_space // num_slots
+            extra_pixels = total_space % num_slots
+
+            slot_x = x
+            for w_idx, w in enumerate(line_words):
+                draw_text_scaled(slot_x, cur_y, w, col, scale=scale)
+                slot_x += len(w) * char_w
+                if w_idx < num_slots:
+                    slot_w = base_slot_space + (1 if w_idx < extra_pixels else 0)
+                    slot_x += slot_w
+        cur_y += line_spacing * scale
 
 
 CANONICAL_SINS: List[SinType] = [
@@ -199,7 +278,7 @@ def is_dev_environment() -> bool:
 
 
 class GrainOfDoubtApp:
-    VERSION: str = "v1.0.0"
+    VERSION: str = "v1.1.0"
     SCREEN_WIDTH: int = 600
     SCREEN_HEIGHT: int = 800
 
@@ -403,6 +482,11 @@ class GrainOfDoubtApp:
 
         # State dispatch
         if self.state.current_state == GameState.TITLE:
+            # Check if player pressed 'L' or 'H' for Lore & How to Play
+            if pyxel.btnp(pyxel.KEY_L) or pyxel.btnp(pyxel.KEY_H):
+                self.state.current_state = GameState.LORE
+                return
+
             # Start game with any lateral key, space/enter, or mouse/touch tap
             if (self.bot_mode or
                 pyxel.btnp(pyxel.KEY_LEFT) or pyxel.btnp(pyxel.KEY_RIGHT) or
@@ -410,6 +494,15 @@ class GrainOfDoubtApp:
                 pyxel.btnp(pyxel.KEY_SPACE) or pyxel.btnp(pyxel.KEY_RETURN) or
                 pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT)):
                 self.start_new_game()
+
+        elif self.state.current_state == GameState.LORE:
+            # Return to Title on L, H, Space, Enter, Escape, X, or tap
+            if (pyxel.btnp(pyxel.KEY_L) or pyxel.btnp(pyxel.KEY_H) or
+                pyxel.btnp(pyxel.KEY_SPACE) or pyxel.btnp(pyxel.KEY_RETURN) or
+                pyxel.btnp(pyxel.KEY_ESCAPE) or pyxel.btnp(pyxel.KEY_X) or
+                pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT)):
+                self.state.current_state = GameState.TITLE
+                return
 
         elif self.state.current_state == GameState.CHRONOS:
             if self.bot_mode:
@@ -626,6 +719,10 @@ class GrainOfDoubtApp:
             self.draw_title_screen()
             if self.theme_banner_timer > 0:
                 self.draw_theme_banner()
+            return
+        elif self.state.current_state == GameState.LORE:
+            pyxel.camera(0, 0)
+            self.draw_lore_screen()
             return
 
         is_reader = getattr(theme, "is_reader_mode", False)
@@ -987,8 +1084,10 @@ class GrainOfDoubtApp:
         x2, y2 = rot_pts[2]
         is_fat = getattr(shard, "is_fat", False)
 
-        # Cast drop shadow
-        pyxel.tri(x0 + 3, y0 + 4, x1 + 3, y1 + 4, x2 + 3, y2 + 4, pal.shadow)
+        # Cast drop shadow (suppressed in Pro Mode)
+        theme_name = getattr(get_theme(self.current_theme_index), "name", "")
+        if self.current_theme_index not in (1, 2) and not theme_name.startswith("PRO MODE"):
+            pyxel.tri(x0 + 3, y0 + 4, x1 + 3, y1 + 4, x2 + 3, y2 + 4, pal.shadow)
 
         if is_fat:
             # Gluttony big triangle: exact same color as regular shard
@@ -1050,25 +1149,26 @@ class GrainOfDoubtApp:
             else:
                 pyxel.rectb(hx, hy + 4, 28, 16, 4 if is_light else 5)
 
-        # 2. Elapsed Time container (Top Center) - translucent theme-aware container
-        draw_hud_box(self.SCREEN_WIDTH // 2 - 76, 8, 152, 30)
+        # 2. Elapsed Time container (Top Center) - [x=225, w=150]
+        draw_hud_box(225, 8, 150, 30)
 
         elapsed_sec = self.state.total_frames / 30.0
         time_str = f"TIME: {elapsed_sec:04.1f} s"
         t_col = (8 if is_light else 10) if flash_time else text_col
-        draw_text_scaled(self.SCREEN_WIDTH // 2 - 47, 14, time_str, t_col, scale=2)
+        time_w = len(time_str) * 12 - 2
+        draw_text_scaled(225 + (150 - time_w) // 2, 14, time_str, t_col, scale=2)
 
-        # 3. Score container (Top Right) - translucent theme-aware container
-        draw_hud_box(self.SCREEN_WIDTH - 250, 8, 240, 30)
+        # 3. Score container (Top Right) - [x=390, w=200, no overlap with Time box]
+        draw_hud_box(390, 8, 200, 30)
 
         score_fmt = f"{self.state.score:,}".replace(",", " ")
         score_str = f"SCORE: {score_fmt}"
-        draw_text_scaled(self.SCREEN_WIDTH - 240, 14, score_str, num_col, scale=2)
+        draw_text_scaled(398, 14, score_str, num_col, scale=2)
 
         # Multiplier (inside score container at right)
         if self.state.score_multiplier > 1.05:
             mult_str = f"x{self.state.score_multiplier:.1f}"
-            draw_text_scaled(self.SCREEN_WIDTH - 65, 14, mult_str, 8 if is_light else 9, scale=2)
+            draw_text_scaled(540, 14, mult_str, 8 if is_light else 9, scale=2)
 
         # 4. Vertical Pacts List in Catholic Canonical Order at Top Right (All 7 always listed)
         pacts_box_w = 180
@@ -1083,7 +1183,8 @@ class GrainOfDoubtApp:
             row_y = pacts_box_y + 22 + idx * 16
             sin_lbl = sin.name.lower()
             line_txt = f"{idx+1}. {sin_lbl:<10} {k}"
-            col = (8 if is_light else 10) if k > 0 else (4 if is_light else 5)
+            # In dark themes, use vibrant Cyan (12) when unselected so text doesn't blend into dark grid
+            col = (8 if is_light else 10) if k > 0 else (4 if is_light else 12)
             # Draw color swatch matching the background of the pact card
             sin_col = SIN_CARD_COLORS.get(sin, 1)
             pyxel.rect(pacts_box_x + 5, row_y + 2, 4, 11, sin_col)
@@ -1109,14 +1210,6 @@ class GrainOfDoubtApp:
             draw_text_scaled(15, badge_y + 4, "[GODMODE]", 10 if not is_light else 8, scale=2)
             badge_y += 24
 
-        # Envy Tidal Pull Badge
-        if self.state.envy_mega_lust_active:
-            lust_secs = (self.state.envy_mega_lust_timer + 29) // 30
-            flash = (pyxel.frame_count // 4) % 2 == 0
-            draw_hud_box(10, badge_y, 100, 20)
-            draw_text_scaled(15, badge_y + 4, f"TIDAL PULL {lust_secs} s", (10 if flash else 7) if not is_light else (8 if flash else 0), scale=2)
-            badge_y += 24
-
         # Greed Borrowed Time Warning Indicator
         if self.state.greed_active:
             flash = (pyxel.frame_count // 5) % 2 == 0
@@ -1126,10 +1219,6 @@ class GrainOfDoubtApp:
             else:
                 msg = "BORROWED TIME"
             draw_text_scaled(self.SCREEN_WIDTH // 2 - 80, 48, msg, col, scale=2)
-
-        # Wrath Zero Yield Warning
-        if self.state.wrath_zero_yield_timer > 0:
-            draw_text_scaled(16, 190, "WRATH: ZERO YIELD", 8, scale=2)
 
     def draw_pro_mode_chronos_bars(self):
         """Draw dual vertical telemetry countdown progress bars pinned to extreme left and right borders in Pro Mode.
@@ -1295,62 +1384,104 @@ class GrainOfDoubtApp:
                 badge_txt_col = kp.badge_text
             pyxel.rect(cx + 14, col_y + 12, col_w - 28, 28, badge_col)
             badge_lbl = col_labels[i]
-            badge_w = (len(badge_lbl) * 4 - 1) * 2
+            badge_w = len(badge_lbl) * 12 - 2
             draw_text_scaled(cx + col_w // 2 - badge_w // 2, col_y + 18, badge_lbl, badge_txt_col, scale=2)
 
-            # Pure Sin Name: significantly bigger, fills entire box horizontally based on longest character, justified center
-            max_sin_len = max(len(d.name) for d in BARGAIN_REGISTRY.values())
-            title_scale = max(1, int((col_w - 11) / (max_sin_len * 4 - 1)))
-            name = defn.name.upper()
-            if sin == SinType.GLUTTONY and not is_pro_mode:
-                # Make Gluttony so big it gets out of the frame a little bit (looks intentional)
-                title_scale = 8
-            title_w = (len(name) * 4 - 1) * title_scale
             center_x = cx + col_w // 2
-            title_x = center_x - title_w // 2
-            if is_selected:
-                title_col = kp.sin_title_selected
-            elif is_pro_mode and sin == SinType.LUST:
-                title_col = 0
-            elif is_pro_mode:
-                title_col = 7
-            else:
-                title_col = kp.sin_title
-            draw_text_scaled(title_x, col_y + 46, name, title_col, scale=title_scale)
-
-            # Level indicator (justified center below title)
-            lvl_str = f"LEVEL: {k}"
-            lvl_w = (len(lvl_str) * 4 - 1) * 2
-            lvl_x = center_x - lvl_w // 2
-            if is_selected:
-                lvl_col = kp.sin_title_selected
-            elif is_pro_mode and sin == SinType.LUST:
-                lvl_col = 0
-            elif is_pro_mode:
-                lvl_col = 9
-            else:
-                lvl_col = kp.level_text
-            draw_text_scaled(lvl_x, col_y + 88, lvl_str, lvl_col, scale=2)
 
             if is_pro_mode:
-                # Pro mode: "no description of the pact required"
-                # Pure, uncluttered functional presentation: level advancement indicator & selection
-                next_lvl_str = f"-> LEVEL {k + 1} <-"
-                next_lvl_w = (len(next_lvl_str) * 4 - 1) * 3
-                draw_text_scaled(center_x - next_lvl_w // 2, col_y + 180, next_lvl_str, 10 if is_selected else (0 if sin == SinType.LUST else 7), scale=3)
+                # Pro Mode: Exactly 3 lines, high visual density & clarity
+                # Determine high-contrast text color against card background (WCAG AAA)
+                # Wrath is color 8 (Red) -> white text (7) gives crystal clear contrast!
+                if bg_col in (7, 9, 10, 11, 14, 15):
+                    txt_col = 0  # Black on light/yellow/peach
+                    accent_col = 8 if is_selected else 0
+                else:
+                    txt_col = 7  # Crisp white on red/navy/dark
+                    accent_col = 10 if is_selected else 7
+
+                # Line 1: 2-letter abbreviation (1st capitalized, 2nd lowercase, e.g. 'Pd' for Pride)
+                # Rendered in VERY huge font, 3x bigger than normal (scale=6)
+                abbr = SIN_PRO_ABBREVIATIONS.get(sin, sin.name[:2].title())
+                abbr_w = len(abbr) * 36 - 6
+                abbr_y = col_y + 70
+                draw_text_scaled(center_x - abbr_w // 2, abbr_y, abbr, accent_col, scale=6)
+
+                # Line 2: Sin name written in full like normal (scale=2)
+                full_name = defn.name.upper()
+                name_w = len(full_name) * 12 - 2
+                name_y = col_y + 160
+                draw_text_scaled(center_x - name_w // 2, name_y, full_name, txt_col, scale=2)
+
+                # Line 3: Level number alone without the word "level" in 3x huge font (scale=6)
+                next_lvl = k + 1
+                lvl_num_str = str(next_lvl)
+                lvl_num_w = len(lvl_num_str) * 36 - 6
+                lvl_num_y = col_y + 220
+                draw_text_scaled(center_x - lvl_num_w // 2, lvl_num_y, lvl_num_str, accent_col, scale=6)
 
                 # Selection status button at bottom
                 if is_selected:
                     pyxel.rect(cx + 14, col_y + col_h - 48, col_w - 28, 34, kp.selected_btn_bg)
                     sel_lbl = "SELECTED"
-                    sel_w = (len(sel_lbl) * 4 - 1) * 2
+                    sel_w = len(sel_lbl) * 12 - 2
                     draw_text_scaled(center_x - sel_w // 2, col_y + col_h - 40, sel_lbl, kp.selected_btn_text, scale=2)
                 else:
-                    pyxel.rectb(cx + 14, col_y + col_h - 48, col_w - 28, 34, 0 if sin == SinType.LUST else (0 if theme.id == 7 else 7))
+                    pyxel.rectb(cx + 14, col_y + col_h - 48, col_w - 28, 34, txt_col)
                     btn_lbl = "STEER TO CHOOSE"
-                    btn_w = (len(btn_lbl) * 4 - 1) * 2
-                    draw_text_scaled(center_x - btn_w // 2, col_y + col_h - 40, btn_lbl, 0 if sin == SinType.LUST else (0 if theme.id == 7 else 7), scale=2)
+                    btn_w = len(btn_lbl) * 12 - 2
+                    draw_text_scaled(center_x - btn_w // 2, col_y + col_h - 40, btn_lbl, txt_col, scale=2)
+
+            elif getattr(theme, "is_reader_mode", False):
+                # Reader Mode: Title like usual, followed by authentic KJV paragraph in justified alignment
+                name = defn.name.upper()
+                title_scale = 3
+                title_w = len(name) * (6 * title_scale) - title_scale
+                title_col = kp.sin_title_selected if is_selected else kp.sin_title
+                draw_text_scaled(center_x - title_w // 2, col_y + 48, name, title_col, scale=title_scale)
+
+                lvl_str = f"COVENANT {k + 1}"
+                lvl_w = len(lvl_str) * 12 - 2
+                draw_text_scaled(center_x - lvl_w // 2, col_y + 82, lvl_str, kp.level_text, scale=2)
+
+                pyxel.line(cx + 14, col_y + 106, cx + col_w - 14, col_y + 106, kp.divider)
+
+                # Justified KJV descriptive narrative paragraph
+                kjv_text = KJV_SIN_PARAGRAPHS.get(sin, "")
+                draw_justified_paragraph(cx + 16, col_y + 124, col_w - 32, kjv_text, kp.pro_text, scale=2, line_spacing=13)
+
+                # Selection status button at bottom
+                if is_selected:
+                    pyxel.rect(cx + 14, col_y + col_h - 48, col_w - 28, 34, kp.selected_btn_bg)
+                    sel_lbl = "SELECTED"
+                    sel_w = len(sel_lbl) * 12 - 2
+                    draw_text_scaled(center_x - sel_w // 2, col_y + col_h - 40, sel_lbl, kp.selected_btn_text, scale=2)
+                else:
+                    pyxel.rectb(cx + 14, col_y + col_h - 48, col_w - 28, 34, kp.card_border)
+                    btn_lbl = "STEER TO CHOOSE"
+                    btn_w = len(btn_lbl) * 12 - 2
+                    draw_text_scaled(center_x - btn_w // 2, col_y + col_h - 40, btn_lbl, kp.footer_text, scale=2)
+
             else:
+                # Standard Mode: Detailed Pro/Con bullet points with bulging Gluttony
+                max_sin_len = max(len(d.name) for d in BARGAIN_REGISTRY.values())
+                title_scale = max(1, int((col_w - 11) / (max_sin_len * 4 - 1)))
+                name = defn.name.upper()
+                if sin == SinType.GLUTTONY:
+                    # Make Gluttony so big it gets out of the frame a little bit (looks intentional)
+                    title_scale = 8
+                title_w = (len(name) * 4 - 1) * title_scale
+                title_x = center_x - title_w // 2
+                title_col = kp.sin_title_selected if is_selected else kp.sin_title
+                draw_text_scaled(title_x, col_y + 46, name, title_col, scale=title_scale)
+
+                # Level indicator
+                lvl_str = f"LEVEL: {k}"
+                lvl_w = len(lvl_str) * 12 - 2
+                lvl_x = center_x - lvl_w // 2
+                lvl_col = kp.sin_title_selected if is_selected else kp.level_text
+                draw_text_scaled(lvl_x, col_y + 88, lvl_str, lvl_col, scale=2)
+
                 # Visual divider
                 pyxel.line(cx + 14, col_y + 106, cx + col_w - 14, col_y + 106, kp.divider)
 
@@ -1431,7 +1562,7 @@ class GrainOfDoubtApp:
                 # Selection status
                 if is_selected:
                     pyxel.rect(cx + 14, col_y + col_h - 48, col_w - 28, 34, kp.selected_btn_bg)
-                    sel_w = (len("SELECTED") * 4 - 1) * 2
+                    sel_w = len("SELECTED") * 12 - 2
                     draw_text_scaled(center_x - sel_w // 2, col_y + col_h - 40, "SELECTED", kp.selected_btn_text, scale=2)
 
         # Footer instructions
@@ -1449,66 +1580,77 @@ class GrainOfDoubtApp:
             return
         theme = get_theme(self.current_theme_index)
         kp = theme.get_kairos_palette()
-        # Position banner safely above bottom window / buttons
+        # Position banner safely above bottom window / buttons with translucent dither
+        if hasattr(pyxel, "dither"):
+            pyxel.dither(0.70)
         pyxel.rect(40, 540, 520, 44, kp.modal_bg)
+        if hasattr(pyxel, "dither"):
+            pyxel.dither(1.0)
         pyxel.rectb(40, 540, 520, 44, kp.border_outer)
         txt = f"PACT SEALED: {fb['sin'].upper()}!"
         draw_text_scaled(70, 554, txt, kp.sin_title_selected, scale=2)
 
     def draw_title_screen(self):
         # Header plaque for high-contrast presentation on any background theme
-        pyxel.rect(40, 52, 520, 226, 0)
-        pyxel.rectb(40, 52, 520, 226, 10)
-        pyxel.rectb(42, 54, 516, 222, 9)
+        pyxel.rect(40, 36, 520, 180, 0)
+        pyxel.rectb(40, 36, 520, 180, 10)
+        pyxel.rectb(42, 38, 516, 176, 9)
 
-        # Pulsing logo centered with dark drop shadow for high contrast on daylight sand
-        draw_text_scaled(190, 72, "GRAIN OF DOUBT", 4, scale=4)
-        draw_text_scaled(188, 70, "GRAIN OF DOUBT", 10, scale=4)
+        # Pulsing logo centered with dark drop shadow for high contrast
+        draw_text_scaled(190, 48, "GRAIN OF DOUBT", 4, scale=4)
+        draw_text_scaled(188, 46, "GRAIN OF DOUBT", 10, scale=4)
 
-        draw_text_scaled(162, 127, "PYWEEK 42 : BORROWED TIME", 4, scale=2)
-        draw_text_scaled(160, 125, "PYWEEK 42 : BORROWED TIME", 9, scale=2)
+        draw_text_scaled(162, 94, "PYWEEK 42 : BORROWED TIME", 4, scale=2)
+        draw_text_scaled(160, 92, "PYWEEK 42 : BORROWED TIME", 9, scale=2)
 
-        draw_text_scaled(238, 157, "BY ARIAN PRABOWO", 4, scale=2)
-        draw_text_scaled(236, 155, "BY ARIAN PRABOWO", 7, scale=2)
+        draw_text_scaled(238, 118, "BY ARIAN PRABOWO", 4, scale=2)
+        draw_text_scaled(236, 116, "BY ARIAN PRABOWO", 7, scale=2)
 
         if self.dev_mode:
-            draw_text_scaled(216, 178, f"VERSION: {self.VERSION} [DEV MODE]", 3, scale=2)
+            draw_text_scaled(216, 138, f"VERSION: {self.VERSION} [DEV MODE]", 3, scale=2)
 
-        # Subtitles centered in rich indigo & red for crisp daylight contrast
-        draw_text_scaled(110, 205, "FALL DOWN THE DESERT SLOPE", 6, scale=2)
-        draw_text_scaled(110, 230, "COLLECT GOLDEN SAND TO SURVIVE", 10, scale=2)
-        draw_text_scaled(95, 255, "DODGE LETHAL FALLING GLASS SHARDS", 8, scale=2)
+        # Subtitles centered in crisp daylight contrast
+        draw_text_scaled(110, 154, "FALL DOWN THE DESERT SLOPE", 6, scale=2)
+        draw_text_scaled(110, 172, "COLLECT GOLDEN SAND TO SURVIVE", 10, scale=2)
+        draw_text_scaled(95, 190, "DODGE LETHAL FALLING GLASS SHARDS", 8, scale=2)
+
+        # Photosensitivity & Lore prompt plaque
+        pyxel.rect(40, 224, 520, 68, 0)
+        pyxel.rectb(40, 224, 520, 68, 9)
+        draw_text_scaled(52, 232, "PHOTOSENSITIVITY WARNING: Rapid motion in some themes.", 9, scale=1)
+        draw_text_scaled(52, 244, "Switch to PRO MODE (Themes 2 & 3) for calm monochrome blueprint.", 6, scale=1)
+        draw_text_scaled(60, 262, "[L] / [H] VIEW LORE & HOW TO PLAY CODEX", 10, scale=2)
 
         # Controls box
-        pyxel.rect(40, 290, 520, 350, 1)
-        pyxel.rectb(40, 290, 520, 350, 5)
+        pyxel.rect(40, 300, 520, 334, 1)
+        pyxel.rectb(40, 300, 520, 334, 5)
 
-        draw_text_scaled(60, 306, "CONTROLS & HOW TO PLAY", 10, scale=2)
-        draw_text_scaled(60, 330, "A / D  or  LEFT / RIGHT ARROWS", 7, scale=2)
-        draw_text_scaled(60, 350, "Steer descent to catch sand & dodge glass", 6, scale=2)
+        draw_text_scaled(60, 314, "CONTROLS & HOW TO PLAY", 10, scale=2)
+        draw_text_scaled(60, 338, "A / D  or  LEFT / RIGHT ARROWS", 7, scale=2)
+        draw_text_scaled(60, 358, "Steer descent to catch sand & dodge glass", 6, scale=2)
 
-        draw_text_scaled(60, 376, "MOBILE / TOUCH CONTROLS", 10, scale=2)
-        draw_text_scaled(60, 400, "< LEFT BUTTON   |   RIGHT BUTTON >", 7, scale=2)
-        draw_text_scaled(60, 420, "Tap buttons or screen half to steer", 6, scale=2)
+        draw_text_scaled(60, 384, "MOBILE / TOUCH CONTROLS", 10, scale=2)
+        draw_text_scaled(60, 408, "< LEFT BUTTON   |   RIGHT BUTTON >", 7, scale=2)
+        draw_text_scaled(60, 428, "Tap buttons or screen half to steer", 6, scale=2)
 
-        draw_text_scaled(60, 446, "10 DIVERGENT THEMES (PRO & READER MODES)", 10, scale=2)
-        draw_text_scaled(60, 470, f"[0-9] SELECT | [,] PREV | [.] NEXT  ({self.current_theme_index + 1}/{len(ALL_THEMES)})", 7, scale=2)
+        draw_text_scaled(60, 454, "10 DIVERGENT THEMES (PRO & READER MODES)", 10, scale=2)
+        draw_text_scaled(60, 478, f"[0-9] SELECT | [,] PREV | [.] NEXT  ({self.current_theme_index + 1}/{len(ALL_THEMES)})", 7, scale=2)
         theme = get_theme(self.current_theme_index)
-        draw_text_scaled(60, 492, f"ACTIVE: {theme.name}", 10 if (self.current_theme_index in (1, 2) or getattr(theme, "is_reader_mode", False)) else 9, scale=2)
+        draw_text_scaled(60, 500, f"ACTIVE: {theme.name}", 10 if (self.current_theme_index in (1, 2) or getattr(theme, "is_reader_mode", False)) else 9, scale=2)
 
-        draw_text_scaled(60, 522, "SHORTCUTS", 9, scale=2)
+        draw_text_scaled(60, 528, "SHORTCUTS", 9, scale=2)
         if self.dev_mode:
-            draw_text_scaled(60, 546, "[`] DEV OVERLAY  |  [I] INVULN  |  [B] BOT  |  [V] REC", 11, scale=2)
-            draw_text_scaled(60, 570, "[X] QUIT  |  [SPACE] START", 7, scale=2)
+            draw_text_scaled(60, 552, "[`] DEV OVERLAY  |  [I] INVULN  |  [B] BOT  |  [V] REC", 11, scale=2)
+            draw_text_scaled(60, 574, "[L] LORE  |  [X] QUIT  |  [SPACE] START", 7, scale=2)
         else:
-            draw_text_scaled(60, 546, "[X] QUIT  |  [SPACE] START", 7, scale=2)
+            draw_text_scaled(60, 552, "[L] LORE  |  [X] QUIT  |  [SPACE] START", 7, scale=2)
 
         # Start prompt
         blink = (pyxel.frame_count // 12) % 2 == 0
         if blink:
-            pyxel.rect(50, 646, 500, 26, 0)
-            pyxel.rectb(50, 646, 500, 26, 10)
-            draw_text_scaled(60, 652, "PRESS ARROWS OR TOUCH BUTTONS TO START", 10, scale=2)
+            pyxel.rect(50, 642, 500, 26, 0)
+            pyxel.rectb(50, 642, 500, 26, 10)
+            draw_text_scaled(60, 648, "PRESS ARROWS OR TOUCH BUTTONS TO START", 10, scale=2)
 
         # Draw the 2 mobile buttons at bottom of title screen (mobile only)
         if self.is_mobile:
@@ -1516,6 +1658,79 @@ class GrainOfDoubtApp:
 
         if self.dev_mode:
             draw_text_scaled(self.SCREEN_WIDTH - 140, self.SCREEN_HEIGHT - 20, f"[DEV] {self.VERSION}", 3, scale=2)
+
+    def draw_lore_screen(self):
+        """Render dedicated Lore + How to Play manual screen."""
+        box_x = 24
+        box_y = 16
+        box_w = 552
+        box_h = 768
+
+        # Main background container with gold frame
+        pyxel.rect(box_x, box_y, box_w, box_h, 0)
+        pyxel.rectb(box_x, box_y, box_w, box_h, 10)
+        pyxel.rectb(box_x + 2, box_y + 2, box_w - 4, box_h - 4, 9)
+
+        # Header Title
+        draw_text_scaled(box_x + 40, box_y + 16, "GRAIN OF DOUBT : CODEX & LORE", 10, scale=3)
+        draw_text_scaled(box_x + 60, box_y + 46, "THE APPOINTED SEASON & THE SEVEN COVENANTS", 6, scale=2)
+        pyxel.line(box_x + 16, box_y + 68, box_x + box_w - 16, box_y + 68, 5)
+
+        # Section 1: The Narrative Setting
+        draw_text_scaled(box_x + 20, box_y + 78, "I. THE NARRATIVE (ECCLESIASTES 3)", 10, scale=2)
+        narrative_lines = [
+            "To every thing there is a season, and a time to every purpose under heaven.",
+            "Thou art an hourglass hurtling ceaselessly into the infinite desert abyss.",
+            "Golden sands replenish thy vessel and prolong thy fleeting span of existence;",
+            "yet jagged shards of razor glass await to shatter thy fragile walls.",
+        ]
+        for idx, line in enumerate(narrative_lines):
+            draw_text_scaled(box_x + 20, box_y + 102 + idx * 18, line, 7, scale=1)
+
+        # Section 2: Chronos & Kairos Mechanics
+        pyxel.line(box_x + 16, box_y + 182, box_x + box_w - 16, box_y + 182, 5)
+        draw_text_scaled(box_x + 20, box_y + 192, "II. TIME ARCHITECTURE : CHRONOS & KAIROS", 10, scale=2)
+        time_lines = [
+            "CHRONOS (Action): Steer left and right (A/D or Arrows) to collect sand and dodge glass.",
+            "KAIROS (Decision): Circuit breaker strikes every season! Time freezes for 2.0 seconds.",
+            "Thou must steer left or right to seal one of two Faustian Covenants. Hesitate and die!",
+        ]
+        for idx, line in enumerate(time_lines):
+            draw_text_scaled(box_x + 20, box_y + 216 + idx * 18, line, 6, scale=1)
+
+        # Section 3: The Seven Faustian Pacts (Catholic Canonical Order)
+        pyxel.line(box_x + 16, box_y + 278, box_x + box_w - 16, box_y + 278, 5)
+        draw_text_scaled(box_x + 20, box_y + 288, "III. THE SEVEN FAUSTIAN COVENANTS (BOON vs COMPOUND CURSE)", 10, scale=2)
+        pacts_data = [
+            ("1. PRIDE (Pd)", "+Sand Clusters (Pairs/Triplets)", "-Compound Fall Velocity (+25%)", 10),
+            ("2. GREED (Gd)", "+Score Multiplier (x110% per sand)", "-Lethal Borrowed Time Countdown", 9),
+            ("3. LUST (Lt)", "+Permanent Sand Magnet Pull", "-Permanent Hazard Glass Magnet Pull", 14),
+            ("4. ENVY (Ey)", "+Tidal Pull of distant sand", "-Vision narrows to dark vignette", 11),
+            ("5. GLUTTONY (Gy)", "+Fat Grains (3x Score Value)", "-Monstrous Enlarged Glass Shards", 4),
+            ("6. WRATH (Wh)", "+1200px Kinetic Screen Blast", "-10.0s Zero Harvest Score Yield", 8),
+            ("7. SLOTH (Sh)", "+Hurls Perils Downward", "-Severe Lateral Steering Wave Drag", 12),
+        ]
+        for idx, (pact_title, boon, curse, pcol) in enumerate(pacts_data):
+            py = box_y + 314 + idx * 38
+            pyxel.rect(box_x + 20, py + 2, 4, 28, pcol)
+            draw_text_scaled(box_x + 30, py, pact_title, 10, scale=2)
+            draw_text_scaled(box_x + 30, py + 18, f"PRO: {boon}  |  CON: {curse}", 7, scale=1)
+
+        # Section 4: Themes & Accessibility
+        pyxel.line(box_x + 16, box_y + 590, box_x + box_w - 16, box_y + 590, 5)
+        draw_text_scaled(box_x + 20, box_y + 600, "IV. DIVERGENT THEMES & ACCESSIBILITY", 10, scale=2)
+        theme_lines = [
+            "Press [0-9] or [,] / [.] to cycle through 10 visually divergent aesthetic themes.",
+            "PRO MODE (Themes 2 & 3): High-contrast monochrome blueprint, no shadows, no clutter.",
+            "READER MODE (Themes 4 & 5): Authentic King James Ecclesiastes text scroll.",
+        ]
+        for idx, line in enumerate(theme_lines):
+            draw_text_scaled(box_x + 20, box_y + 624 + idx * 18, line, 6, scale=1)
+
+        # Return Prompt
+        blink = (pyxel.frame_count // 12) % 2 == 0
+        p_col = 10 if blink else 7
+        draw_text_scaled(box_x + 70, box_y + 734, "PRESS [L], [H], [SPACE], OR [ESC] TO RETURN", p_col, scale=2)
 
     def draw_game_over_screen(self):
         # Full-screen ambient dimmer overlay over background gameplay world
@@ -1536,7 +1751,7 @@ class GrainOfDoubtApp:
         draw_text_scaled(210, 128, "BY ARIAN PRABOWO", 6, scale=2)
 
         reason = self.state.death_reason or "Consumed by the Void"
-        reason_w = (len(reason) * 4 - 1) * 2
+        reason_w = len(reason) * 12 - 2
         reason_x = max(50, (self.SCREEN_WIDTH - reason_w) // 2)
         draw_text_scaled(reason_x, 150, reason, 7, scale=2)
 
@@ -1584,16 +1799,24 @@ class GrainOfDoubtApp:
         btn_h = 75
         btn_w = 250
 
+        # Translucent background for buttons
+        if hasattr(pyxel, "dither"):
+            pyxel.dither(0.60)
+
         # Left Button [x=30, y=690, w=250, h=75]
         lx = 30
         pyxel.rect(lx, btn_y, btn_w, btn_h, 5 if self.touch_left else 1)
+        # Right Button [x=320, y=690, w=250, h=75]
+        rx = 320
+        pyxel.rect(rx, btn_y, btn_w, btn_h, 5 if self.touch_right else 1)
+
+        if hasattr(pyxel, "dither"):
+            pyxel.dither(1.0)
+
         pyxel.rectb(lx, btn_y, btn_w, btn_h, 10 if self.touch_left else 6)
         pyxel.rectb(lx + 2, btn_y + 2, btn_w - 4, btn_h - 4, 7 if self.touch_left else 1)
         draw_text_scaled(lx + 70, btn_y + 24, "< LEFT", 10 if self.touch_left else 7, scale=3)
 
-        # Right Button [x=320, y=690, w=250, h=75]
-        rx = 320
-        pyxel.rect(rx, btn_y, btn_w, btn_h, 5 if self.touch_right else 1)
         pyxel.rectb(rx, btn_y, btn_w, btn_h, 10 if self.touch_right else 6)
         pyxel.rectb(rx + 2, btn_y + 2, btn_w - 4, btn_h - 4, 7 if self.touch_right else 1)
         draw_text_scaled(rx + 65, btn_y + 24, "RIGHT >", 10 if self.touch_right else 7, scale=3)
@@ -1606,7 +1829,11 @@ class GrainOfDoubtApp:
         box_x = (self.SCREEN_WIDTH - box_w) // 2  # 40
         box_y = self.SCREEN_HEIGHT - box_h - 24  # 730 at bottom of screen
 
+        if hasattr(pyxel, "dither"):
+            pyxel.dither(0.70)
         pyxel.rect(box_x, box_y, box_w, box_h, 0)
+        if hasattr(pyxel, "dither"):
+            pyxel.dither(1.0)
         pyxel.rectb(box_x, box_y, box_w, box_h, 10)
         pyxel.rectb(box_x + 1, box_y + 1, box_w - 2, box_h - 2, 9)
 
@@ -1616,14 +1843,18 @@ class GrainOfDoubtApp:
         draw_text_scaled(box_x + 16, box_y + 28, sub_str, 7, scale=1)
 
     def draw_dev_overlay(self):
-        """Render developer debug overlay at bottom of screen with solid background."""
+        """Render developer debug overlay at bottom of screen with translucent background."""
         box_x = 10
         box_w = 580
         box_h = 188
         box_y = self.SCREEN_HEIGHT - box_h - 10  # 602..790
 
-        # Solid dark panel with mint neon border
+        # Translucent dark panel with mint neon border
+        if hasattr(pyxel, "dither"):
+            pyxel.dither(0.70)
         pyxel.rect(box_x, box_y, box_w, box_h, 0)
+        if hasattr(pyxel, "dither"):
+            pyxel.dither(1.0)
         pyxel.rectb(box_x, box_y, box_w, box_h, 11)
         pyxel.rectb(box_x + 1, box_y + 1, box_w - 2, box_h - 2, 3)
 
