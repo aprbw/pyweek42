@@ -382,13 +382,13 @@ class GrainOfDoubtApp:
                     self.selected_feedback = fb
                     self.feedback_timer = 90
 
-            # Comma (',') and Period ('.') cycle through all 20 divergent aesthetic themes
-            if pyxel.btnp(pyxel.KEY_COMMA):
-                self.current_theme_index = (self.current_theme_index - 1) % len(ALL_THEMES)
-                self.theme_banner_timer = 90
-            elif pyxel.btnp(pyxel.KEY_PERIOD):
-                self.current_theme_index = (self.current_theme_index + 1) % len(ALL_THEMES)
-                self.theme_banner_timer = 90
+        # Comma (',') and Period ('.') cycle through all 20 divergent aesthetic themes (available to all players)
+        if pyxel.btnp(pyxel.KEY_COMMA):
+            self.current_theme_index = (self.current_theme_index - 1) % len(ALL_THEMES)
+            self.theme_banner_timer = 90
+        elif pyxel.btnp(pyxel.KEY_PERIOD):
+            self.current_theme_index = (self.current_theme_index + 1) % len(ALL_THEMES)
+            self.theme_banner_timer = 90
 
         # Enforce speed handicap in physics when bot is active
         self.state._bot_speed_handicap = self.bot.config.speed_handicap if self.bot_mode else 1.0
@@ -644,6 +644,10 @@ class GrainOfDoubtApp:
 
         # Draw HUD (Score, Hearts, Active Pacts, Elapsed Time)
         self.draw_hud()
+
+        # In Pro Mode: dual vertical countdown bars at extreme left and right borders during Chronos
+        if self.state.current_state == GameState.CHRONOS:
+            self.draw_pro_mode_chronos_bars()
 
         # Draw on-screen mobile touch buttons during Chronos descent (mobile only)
         if self.state.current_state == GameState.CHRONOS and self.is_mobile:
@@ -962,13 +966,8 @@ class GrainOfDoubtApp:
                 pyxel.line(x0, y0, x1, y1, pal.glint)
 
     def draw_hud(self):
-        # Universal Dither Alpha on HUD containers
-        # 1. Hearts container (Top Left)
-        if hasattr(pyxel, "dither"):
-            pyxel.dither(0.60)
+        # 1. Hearts container (Top Left) - solid opaque dark container
         pyxel.rect(10, 8, 172, 30, 0)
-        if hasattr(pyxel, "dither"):
-            pyxel.dither(1.0)
         pyxel.rectb(10, 8, 172, 30, 1)
 
         for i in range(5):
@@ -985,12 +984,8 @@ class GrainOfDoubtApp:
             else:
                 pyxel.rectb(hx, hy + 4, 28, 16, 5)
 
-        # 2. Elapsed Time container (Top Center)
-        if hasattr(pyxel, "dither"):
-            pyxel.dither(0.60)
+        # 2. Elapsed Time container (Top Center) - solid opaque dark container
         pyxel.rect(self.SCREEN_WIDTH // 2 - 76, 8, 152, 30, 0)
-        if hasattr(pyxel, "dither"):
-            pyxel.dither(1.0)
         pyxel.rectb(self.SCREEN_WIDTH // 2 - 76, 8, 152, 30, 1)
 
         elapsed_sec = self.state.total_frames / 30.0
@@ -998,12 +993,8 @@ class GrainOfDoubtApp:
         flash_time = (pyxel.frame_count // 15) % 2 == 0
         draw_text_scaled(self.SCREEN_WIDTH // 2 - 47, 14, time_str, 10 if flash_time else 7, scale=2)
 
-        # 3. Score container (Top Right)
-        if hasattr(pyxel, "dither"):
-            pyxel.dither(0.60)
+        # 3. Score container (Top Right) - solid opaque dark container
         pyxel.rect(self.SCREEN_WIDTH - 250, 8, 240, 30, 0)
-        if hasattr(pyxel, "dither"):
-            pyxel.dither(1.0)
         pyxel.rectb(self.SCREEN_WIDTH - 250, 8, 240, 30, 1)
 
         score_fmt = f"{self.state.score:,}".replace(",", " ")
@@ -1020,11 +1011,7 @@ class GrainOfDoubtApp:
         pacts_box_h = 140
         pacts_box_x = self.SCREEN_WIDTH - pacts_box_w - 10
         pacts_box_y = 44
-        if hasattr(pyxel, "dither"):
-            pyxel.dither(0.60)
         pyxel.rect(pacts_box_x, pacts_box_y, pacts_box_w, pacts_box_h, 0)
-        if hasattr(pyxel, "dither"):
-            pyxel.dither(1.0)
         pyxel.rectb(pacts_box_x, pacts_box_y, pacts_box_w, pacts_box_h, 1)
 
         draw_text_scaled(pacts_box_x + 8, pacts_box_y + 4, "FAUSTIAN PACTS", 6, scale=2)
@@ -1085,6 +1072,51 @@ class GrainOfDoubtApp:
         if self.state.wrath_zero_yield_timer > 0:
             draw_text_scaled(16, 190, "WRATH: ZERO YIELD", 8, scale=2)
 
+    def draw_pro_mode_chronos_bars(self):
+        """Draw dual vertical telemetry countdown progress bars pinned to extreme left and right borders in Pro Mode.
+
+        Indicates Chronos countdown progression towards Kairos from top to bottom.
+        """
+        theme = get_theme(self.current_theme_index)
+        if not theme.name.startswith("PRO MODE"):
+            return
+        if self.state.current_state != GameState.CHRONOS:
+            return
+
+        prog = min(1.0, max(0.0, self.state.chronos_timer / float(self.state.CHRONOS_FRAMES)))
+        bar_w = 6
+        fill_h = int(self.SCREEN_HEIGHT * prog)
+
+        is_dark = (theme.clear_color == 0)
+
+        # Track colors (background track)
+        track_bg = 1 if is_dark else 6     # Navy in dark, soft grey in light
+        track_border = 5 if is_dark else 5 # Slate grey boundary line
+
+        # Bar fill color
+        if prog > 0.85:
+            # Imminent Kairos urgency: flashing crimson red / amber
+            fill_col = 8 if (pyxel.frame_count // 3) % 2 == 0 else 9
+        elif is_dark:
+            fill_col = 10  # High-vis safety yellow in Pro Dark
+        else:
+            fill_col = 0   # Pitch-black obsidian in Pro Light
+
+        # 1. Left border progress bar (x = 0..bar_w)
+        pyxel.rect(0, 0, bar_w, self.SCREEN_HEIGHT, track_bg)
+        pyxel.line(bar_w, 0, bar_w, self.SCREEN_HEIGHT, track_border)
+        if fill_h > 0:
+            pyxel.rect(0, 0, bar_w, fill_h, fill_col)
+            pyxel.line(0, fill_h, bar_w, fill_h, 7 if is_dark else 0)
+
+        # 2. Right border progress bar (x = (SCREEN_WIDTH - bar_w)..SCREEN_WIDTH)
+        rx = self.SCREEN_WIDTH - bar_w
+        pyxel.rect(rx, 0, bar_w, self.SCREEN_HEIGHT, track_bg)
+        pyxel.line(rx - 1, 0, rx - 1, self.SCREEN_HEIGHT, track_border)
+        if fill_h > 0:
+            pyxel.rect(rx, 0, bar_w, fill_h, fill_col)
+            pyxel.line(rx, fill_h, self.SCREEN_WIDTH, fill_h, 7 if is_dark else 0)
+
     def draw_kairos_modal(self):
         """Draw 2-column Kairos modal navigated strictly via Left/Right arrows or A/D."""
         modal_x = 30
@@ -1092,12 +1124,15 @@ class GrainOfDoubtApp:
         modal_w = 540
         modal_h = 680
 
-        # Modal backdrop with dither alpha
+        # Full-screen ambient dimmer overlay over background gameplay world
         if hasattr(pyxel, "dither"):
-            pyxel.dither(0.85)
-        pyxel.rect(modal_x, modal_y, modal_w, modal_h, 0)
+            pyxel.dither(0.50)
+        pyxel.rect(0, 0, self.SCREEN_WIDTH, self.SCREEN_HEIGHT, 0)
         if hasattr(pyxel, "dither"):
             pyxel.dither(1.0)
+
+        # Modal backdrop: SOLID opaque black box with crisp double border (no checkered noise)
+        pyxel.rect(modal_x, modal_y, modal_w, modal_h, 0)
         pyxel.rectb(modal_x, modal_y, modal_w, modal_h, 8)
         pyxel.rectb(modal_x + 2, modal_y + 2, modal_w - 4, modal_h - 4, 2)
 
@@ -1348,23 +1383,28 @@ class GrainOfDoubtApp:
         draw_text_scaled(95, 259, "DODGE LETHAL FALLING GLASS SHARDS", 8, scale=2)
 
         # Controls box
-        pyxel.rect(40, 300, 520, 335, 1)
-        pyxel.rectb(40, 300, 520, 335, 5)
+        pyxel.rect(40, 290, 520, 350, 1)
+        pyxel.rectb(40, 290, 520, 350, 5)
 
-        draw_text_scaled(60, 320, "CONTROLS & HOW TO PLAY", 10, scale=2)
-        draw_text_scaled(60, 350, "A / D  or  LEFT / RIGHT ARROWS", 7, scale=2)
-        draw_text_scaled(60, 380, "Steer descent to catch sand & dodge glass", 6, scale=2)
+        draw_text_scaled(60, 306, "CONTROLS & HOW TO PLAY", 10, scale=2)
+        draw_text_scaled(60, 330, "A / D  or  LEFT / RIGHT ARROWS", 7, scale=2)
+        draw_text_scaled(60, 350, "Steer descent to catch sand & dodge glass", 6, scale=2)
 
-        draw_text_scaled(60, 420, "MOBILE / TOUCH CONTROLS", 10, scale=2)
-        draw_text_scaled(60, 450, "< LEFT BUTTON   |   RIGHT BUTTON >", 7, scale=2)
-        draw_text_scaled(60, 480, "Tap buttons or screen half to steer", 6, scale=2)
+        draw_text_scaled(60, 376, "MOBILE / TOUCH CONTROLS", 10, scale=2)
+        draw_text_scaled(60, 400, "< LEFT BUTTON   |   RIGHT BUTTON >", 7, scale=2)
+        draw_text_scaled(60, 420, "Tap buttons or screen half to steer", 6, scale=2)
 
-        draw_text_scaled(60, 520, "SHORTCUTS", 9, scale=2)
+        draw_text_scaled(60, 446, "20 DIVERGENT THEMES (PRO & STEALTH MODES)", 10, scale=2)
+        draw_text_scaled(60, 470, f"[,] PREV THEME   |   [.] NEXT THEME  ({self.current_theme_index + 1}/20)", 7, scale=2)
+        theme = get_theme(self.current_theme_index)
+        draw_text_scaled(60, 492, f"ACTIVE: {theme.name}", 10 if (self.current_theme_index in (6, 7)) else 9, scale=2)
+
+        draw_text_scaled(60, 522, "SHORTCUTS", 9, scale=2)
         if self.dev_mode:
-            draw_text_scaled(60, 550, "[`] DEV  |  [I] INVULN  |  [B] BOT  |  [V] REC", 11, scale=2)
-            draw_text_scaled(60, 580, "[X] QUIT  |  [SPACE] START", 5, scale=2)
+            draw_text_scaled(60, 546, "[`] DEV OVERLAY  |  [I] INVULN  |  [B] BOT  |  [V] REC", 11, scale=2)
+            draw_text_scaled(60, 570, "[X] QUIT  |  [SPACE] START", 7, scale=2)
         else:
-            draw_text_scaled(60, 550, "[X] QUIT  |  [SPACE] START", 5, scale=2)
+            draw_text_scaled(60, 546, "[X] QUIT  |  [SPACE] START", 7, scale=2)
 
         # Start prompt
         blink = (pyxel.frame_count // 12) % 2 == 0
@@ -1380,12 +1420,15 @@ class GrainOfDoubtApp:
             draw_text_scaled(self.SCREEN_WIDTH - 140, self.SCREEN_HEIGHT - 20, f"[DEV] {self.VERSION}", 3, scale=2)
 
     def draw_game_over_screen(self):
-        # Dark overlay box with dither alpha
+        # Full-screen ambient dimmer overlay over background gameplay world
         if hasattr(pyxel, "dither"):
-            pyxel.dither(0.80)
-        pyxel.rect(40, 60, 520, 680, 0)
+            pyxel.dither(0.50)
+        pyxel.rect(0, 0, self.SCREEN_WIDTH, self.SCREEN_HEIGHT, 0)
         if hasattr(pyxel, "dither"):
             pyxel.dither(1.0)
+
+        # Main Game Over card: SOLID opaque black box (no checkered noise)
+        pyxel.rect(40, 60, 520, 680, 0)
         pyxel.rectb(40, 60, 520, 680, 8)
         pyxel.rectb(44, 64, 512, 672, 2)
 
@@ -1397,12 +1440,8 @@ class GrainOfDoubtApp:
         reason = self.state.death_reason or "Consumed by the Void"
         draw_text_scaled(70, 150, reason[:36], 7, scale=2)
 
-        # Inner stats container with dither alpha
-        if hasattr(pyxel, "dither"):
-            pyxel.dither(0.65)
+        # Inner stats container: SOLID Midnight Navy with Slate border (no checkered noise)
         pyxel.rect(60, 175, 480, 420, 1)
-        if hasattr(pyxel, "dither"):
-            pyxel.dither(1.0)
         pyxel.rectb(60, 175, 480, 420, 5)
 
         time_survived = self.state.total_frames / 30.0
@@ -1447,22 +1486,14 @@ class GrainOfDoubtApp:
 
         # Left Button [x=30, y=690, w=250, h=75]
         lx = 30
-        if hasattr(pyxel, "dither"):
-            pyxel.dither(0.60 if self.touch_left else 0.30)
         pyxel.rect(lx, btn_y, btn_w, btn_h, 5 if self.touch_left else 1)
-        if hasattr(pyxel, "dither"):
-            pyxel.dither(1.0)
         pyxel.rectb(lx, btn_y, btn_w, btn_h, 10 if self.touch_left else 6)
         pyxel.rectb(lx + 2, btn_y + 2, btn_w - 4, btn_h - 4, 7 if self.touch_left else 1)
         draw_text_scaled(lx + 70, btn_y + 24, "< LEFT", 10 if self.touch_left else 7, scale=3)
 
         # Right Button [x=320, y=690, w=250, h=75]
         rx = 320
-        if hasattr(pyxel, "dither"):
-            pyxel.dither(0.60 if self.touch_right else 0.30)
         pyxel.rect(rx, btn_y, btn_w, btn_h, 5 if self.touch_right else 1)
-        if hasattr(pyxel, "dither"):
-            pyxel.dither(1.0)
         pyxel.rectb(rx, btn_y, btn_w, btn_h, 10 if self.touch_right else 6)
         pyxel.rectb(rx + 2, btn_y + 2, btn_w - 4, btn_h - 4, 7 if self.touch_right else 1)
         draw_text_scaled(rx + 65, btn_y + 24, "RIGHT >", 10 if self.touch_right else 7, scale=3)
@@ -1475,11 +1506,7 @@ class GrainOfDoubtApp:
         box_x = (self.SCREEN_WIDTH - box_w) // 2  # 40
         box_y = 196
 
-        if hasattr(pyxel, "dither"):
-            pyxel.dither(0.85)
         pyxel.rect(box_x, box_y, box_w, box_h, 0)
-        if hasattr(pyxel, "dither"):
-            pyxel.dither(1.0)
         pyxel.rectb(box_x, box_y, box_w, box_h, 10)
         pyxel.rectb(box_x + 1, box_y + 1, box_w - 2, box_h - 2, 9)
 
@@ -1489,18 +1516,14 @@ class GrainOfDoubtApp:
         draw_text_scaled(box_x + 16, box_y + 28, sub_str, 7, scale=1)
 
     def draw_dev_overlay(self):
-        """Render developer debug overlay at bottom of screen with alpha transparency."""
+        """Render developer debug overlay at bottom of screen with solid background."""
         box_x = 10
         box_w = 580
         box_h = 188
         box_y = self.SCREEN_HEIGHT - box_h - 10  # 602..790
 
-        # Alpha semi-transparent dark panel with mint neon border
-        if hasattr(pyxel, "dither"):
-            pyxel.dither(0.70)
+        # Solid dark panel with mint neon border
         pyxel.rect(box_x, box_y, box_w, box_h, 0)
-        if hasattr(pyxel, "dither"):
-            pyxel.dither(1.0)
         pyxel.rectb(box_x, box_y, box_w, box_h, 11)
         pyxel.rectb(box_x + 1, box_y + 1, box_w - 2, box_h - 2, 3)
 

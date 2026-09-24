@@ -35,9 +35,9 @@ Steer left or right to avoid falling glass shards while collecting glistening go
 
 ---
 
-## 🎨 20 Divergent Aesthetic Themes (Dev Mode Swapping)
+## 🎨 20 Divergent Aesthetic Themes (Available to All Players)
 
-In **Dev Mode** (toggle with `` ` ``), you can freely cycle through **20 completely unique, divergent aesthetic themes** in real time using the `,` (previous theme) and `.` (next theme) keys:
+You can freely cycle through **20 completely unique, divergent aesthetic themes** in real time—both directly on the **Title Screen (Home Page)** and during gameplay—using the `,` (previous theme) and `.` (next theme) keys:
 
 1. **SkiFree Sandfall**: Classic golden rushing sand dunes, braided chutes, white frothing crests, and spray motes.
 2. **Cosmic Chronometer**: Deep space midnight, concentric celestial orbits, astrolabe ticks, and starry void.
@@ -45,8 +45,8 @@ In **Dev Mode** (toggle with `` ` ``), you can freely cycle through **20 complet
 4. **Shattered Mirror Chasm**: Iridescent lavender crystal chasm, reflecting diamond fractures, and prism facets.
 5. **Magma Caldera**: Volcanic caldera, basalt crags, obsidian riverbed, and bubbling liquid lava flumes.
 6. **Cartographer's Scroll**: Antique nautical map parchment, compass rhumb lines, and sea monster territorial borders.
-7. **Pro Mode (High Contrast Dark)**: Pure pitch-black canvas, 100% functional zero-noise clarity, static major (100px) and minor (25px) grid lines fixed to screen background, color-matched pact cards with uncluttered level advancement, and high-visibility color-blind safe palettes (WCAG AAA).
-8. **Pro Mode (High Contrast Light)**: Clinical white engineering canvas, static major (100px) and minor (25px) grid lines fixed to screen background, pitch-black obsidian shards, amber sand, and extreme luminance delta (>20:1 contrast).
+7. **Pro Mode (High Contrast Dark)**: Pure pitch-black canvas, 100% functional zero-noise clarity, static major (100px) and minor (25px) grid lines fixed to screen background, dual vertical Chronos countdown progress bars at extreme left and right borders (top to bottom), solid opaque HUD panels, and color-matched pact cards with uncluttered level advancement (WCAG AAA).
+8. **Pro Mode (High Contrast Light)**: Clinical white engineering canvas, static major (100px) and minor (25px) grid lines fixed to screen background, dual vertical Chronos countdown progress bars at extreme left and right borders (top to bottom), pitch-black obsidian shards, amber sand, and extreme luminance delta (>20:1 contrast).
 9. **Copper & Verdigris**: Steampunk weathered bronze, verdigris patina corrosion, and ticking brass gears.
 10. **Solar Flare**: Blinding coronal solar mass ejections, magnetic prominence arcs, and fiery plasma ribbons.
 11. **Monochrome Blueprint**: Engineering architectural drafting cyan blueprint with white millimeter grids.
@@ -69,13 +69,13 @@ Each theme dynamically transforms the procedural background terrain as well as t
 | Control | Action | Mechanic |
 | :--- | :--- | :--- |
 | `A` / `D` or `Left` / `Right` | Lateral Steering | Steer hourglass horizontally (viscous damping coefficient: 0.82) |
-| Touch `< LEFT` / `RIGHT >` | Mobile Touch Steering | Semi-transparent on-screen buttons (visible on mobile only) or bottom screen tap |
+| Touch `< LEFT` / `RIGHT >` | Mobile Touch Steering | High-contrast on-screen buttons (visible on mobile only) or bottom screen tap |
 | `Left` / `Right` or Tap Card | Select Faustian Bargain | Steer left or right during Kairos to choose between the 2 bargain cards within 2.0s (requires fresh press after release) |
 | `Space` / `Enter` or Tap Screen | Start / Restart | Start game or restart after a 2.0s post-mortem lockout (debounced) |
 | `X` | Return to Menu / Quit | In gameplay: return to Title Menu. On Title Menu: quit game (no-op in browser) |
+| `,` (Comma) | Previous Theme | Cycle backwards through all 20 divergent aesthetic themes (works on Title Screen and in-game) |
+| `.` (Period) | Next Theme | Cycle forward through all 20 divergent aesthetic themes (works on Title Screen and in-game) |
 | `~` / `` ` `` (Backtick) | Toggle Dev Mode | On-screen debug HUD, live telemetry, and shortcut cheats |
-| `,` (Comma in Dev Mode) | Previous Theme | Cycle backwards through all 20 divergent aesthetic themes |
-| `.` (Period in Dev Mode) | Next Theme | Cycle forward through all 20 divergent aesthetic themes |
 | `I` (in Dev Mode) | Toggle God Mode | Invulnerability toggle (immune to glass shards and void collision) |
 | `B` (in Dev Mode) | Toggle GOFAI Bot | Autonomous kinematic AI playtesting agent (80% speed handicap, 20% bottom blind zone) |
 | `V` (in Dev Mode) | Toggle MP4 Recording | Lossless FFmpeg background canvas video recorder |

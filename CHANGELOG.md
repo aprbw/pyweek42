@@ -16,8 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     4. *Shattered Mirror Chasm*: Iridescent violet prism corridors, silver quartz dust, and fractured facets.
     5. *Magma Caldera*: Volcanic obsidian crags, molten basalt flumes, glowing embers, and fiery core.
     6. *Cartographer's Scroll*: Aged sepia parchment, nautical rhumb lines, and compass bearings.
-    7. *Pro Mode (High Contrast Dark)*: High-contrast pure black background, static major/minor grid lines fixed to screen background, and color-blind safe palettes (WCAG AAA).
-    8. *Pro Mode (High Contrast Light)*: Clinical white engineering drafting grid, static major/minor grid lines fixed to screen background, pitch-black obsidian shards, amber sand, and extreme luminance delta.
+    7. *Pro Mode (High Contrast Dark)*: High-contrast pure black background, static major/minor grid lines fixed to screen background, dual vertical Chronos countdown progress bars at extreme left/right margins, and color-blind safe palettes (WCAG AAA).
+    8. *Pro Mode (High Contrast Light)*: Clinical white engineering drafting grid, static major/minor grid lines fixed to screen background, dual vertical Chronos countdown progress bars at extreme left/right margins, pitch-black obsidian shards, amber sand, and extreme luminance delta.
     9. *Copper & Verdigris*: Oxidized green patinas, hammered bronze gears, and industrial copper rivets.
     10. *Solar Flare*: Blinding orange and yellow coronal mass ejections and solar prominence arches.
     11. *Monochrome Blueprint*: Navy architectural technical blueprint with white drafting grid lines and measurement callouts.
@@ -30,13 +30,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     18. *Chalkboard Theory*: Dark slate academic chalkboard with sketched physical equations and calculus integrals.
     19. *Blood Moon Eclipse*: Crimson lunar halo, eclipse corona rays, and dark sanguine dunes.
     20. *Zen Ink Wash (Sumi-e)*: Minimalist Japanese parchment, black ink wash brush strokes, and red artisan seal.
+- **Universal Theme Switching & Home Page Integration**:
+  - Theme selection using `,` (previous) and `.` (next) is now accessible to all players at any time, decoupled completely from Dev Mode.
+  - Title Screen (Home Page) features a dedicated "20 DIVERGENT THEMES (PRO & STEALTH MODES)" guide showcasing key shortcuts and live-updating active theme indicator.
+- **Pro Mode Dual Vertical Countdown Progress Bars**:
+  - Pinned to the extreme left (`x = 0..6`) and extreme right (`x = 594..600`) margins of the screen.
+  - Progresses downwards from top to bottom during Chronos descent, providing intuitive peripheral vision countdown until Kairos strikes.
+  - Features imminent urgency pulsing (Crimson Red / Amber) during the final 1.5 seconds.
+- **Eliminated UI Checkerboard Noise for 100% Typography Readability**:
+  - Replaced dithered transparency on all UI text containers (Hearts, Elapsed Time, Score, Faustian Pacts HUD, Kairos modal body, Game Over stats, theme banner, dev overlay, and mobile buttons) with solid opaque backgrounds and crisp borders.
+  - Background dimming behind modals now uses a clean full-screen ambient backdrop, ensuring zero checkered dot artifacts interfere with text across all 20 themes.
 - **Harmonious Entity & Palettes System**:
   - Each theme defines bespoke palettes for sand grains (body, outline, center glint, drop shadow, fat grain styling), glass shards (translucent facet, outline, specular glint, drop shadow, fat shard styling), and player hourglass (caps, cap highlights, rivets, glass walls, waist neck, and dual-tone bulb sands).
-- **Real-Time Theme Switching in Dev Mode**:
-  - Comma (`,`) cycles to the previous theme.
-  - Period (`.`) cycles to the next theme.
-  - Prominent on-screen banner: `THEME [XX/20]: <NAME> ([,] PREV THEME  [.] NEXT THEME)` displays cleanly below the HUD without overlap upon switching.
-  - Active theme name and controls integrated into the developer debug overlay (`~`).
 - **Dedicated Theme Engine Architecture (`engine/themes.py`)**:
   - Modularized theme definitions and procedural background math into dedicated dataclasses (`Theme`, `SandPalette`, `ShardPalette`, `HourglassPalette`) with infinite horizontal rendering and high 60 FPS performance.
 - **Mobile Browser Zoom Prevention & Touch Hardening**:

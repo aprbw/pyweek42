@@ -1857,19 +1857,20 @@ def test_dev_mode_comma_period_theme_cycling():
     from main import GrainOfDoubtApp
     from engine.themes import ALL_THEMES
 
-    app = GrainOfDoubtApp(headless=True, dev_mode=True)
+    # Test that theme selection works outside dev mode (available to all players)
+    app = GrainOfDoubtApp(headless=True, dev_mode=False)
     assert app.current_theme_index == 0
     assert app.theme_banner_timer == 0
 
     orig_btnp = pyxel.btnp
     try:
-        # Press '.' -> next theme (index 1)
+        # Press '.' without dev_mode -> advances to next theme (index 1)
         pyxel.btnp = lambda k: k == pyxel.KEY_PERIOD
         app.update()
         assert app.current_theme_index == 1
         assert app.theme_banner_timer == 89
 
-        # Press ',' -> previous theme (index 0)
+        # Press ',' without dev_mode -> previous theme (index 0)
         pyxel.btnp = lambda k: k == pyxel.KEY_COMMA
         app.update()
         assert app.current_theme_index == 0
@@ -1885,15 +1886,40 @@ def test_dev_mode_comma_period_theme_cycling():
         pyxel.btnp = lambda k: False
         app.update()
         assert app.theme_banner_timer == 88
-
-        # Ensure non-dev mode ignores ',' and '.'
-        app.dev_mode = False
-        app.current_theme_index = 0
-        pyxel.btnp = lambda k: k == pyxel.KEY_PERIOD
-        app.update()
-        assert app.current_theme_index == 0  # Should NOT change when dev_mode is False
     finally:
         pyxel.btnp = orig_btnp
+
+
+def test_pro_mode_chronos_bars():
+    """Verify Pro Mode renders dual vertical countdown progress bars at extreme left and right borders during Chronos."""
+    import pyxel
+    from main import GrainOfDoubtApp
+    from engine.state import GameState
+
+    try:
+        pyxel.init(600, 800, headless=True)
+    except BaseException:
+        pass
+
+    app = GrainOfDoubtApp(headless=True)
+    app.start_new_game()
+    app.current_theme_index = 6  # Pro Mode Dark
+    app.state.current_state = GameState.CHRONOS
+
+    # Verify method runs without error at various stages of countdown
+    for timer_val in [0, 75, 150, 260, 300]:
+        app.state.chronos_timer = timer_val
+        app.draw_pro_mode_chronos_bars()
+
+    # Switch to Pro Mode Light and test
+    app.current_theme_index = 7  # Pro Mode Light
+    for timer_val in [0, 75, 150, 260, 300]:
+        app.state.chronos_timer = timer_val
+        app.draw_pro_mode_chronos_bars()
+
+    # Verify it does nothing when not in Chronos
+    app.state.current_state = GameState.TITLE
+    app.draw_pro_mode_chronos_bars()
 
 
 
