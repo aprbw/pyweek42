@@ -9,8 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v0.19.0] - 2026-09-24
 ### Added
+- **Continuous 2D Procedural Sand Dunes Landscape (`sand_dunes_landscape.py` & Theme 0)**:
+  - **Topology Engine**: Layered procedural wave polygons rendered back-to-front. Prohibits explicit stroke outlines—defining dune boundaries entirely through negative space between sequential procedural waveforms.
+  - **Perspective Inverse Z-Depth Velocity**: Projects simulated depth to 2D screen coordinates converging toward a supra-canvas horizon point ($Y_H = -140$). Translation velocity and wave amplitude are modulated inversely against Z-depth ($\frac{dY}{dt} \propto (Y - Y_H)^2$). Proximal dunes at the bottom rush upwards at $>10\times$ the velocity of distal dunes near the top, which experience asymptotic stalling near the horizon.
+  - **Intra-Layer Shadow Mapping**: Binds localized vertical linear color gradients within wave geometry—rendering darker crest coordinates transitioning into luminous dune bases to simulate realistic directional self-shadowing.
+  - **Atmospheric Scattering**: Overrides localized gradients with a global luminosity scalar linked to Z-depth, desaturating and optically bleaching distant ridges into the ambient desert haze threshold.
+  - **Standalone Executable Script**: Created `sand_dunes_landscape.py` with interactive keyboard controls (`A`/`D` pan, `W`/`S` scroll speed, `U`/`J` horizon altitude, `P` haze toggle, `C` screenshot, and `--headless` automated test flags).
+- **Reader Mode (E-Reader Dark & Light, Themes 13 & 14)**:
+  - Replaced legacy stealth specifications with an authentic digital e-reader interface.
+  - **Genuine Scripture Text**: Embedded complete **Ecclesiastes 3:1-22 (King James Version)** ("To every thing there is a season, and a time to every purpose under the heaven...").
+  - **Double-Sized E-Reader Typography**: Double font size (`scale=2`, $8 \times 12$ px characters) formatted as continuous, un-indented wrapped prose.
+  - **100% Floating HUD Suppression**: Removed all floating arcade UI containers (hearts, score, chronos timer bar, and pact list).
+  - **Disguised Line 2 Telemetry**: Formats vital game state seamlessly into the second line of the prose (`Hearts: X/5 | Score: Y | Time: Z.Zs | Pacts: None / List`).
+  - **30% Alpha Translucent Gameplay Elements**: Applies `pyxel.dither(0.30)` to the player hourglass, falling triangle glass shards, and cascading sand grains, transforming fast-paced arcade action into subtle watermarks beneath the prose.
 - **20 Divergent Aesthetic Themes**: Introduced 20 completely unique, cohesive aesthetic themes accessible in real time:
-    1. *SkiFree Sandfall*: Golden rushing braided dunes, amber shadows, sunlit crests, and spray motes.
+    1. *SkiFree Sandfall (Dune Horizon)*: Continuous 2D procedural sand dune landscape, perspective Z-depth scaling, and atmospheric scattering.
     2. *Cosmic Chronometer*: Deep midnight space, concentric planetary orbits, astrolabe celestial ticks.
     3. *Abyssal Hourglass*: Pitch black void, bioluminescent indigo trails, and crystalline glints.
     4. *Shattered Mirror Chasm*: Iridescent violet prism corridors, silver quartz dust, and fractured facets.
@@ -23,8 +36,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     11. *Monochrome Blueprint*: Navy architectural technical blueprint with white drafting grid lines and measurement callouts.
     12. *Glacial Crevasse*: Sub-zero ice shelf, vertical fissure crevasses, and permafrost ice needles.
     13. *Retro Terminal Matrix*: Monochrome green CRT phosphor terminal, falling digital glyph matrix rain, and scanlines.
-    14. *Stealth Mode (E-Reader Dark)*: Formatted computer science specification / RFC documentation scrolling in dark mode terminal, disguised as a technical paper.
-    15. *Stealth Mode (Book Novel Light)*: Antique book page layout with warm cream paper, classical novel prose chapters on borrowed time, and margins.
+    14. *Reader Mode (E-Reader Dark)*: Digital e-reader displaying Ecclesiastes 3 KJV in double-sized font, 100% suppressed floating HUD, disguised Line 2 telemetry, and 30% alpha translucent watermarks.
+    15. *Reader Mode (E-Reader Light)*: Warm parchment e-reader displaying Ecclesiastes 3 KJV, disguised Line 2 telemetry, and 30% alpha gameplay watermarks.
     16. *Neon Noir Megacity*: Rain-slicked cyber metropolis, neon signage, and vertical skyscraper silhouettes.
     17. *Liminal Vaporwave*: Dreamlike pink and periwinkle wireframe grid with neon aesthetic.
     18. *Chalkboard Theory*: Dark slate academic chalkboard with sketched physical equations and calculus integrals.
@@ -32,7 +45,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     20. *Zen Ink Wash (Sumi-e)*: Minimalist Japanese parchment, black ink wash brush strokes, and red artisan seal.
 - **Universal Theme Switching & Home Page Integration**:
   - Theme selection using `,` (previous) and `.` (next) is now accessible to all players at any time, decoupled completely from Dev Mode.
-  - Title Screen (Home Page) features a dedicated "20 DIVERGENT THEMES (PRO & STEALTH MODES)" guide showcasing key shortcuts and live-updating active theme indicator.
+  - Title Screen (Home Page) features a dedicated "20 DIVERGENT THEMES (PRO & READER MODES)" guide showcasing key shortcuts and live-updating active theme indicator.
+
 - **Pro Mode Dual Vertical Countdown Progress Bars**:
   - Pinned to the extreme left (`x = 0..6`) and extreme right (`x = 594..600`) margins of the screen.
   - Progresses downwards from top to bottom during Chronos descent, providing intuitive peripheral vision countdown until Kairos strikes.

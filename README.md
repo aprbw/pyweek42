@@ -39,7 +39,7 @@ Steer left or right to avoid falling glass shards while collecting glistening go
 
 You can freely cycle through **20 completely unique, divergent aesthetic themes** in real time—both directly on the **Title Screen (Home Page)** and during gameplay—using the `,` (previous theme) and `.` (next theme) keys:
 
-1. **SkiFree Sandfall**: Classic golden rushing sand dunes, braided chutes, white frothing crests, and spray motes.
+1. **SkiFree Sandfall (Dune Horizon)**: Continuous 2D procedural sand dune landscape with a **Topology Engine** (layered polygons rendered back-to-front; negative space geometry prohibiting stroke lines; inverse Z-depth upward velocity converging at supra-canvas horizon $Y_H = -140$; speed $>10\times$ faster at bottom than top), **Shadow Mapping** (intra-layer vertical linear gradients from dark crests to light bases), and **Atmospheric Scattering** (global luminosity scalar desaturating distal ridges into ambient desert haze).
 2. **Cosmic Chronometer**: Deep space midnight, concentric celestial orbits, astrolabe ticks, and starry void.
 3. **Abyssal Hourglass**: Stygian black ocean abyss, bioluminescent cyan ribbons, and deep-sea current pulses.
 4. **Shattered Mirror Chasm**: Iridescent lavender crystal chasm, reflecting diamond fractures, and prism facets.
@@ -52,8 +52,8 @@ You can freely cycle through **20 completely unique, divergent aesthetic themes*
 11. **Monochrome Blueprint**: Engineering architectural drafting cyan blueprint with white millimeter grids.
 12. **Glacial Crevasse**: Sub-zero glacial ice sheet, deep blue crevasse crevasses, and permafrost frost needles.
 13. **Retro Terminal Matrix**: Phosphor green cathode-ray tube monitor with falling hexadecimal digital rain.
-14. **Stealth Mode (E-Reader Dark)**: Formatted computer science specification / RFC documentation scrolling in dark mode terminal, disguised as an academic technical paper.
-15. **Stealth Mode (Book Novel Light)**: Antique book page layout with warm cream paper, classical novel prose chapters on borrowed time, margins, and letterpress typography.
+14. **Reader Mode (E-Reader Dark)**: Digital e-reader interface displaying genuine **Ecclesiastes 3:1-22 (King James Version)** in double-sized font (`scale=2`, $8 \times 12$ px characters) formatted as continuous, un-indented prose. Floating arcade HUD panels are 100% suppressed; gameplay telemetry (Hearts, Score, Time, Pacts) is seamlessly disguised on Line 2 of the scripture. All gameplay entities (hourglass, triangle shards, sand grains) render at **30% alpha** (`pyxel.dither(0.30)`), appearing as subtle translucent watermarks beneath the prose.
+15. **Reader Mode (E-Reader Light)**: Warm cream parchment companion to Reader Mode. Double-sized Ecclesiastes 3 KJV text, Line 2 disguised telemetry, 100% suppressed floating HUD, and 30% alpha translucent gameplay elements.
 16. **Neon Noir Megacity**: Cyberpunk rainy skyscraper canyon, glowing magenta neon signs, and dark tarmac.
 17. **Liminal Vaporwave**: Pastel pink and cyan retro-futuristic wireframe perspective grid and digital horizon.
 18. **Chalkboard Theory**: Dark classroom slate chalkboard inscribed with theoretical physics equations and integrals.
@@ -61,6 +61,7 @@ You can freely cycle through **20 completely unique, divergent aesthetic themes*
 20. **Zen Ink Wash (Sumi-e)**: Traditional Japanese washi parchment, black ink calligraphy brush strokes, and red cinnabar seal.
 
 Each theme dynamically transforms the procedural background terrain as well as the complete color palettes of the player's hourglass, sand grains, and glass shards to ensure aesthetic harmony and sharp contrast!
+
 
 ---
 
@@ -212,39 +213,31 @@ python3 -m http.server 8000
 > Complete version history for every release from **v0.1.0** through **v0.19.0** is detailed below and in [CHANGELOG.md](CHANGELOG.md).
 
 ### v0.19.0 (September 2026)
-* **20 Divergent Aesthetic Themes**:
-  * Introduced 20 completely unique, cohesive aesthetic themes accessible in real time:
-    1. *SkiFree Sandfall*: Golden rushing braided dunes, amber shadows, sunlit crests, and spray motes.
-    2. *Cosmic Chronometer*: Deep midnight space, concentric planetary orbits, astrolabe celestial ticks.
-    3. *Abyssal Hourglass*: Pitch black void, bioluminescent indigo trails, and crystalline glints.
-    4. *Shattered Mirror Chasm*: Iridescent violet prism corridors, silver quartz dust, and fractured facets.
-    5. *Magma Caldera*: Volcanic obsidian crags, molten basalt flumes, glowing embers, and fiery core.
-    6. *Cartographer's Scroll*: Aged sepia parchment, nautical rhumb lines, and compass bearings.
-    7. *Pro Mode (High Contrast Dark)*: High-contrast pure black background, static major/minor grid lines, and color-blind safe palettes (WCAG AAA).
-    8. *Pro Mode (High Contrast Light)*: Clinical white engineering drafting grid, static major/minor grid lines, pitch-black obsidian shards, and amber sand.
-    9. *Copper & Verdigris*: Oxidized green patinas, hammered bronze gears, and industrial copper rivets.
-    10. *Solar Flare*: Blinding orange and yellow coronal mass ejections and solar prominence arches.
-    11. *Monochrome Blueprint*: Navy architectural technical blueprint with white drafting grid lines and measurement callouts.
-    12. *Glacial Crevasse*: Sub-zero ice shelf, vertical fissure crevasses, and permafrost ice needles.
-    13. *Retro Terminal Matrix*: Monochrome green CRT phosphor terminal, falling digital glyph matrix rain, and scanlines.
-    14. *Stealth Mode (E-Reader Dark)*: Formatted computer science specification / RFC documentation scrolling in dark mode terminal, disguised as a technical paper.
-    15. *Stealth Mode (Book Novel Light)*: Antique book page layout with warm cream paper, classical novel prose chapters on borrowed time, and margins.
-    16. *Neon Noir Megacity*: Rain-slicked cyber metropolis, neon signage, and vertical skyscraper silhouettes.
-    17. *Liminal Vaporwave*: Dreamlike pink and periwinkle wireframe grid with neon aesthetic.
-    18. *Chalkboard Theory*: Dark slate academic chalkboard with sketched physical equations and calculus integrals.
-    19. *Blood Moon Eclipse*: Crimson lunar halo, eclipse corona rays, and dark sanguine dunes.
-    20. *Zen Ink Wash (Sumi-e)*: Minimalist Japanese parchment, black ink wash brush strokes, and red artisan seal.
-* **Harmonious Entity & Palette System**:
-  * Each theme defines bespoke palettes for sand grains (body, outline, center glint, drop shadow, fat grain styling), glass shards (translucent facet, outline, specular glint, drop shadow, fat shard styling), and player hourglass (caps, cap highlights, rivets, glass walls, waist neck, and dual-tone bulb sands).
-* **Real-Time Theme Switching in Dev Mode**:
-  * Comma (`,`) cycles to the previous theme.
-  * Period (`.`) cycles to the next theme.
-  * Prominent on-screen banner: `THEME [XX/20]: <NAME> ([,] PREV THEME  [.] NEXT THEME)` displays cleanly below the HUD without overlap upon switching.
-  * Active theme name and controls integrated into the developer debug overlay (`~`).
-* **Dedicated Theme Engine Architecture (`engine/themes.py`)**:
-  * Modularized theme definitions and procedural background math into dedicated dataclasses (`Theme`, `SandPalette`, `ShardPalette`, `HourglassPalette`) with infinite horizontal rendering and high 60 FPS performance.
+* **Continuous 2D Procedural Sand Dunes Landscape (`sand_dunes_landscape.py` & Theme 0):**
+  * **Topology Engine**: Layered procedural wave polygons rendered back-to-front. Prohibits explicit stroke outlines—defining dune boundaries entirely through the negative space between sequential procedural waveforms.
+  * **Perspective Inverse Z-Depth Velocity**: Projects simulated depth to 2D screen coordinates converging toward a supra-canvas horizon point ($Y_H = -140$). Translation velocity and wave amplitude are modulated inversely against Z-depth ($\frac{dY}{dt} \propto (Y - Y_H)^2$). Proximal dunes at the bottom rush upwards at $>10\times$ the velocity of distal dunes near the top, which experience asymptotic stalling near the horizon.
+  * **Intra-Layer Shadow Mapping**: Binds localized vertical linear color gradients within wave geometry—rendering darker crest coordinates transitioning into luminous dune bases to simulate realistic directional self-shadowing.
+  * **Atmospheric Scattering**: Overrides localized gradients with a global luminosity scalar linked to Z-depth, desaturating and optically bleaching distant ridges into the ambient desert haze threshold.
+  * **Standalone Executable Script**: Run `python sand_dunes_landscape.py` independently with interactive controls (`A`/`D` pan, `W`/`S` scroll speed, `U`/`J` horizon altitude, `P` haze toggle, `C` screenshot).
+* **Reader Mode (E-Reader Dark & Light, Themes 13 & 14):**
+  * Replaces legacy stealth specifications with an authentic e-reader reading experience.
+  * **Scripture Text**: Inscribes the complete, authentic text of **Ecclesiastes 3:1-22 (King James Version)** ("To every thing there is a season, and a time to every purpose under the heaven...").
+  * **Double-Sized E-Reader Typography**: Double-scaled font (`scale=2`, $8 \times 12$ px characters) formatted as continuous, un-indented prose, delivering comfortable book readability.
+  * **100% Floating HUD Suppression**: Removes all floating arcade UI containers (hearts, score, chronos timer bar, and pact list).
+  * **Disguised Line 2 Telemetry**: Formats vital game state seamlessly into the second line of the prose (`Hearts: X/5 | Score: Y | Time: Z.Zs | Pacts: None / List`).
+  * **30% Alpha Translucent Gameplay Elements**: Applies `pyxel.dither(0.30)` to the player hourglass, falling triangle glass shards, and cascading sand grains, transforming fast-paced arcade action into subtle watermarks beneath the prose.
+* **Pro Mode High-Contrast Functional Redesign (Themes 6 & 7):**
+  * Clinical, zero-noise engineering drafting grid with static major (100px) and minor (25px) grid lines fixed to the screen background.
+  * Pinned dual vertical Chronos countdown progress bars at extreme left and right margins ($x \in [0, 6]$ and $x \in [594, 600]$), tracking remaining time downwards from top to bottom with urgency pulsing.
+  * Color-matched pact cards with uncluttered level advancement indicators.
+* **Universal Theme Switching & Home Page Integration**:
+  * Theme switching using `,` (previous) and `.` (next) is available to all players anytime, completely decoupled from Dev Mode.
+  * Home Page (Title Screen) features high-contrast plaques for 100% legibility across all themes and highlights the 20 divergent themes.
+* **Eliminated UI Checkerboard Noise**:
+  * Replaced dithered transparency on all UI panels and modals with clean solid opaque backgrounds and high-contrast borders for 100% text readability.
 * **Mobile Browser Hardening & Zoom Prevention**:
   * Multi-layer defense against unwanted mobile zooming (pinch-to-zoom, Safari gesturestart, double-tap zoom debounce, and CSS touch-action rules).
+
 
 ### v0.18.0 (September 2026)
 * **Complete Visual Decluttering (Zero Particles):**

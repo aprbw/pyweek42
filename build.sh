@@ -9,14 +9,18 @@ echo "1. Running unit test suite..."
 echo "2. Cleaning old bundle files..."
 rm -f *.pyxapp *.html tests/*.mp4 *.mp4
 
-echo "3. Packaging pyxapp (stashing recordings and 2do during package)..."
+echo "3. Packaging pyxapp (stashing recordings, scratch, screenshots, and 2do during package)..."
 mkdir -p .tmp_recordings
 mv recordings/*.mp4 .tmp_recordings/ 2>/dev/null || true
 mv 2do* .tmp_recordings/ 2>/dev/null || true
+mv scratch .tmp_recordings/ 2>/dev/null || true
+mv screenshot_*.png .tmp_recordings/ 2>/dev/null || true
 .venv/bin/pyxel package . main.py
 mv *.pyxapp grain_of_doubt.pyxapp
 mv .tmp_recordings/*.mp4 recordings/ 2>/dev/null || true
 mv .tmp_recordings/2do* ./ 2>/dev/null || true
+mv .tmp_recordings/scratch ./ 2>/dev/null || true
+mv .tmp_recordings/screenshot_*.png ./ 2>/dev/null || true
 rmdir .tmp_recordings 2>/dev/null || true
 
 echo "4. Exporting WebAssembly HTML..."
@@ -31,8 +35,7 @@ ZIP_NAME="grain-of-doubt-0.19.0.zip"
 DIR_NAME="grain-of-doubt-0.19.0"
 rm -rf grain-of-doubt-*.zip "$DIR_NAME"
 mkdir -p "$DIR_NAME"
-
-cp -r run_game.py main.py engine tests requirements.txt README.md CHANGELOG.md p03.md LICENSE.md build.sh run.sh playtest_bot.py optimize_web.py "$DIR_NAME/"
+cp -r run_game.py main.py sand_dunes_landscape.py engine tests requirements.txt README.md CHANGELOG.md p03.md LICENSE.md build.sh run.sh playtest_bot.py optimize_web.py "$DIR_NAME/"
 find "$DIR_NAME" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 find "$DIR_NAME" -name "*.pyc" -delete 2>/dev/null || true
 find "$DIR_NAME" -name "*.mp4" -delete 2>/dev/null || true

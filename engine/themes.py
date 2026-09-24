@@ -50,69 +50,129 @@ class Theme:
     sand: SandPalette
     shard: ShardPalette
     hourglass: HourglassPalette
-    render_bg: Callable[[any, int, float, int, int, int, bool], None]
+    render_bg: Callable[..., None]
+    is_reader_mode: bool = False
 
     def get_clear_color(self, greed_active: bool) -> int:
         return self.greed_clear_color if greed_active else self.clear_color
 
-    def render(self, pyxel_mod, cam_x: int, prog: float, dist: int, screen_w: int = 600, screen_h: int = 800, is_greed: bool = False):
+    def render(self, pyxel_mod, cam_x: int, prog: float, dist: int, screen_w: int = 600, screen_h: int = 800, is_greed: bool = False, telemetry: Optional[dict] = None):
         if self.render_bg and pyxel_mod:
-            self.render_bg(pyxel_mod, cam_x, prog, dist, screen_w, screen_h, is_greed)
+            try:
+                self.render_bg(pyxel_mod, cam_x, prog, dist, screen_w, screen_h, is_greed, telemetry=telemetry)
+            except TypeError:
+                self.render_bg(pyxel_mod, cam_x, prog, dist, screen_w, screen_h, is_greed)
 
 
 # =============================================================================
 # PROCEDURAL BACKGROUND RENDERERS FOR ALL 20 THEMES
 # =============================================================================
 
-def bg_skifree_sandfall(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool):
-    """Theme 1: SkiFree Sandfall (Braided chutes, velocity shearing, sinuous sandbars)."""
-    col_crest = 8 if is_greed else (10 if prog > 0.85 and (pyxel.frame_count // 3) % 2 == 0 else 7)
-    col_shadow = 0 if is_greed else 9
-    col_shadow_deep = 0 if is_greed else 4
-    col_stream = 8 if is_greed else (10 if prog > 0.85 else 9)
-    col_froth = 14 if is_greed else 7
-    col_spray = 8 if is_greed else 10
-    col_rock = 0 if is_greed else 4
-    col_rock_hl = 8 if is_greed else 7
+def bg_sand_dunes_landscape(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool, telemetry: Optional[dict] = None):
+    """Continuous 2D procedural landscape of undulating sand dunes.
+    Topology Engine: Layered negative space curves, supra-canvas horizon projection, inverse Z-depth velocity.
+    Shadow Mapping: Localized vertical linear gradients within wave geometries (dark superior, light inferior).
+    Atmospheric Scattering: Distal layers bleach optically into desaturated ambient haze, proximal retain saturation.
+    """
+    horizon_y = -140
+    num_layers = 16
+    u_min = 1.0 / (screen_h - horizon_y + 100)
+    u_max = 1.0 / max(10, (25 - horizon_y))
+    step_u = (u_max - u_min) / float(num_layers)
+    u_range = u_max - u_min
+    speed_u = 0.000006
 
-    # 1. Cascading Flumes & Streamlines
-    start_col = int((cam_x - 30) // 22) * 22
-    end_col = cam_x + screen_w + 30
-    cycle_h = 320
-    for col_x in range(start_col, end_col, 22):
-        col_hash = (col_x * 73856093) & 0xFFFFFF
-        spd = 1.18 + 0.32 * ((col_hash % 100) / 100.0)
-        for offset_y in (0, 110, 220):
-            sy = (offset_y - int(dist * spd)) % cycle_h - 20
-            if -20 <= sy <= screen_h + 20:
-                streak_len = 10 + (col_hash % 14)
-                meander = int(5.0 * math.sin((sy + dist * 0.04) * 0.015 + col_x * 0.03))
-                fx = col_x + meander
-                pyxel.line(fx, sy, fx, sy + streak_len, col_stream)
-                if (col_hash >> 6) % 3 == 0:
-                    pyxel.pset(fx, sy, col_froth)
+    layers = []
+    for k in range(num_layers):
+        u = u_min + ((k * step_u + dist * speed_u) % u_range)
+        y_base = horizon_y + 1.0 / u
+        layers.append((y_base, k))
 
-    # 2. Braided Sandbar Banks
-    bar_spacing = 140
-    for base_y in range(-bar_spacing, screen_h + bar_spacing, bar_spacing):
-        y_anchor = base_y - (dist % bar_spacing)
-        prev_x = cam_x - 24
-        prev_y = y_anchor + int(24 * math.sin((prev_x + base_y) * 0.009) + 10 * math.cos(prev_x * 0.021))
-        for x in range(cam_x - 18, cam_x + screen_w + 24, 6):
-            cur_y = y_anchor + int(24 * math.sin((x + base_y) * 0.009) + 10 * math.cos(x * 0.021))
-            if -30 <= cur_y <= screen_h + 30:
-                chute_val = math.sin(x * 0.007 + (base_y // bar_spacing) * 1.5)
-                if chute_val > 0.40:
-                    if x % 18 == 0:
-                        pyxel.pset(x, cur_y, col_froth)
-                        pyxel.pset(x + 2, cur_y + 1, col_stream)
+    layers.sort(key=lambda item: item[0])
+
+    step_x = 2
+    x_samples = list(range(0, screen_w + step_x, step_x))
+    curve_profiles = []
+    total_span_y = float(screen_h - horizon_y)
+
+    for y_base, k in layers:
+        s = max(0.0, min(1.0, (y_base - horizon_y) / total_span_y))
+        amp = 85.0 * (s ** 1.35)
+
+        k1 = 0.007 + 0.010 * (1.0 - s)
+        k2 = 0.016 + 0.018 * (1.0 - s)
+        k3 = 0.035 + 0.025 * (1.0 - s)
+
+        phi1 = k * 2.39996 + 0.4
+        phi2 = k * 4.12345 + 1.1
+        phi3 = k * 1.71828
+
+        y_curve = {}
+        for x in x_samples:
+            xw = cam_x + x
+            w1 = math.sin(k1 * xw + phi1)
+            w2 = math.sin(k2 * xw + phi2) * 0.38
+            w3 = math.cos(k3 * xw + phi3) * 0.14
+            y_curve[x] = int(y_base - amp * (w1 + w2 + w3))
+
+        curve_profiles.append((y_base, s, k, y_curve))
+
+    num_profiles = len(curve_profiles)
+    for i in range(num_profiles):
+        y_base, s, k, y_curve = curve_profiles[i]
+        next_curve = curve_profiles[i + 1][3] if (i + 1 < num_profiles) else None
+
+        for x in x_samples:
+            y_top = max(0, min(screen_h, y_curve[x]))
+            y_bot = screen_h if next_curve is None else max(0, min(screen_h, next_curve[x]))
+            if y_bot <= y_top:
+                continue
+
+            span = y_bot - y_top
+
+            if is_greed:
+                if s > 0.60:
+                    c_top, c_mid, c_bot = 0, 2, 8
+                    t1 = int(y_top + span * 0.25)
+                    t2 = int(y_top + span * 0.65)
+                elif s > 0.32:
+                    c_top, c_mid, c_bot = 2, 8, 14
+                    t1 = int(y_top + span * 0.28)
+                    t2 = int(y_top + span * 0.70)
                 else:
-                    pyxel.line(prev_x, prev_y, x, cur_y, col_crest)
-                    pyxel.line(prev_x, prev_y + 1, x, cur_y + 1, col_shadow)
-                    if x % 12 == 0:
-                        pyxel.line(x, cur_y + 2, x, cur_y + 5, col_shadow_deep)
-            prev_x = x
-            prev_y = cur_y
+                    c_top, c_mid, c_bot = 8, 14, 15
+                    t1 = int(y_top + span * 0.34)
+                    t2 = int(y_top + span * 0.74)
+            elif prog > 0.85 and (pyxel.frame_count // 3) % 2 == 0:
+                c_top, c_mid, c_bot = 9, 10, 7
+                t1 = int(y_top + span * 0.20)
+                t2 = int(y_top + span * 0.60)
+            else:
+                if s > 0.60:
+                    c_top, c_mid, c_bot = 4, 9, 10
+                    t1 = int(y_top + span * 0.22)
+                    t2 = int(y_top + span * 0.62)
+                elif s > 0.32:
+                    c_top, c_mid, c_bot = 9, 10, 15
+                    t1 = int(y_top + span * 0.26)
+                    t2 = int(y_top + span * 0.68)
+                else:
+                    c_top, c_mid, c_bot = 10, 15, 7
+                    t1 = int(y_top + span * 0.32)
+                    t2 = int(y_top + span * 0.72)
+
+            if t1 > y_top:
+                pyxel.rect(x, y_top, step_x, t1 - y_top, c_top)
+            if t2 > t1:
+                pyxel.rect(x, t1, step_x, t2 - t1, c_mid)
+            if y_bot > t2:
+                pyxel.rect(x, t2, step_x, y_bot - t2, c_bot)
+
+
+def bg_skifree_sandfall(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool, telemetry: Optional[dict] = None):
+    """Theme 1: SkiFree Sandfall (Continuous 2D Procedural Sand Dunes Landscape)."""
+    bg_sand_dunes_landscape(pyxel, cam_x, prog, dist, screen_w, screen_h, is_greed, telemetry=telemetry)
+
 
 
 def bg_cosmic_chronometer(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool):
@@ -427,29 +487,6 @@ STEALTH_DARK_DOC = [
 ]
 
 
-def bg_stealth_dark(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool):
-    """Theme 14: Stealth Mode E-Reader Dark (Terminal documentation / paper reading disguise)."""
-    col_text = 8 if is_greed else 5
-    col_head = 8 if is_greed else 6
-    col_decor = 8 if is_greed else 1
-
-    line_spacing = 18
-    total_h = len(STEALTH_DARK_DOC) * line_spacing
-    scroll_y = int(dist * 0.4) % total_h
-
-    # IDE / E-reader margin gutters
-    pyxel.line(cam_x + 18, 0, cam_x + 18, screen_h, col_decor)
-    pyxel.line(cam_x + screen_w - 18, 0, cam_x + screen_w - 18, screen_h, col_decor)
-
-    # Render continuous technical text
-    text_x = cam_x + 24
-    for idx, line in enumerate(STEALTH_DARK_DOC):
-        sy = (idx * line_spacing - scroll_y) % total_h
-        if -16 <= sy <= screen_h + 16:
-            c = col_head if (line.startswith("[") or (len(line) > 2 and line[0].isdigit() and line[1] == ".")) else col_text
-            pyxel.text(text_x, sy, line, c)
-
-
 STEALTH_LIGHT_DOC = [
     "CHAPTER IV",
     "THE ARCHITECTURE OF BORROWED SECONDS",
@@ -505,29 +542,163 @@ STEALTH_LIGHT_DOC = [
 ]
 
 
-def bg_stealth_light(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool):
-    """Theme 15: Stealth Mode Book Novel Light (Antique paper novel / literary prose reading disguise)."""
-    col_ink = 8 if is_greed else 0
-    col_rule = 8 if is_greed else 4
-    col_chapter = 8 if is_greed else 4
+ECCLESIASTES_3_KJV_LINES = [
+    "To every thing there is a season, and a time to every",
+    "purpose under the heaven: A time to be born, and a time to",
+    "die; a time to plant, and a time to pluck up that which is",
+    "planted; A time to kill, and a time to heal; a time to",
+    "break down, and a time to build up; A time to weep, and a",
+    "time to laugh; a time to mourn, and a time to dance; A",
+    "time to cast away stones, and a time to gather stones",
+    "together; a time to embrace, and a time to refrain from",
+    "embracing; A time to get, and a time to lose; a time to",
+    "keep, and a time to cast away; A time to rend, and a time",
+    "to sew; a time to keep silence, and a time to speak; A",
+    "time to love, and a time to hate; a time of war, and a",
+    "time of peace. What profit hath he that worketh in that",
+    "wherein he laboureth? I have seen the travail, which God",
+    "hath given to the sons of men to be exercised in it.",
+    "He hath made every thing beautiful in his time: also he",
+    "hath set the world in their heart, so that no man can",
+    "find out the work that God maketh from the beginning to",
+    "the end. I know that there is no good in them, but for",
+    "a man to rejoice, and to do good in his life. And also",
+    "that every man should eat and drink, and enjoy the good",
+    "of all his labour, it is the gift of God. I know that,",
+    "whatsoever God doeth, it shall be for ever: nothing can",
+    "be put to it, nor any thing taken from it: and God doeth",
+    "it, that men should fear before him. That which hath",
+    "been is now; and that which is to be hath already been;",
+    "and God requireth that which is past. And moreover I saw",
+    "under the sun the place of judgment, that wickedness was",
+    "there; and the place of righteousness, that iniquity",
+    "was there. I said in mine heart, God shall judge the",
+    "righteous and the wicked: for there is a time there for",
+    "every purpose and for every work. I said in mine heart",
+    "concerning the estate of the sons of men, that God might",
+    "manifest them, and that they might see that they",
+    "themselves are beasts. For that which befalleth the sons",
+    "of men befalleth beasts; even one thing befalleth them:",
+    "as the one dieth, so dieth the other; yea, they have all",
+    "one breath; so that a man hath no preeminence above a",
+    "beast: for all is vanity. All go unto one place; all are",
+    "of the dust, and all turn to dust again. Who knoweth the",
+    "spirit of man that goeth upward, and the spirit of the",
+    "beast that goeth downward to the earth? Wherefore I",
+    "perceive that there is nothing better, than that a man",
+    "should rejoice in his own works; for that is his portion:",
+    "for who shall bring him to see what shall be after him?",
+]
 
-    line_spacing = 19
-    total_h = len(STEALTH_LIGHT_DOC) * line_spacing
-    scroll_y = int(dist * 0.4) % total_h
 
-    # Page margins (book layout)
-    margin_l = cam_x + 28
-    margin_r = cam_x + screen_w - 28
+def draw_text_scaled_helper(pyxel, x: int, y: int, s: str, col: int, scale: int = 2, img_bank: int = 2):
+    """Render scaled typography using dedicated image bank without texture corruption."""
+    if not s:
+        return
+    w = min(256, len(s) * 4 + 4)
+    h = 8
+    bg_key = 1 if col == 0 else 0
+    pyxel.images[img_bank].cls(bg_key)
+    pyxel.images[img_bank].text(0, 0, s, col)
+    blt_x = x + int(w * (scale - 1) / 2)
+    blt_y = y + int(h * (scale - 1) / 2)
+    pyxel.blt(blt_x, blt_y, img_bank, 0, 0, w, h, colkey=bg_key, scale=scale)
+
+
+def bg_reader_dark(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool, telemetry: Optional[dict] = None):
+    """Theme 14: Reader Mode E-Reader Dark (Ecclesiastes 3 KJV e-reader in dark OLED mode)."""
+    col_ink = 8 if is_greed else 6     # Moonlight soft grey text
+    col_head = 8 if is_greed else 7    # Header white
+    col_rule = 8 if is_greed else 1    # Rule divider
+    col_stat = 8 if is_greed else 7    # Status text
+
+    margin_l = cam_x + 32
+    margin_r = cam_x + screen_w - 32
     pyxel.line(margin_l, 0, margin_l, screen_h, col_rule)
     pyxel.line(margin_r, 0, margin_r, screen_h, col_rule)
 
-    # Render literary text lines
-    text_x = cam_x + 36
-    for idx, line in enumerate(STEALTH_LIGHT_DOC):
-        sy = (idx * line_spacing - scroll_y) % total_h
-        if -16 <= sy <= screen_h + 16:
-            c = col_chapter if (line.startswith("CHAPTER") or line.startswith("THE ARCHITECTURE") or line.startswith("THE WEIGHT")) else col_ink
-            pyxel.text(text_x, sy, line, c)
+    text_x = cam_x + 44
+
+    # Line 1: Running header
+    draw_text_scaled_helper(pyxel, text_x, 16, "ECCLESIASTES 3 (KJV)  --  BORROWED TIME", col_head, scale=2)
+
+    # Line 2: Telemetry status disguise (Hearts, Score, Time, Pacts)
+    if telemetry:
+        h = telemetry.get("hearts", 3)
+        mh = telemetry.get("max_hearts", 3)
+        sc = telemetry.get("score", 0)
+        t_rem = telemetry.get("time_remaining", 15.0)
+        pacts = telemetry.get("pacts", [])
+        p_str = ", ".join(pacts) if pacts else "None"
+        line2 = f"Hearts: {h}/{mh}   Score: {sc}   Time: {t_rem:.1f}s   Pacts: {p_str}"
+    else:
+        line2 = "Hearts: 3/3   Score: 0   Time: 15.0s   Pacts: None"
+    draw_text_scaled_helper(pyxel, text_x, 38, line2, col_stat, scale=2)
+
+    # Divider under Line 2
+    pyxel.line(margin_l, 58, margin_r, 58, col_rule)
+
+    # Verses: Double size font, continuous e-reader wrapping, scrolling with fall
+    line_spacing = 20
+    total_h = len(ECCLESIASTES_3_KJV_LINES) * line_spacing
+    scroll_y = int(dist * 0.4) % total_h
+    start_y = 66
+
+    for idx, line in enumerate(ECCLESIASTES_3_KJV_LINES):
+        sy = start_y + (idx * line_spacing - scroll_y) % total_h
+        if 48 <= sy <= screen_h + 10:
+            draw_text_scaled_helper(pyxel, text_x, sy, line, col_ink, scale=2)
+
+
+def bg_reader_light(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool, telemetry: Optional[dict] = None):
+    """Theme 15: Reader Mode E-Reader Light (Ecclesiastes 3 KJV on warm cream e-reader paper)."""
+    col_ink = 8 if is_greed else 0     # Pitch-black ink
+    col_head = 8 if is_greed else 4    # Sepia / dark brown header
+    col_rule = 8 if is_greed else 4    # Sepia margin rule
+    col_stat = 8 if is_greed else 0    # Ink status text
+
+    margin_l = cam_x + 32
+    margin_r = cam_x + screen_w - 32
+    pyxel.line(margin_l, 0, margin_l, screen_h, col_rule)
+    pyxel.line(margin_r, 0, margin_r, screen_h, col_rule)
+
+    text_x = cam_x + 44
+
+    # Line 1: Running header
+    draw_text_scaled_helper(pyxel, text_x, 16, "ECCLESIASTES 3 (KJV)  --  BORROWED TIME", col_head, scale=2)
+
+    # Line 2: Telemetry status disguise (Hearts, Score, Time, Pacts)
+    if telemetry:
+        h = telemetry.get("hearts", 3)
+        mh = telemetry.get("max_hearts", 3)
+        sc = telemetry.get("score", 0)
+        t_rem = telemetry.get("time_remaining", 15.0)
+        pacts = telemetry.get("pacts", [])
+        p_str = ", ".join(pacts) if pacts else "None"
+        line2 = f"Hearts: {h}/{mh}   Score: {sc}   Time: {t_rem:.1f}s   Pacts: {p_str}"
+    else:
+        line2 = "Hearts: 3/3   Score: 0   Time: 15.0s   Pacts: None"
+    draw_text_scaled_helper(pyxel, text_x, 38, line2, col_stat, scale=2)
+
+    # Divider under Line 2
+    pyxel.line(margin_l, 58, margin_r, 58, col_rule)
+
+    # Verses: Double size font, continuous e-reader wrapping, scrolling with fall
+    line_spacing = 20
+    total_h = len(ECCLESIASTES_3_KJV_LINES) * line_spacing
+    scroll_y = int(dist * 0.4) % total_h
+    start_y = 66
+
+    for idx, line in enumerate(ECCLESIASTES_3_KJV_LINES):
+        sy = start_y + (idx * line_spacing - scroll_y) % total_h
+        if 48 <= sy <= screen_h + 10:
+            draw_text_scaled_helper(pyxel, text_x, sy, line, col_ink, scale=2)
+
+
+# Aliases for backward compatibility
+bg_stealth_dark = bg_reader_dark
+bg_stealth_light = bg_reader_light
+
 
 
 def bg_neon_noir_megacity(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool):
@@ -772,27 +943,29 @@ ALL_THEMES: List[Theme] = [
         hourglass=HourglassPalette(caps=3, cap_hl=11, cap_rivet=7, glass_walls=3, waist_neck=11, sand_a=11, sand_b=3, shadow=0),
         render_bg=bg_retro_terminal_matrix,
     ),
-    # 14. Stealth Mode (E-Reader Dark)
+    # 14. Reader Mode (E-Reader Dark)
     Theme(
         id=13,
-        name="STEALTH MODE (E-READER DARK)",
+        name="READER MODE (E-READER DARK)",
         clear_color=0,
         greed_clear_color=0,
         sand=SandPalette(body=10, border=0, glint=7, shadow=0, fat_body=10, fat_border=0, fat_glint=7),
         shard=ShardPalette(facet=8, border=0, glint=7, shadow=0, fat_facet=8, fat_border=7),
         hourglass=HourglassPalette(caps=5, cap_hl=6, cap_rivet=7, glass_walls=6, waist_neck=12, sand_a=10, sand_b=7, shadow=0),
-        render_bg=bg_stealth_dark,
+        render_bg=bg_reader_dark,
+        is_reader_mode=True,
     ),
-    # 15. Stealth Mode (Book Novel Light)
+    # 15. Reader Mode (E-Reader Light)
     Theme(
         id=14,
-        name="STEALTH MODE (BOOK NOVEL LIGHT)",
+        name="READER MODE (E-READER LIGHT)",
         clear_color=15,
         greed_clear_color=15,
         sand=SandPalette(body=9, border=4, glint=10, shadow=4, fat_body=9, fat_border=4, fat_glint=10),
         shard=ShardPalette(facet=8, border=4, glint=7, shadow=4, fat_facet=8, fat_border=0),
         hourglass=HourglassPalette(caps=4, cap_hl=9, cap_rivet=10, glass_walls=0, waist_neck=7, sand_a=9, sand_b=10, shadow=4),
-        render_bg=bg_stealth_light,
+        render_bg=bg_reader_light,
+        is_reader_mode=True,
     ),
     # 16. Neon Noir Megacity
     Theme(

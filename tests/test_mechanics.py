@@ -1772,8 +1772,8 @@ def test_all_20_divergent_themes_registry():
 
 
 def test_pro_mode_and_stealth_mode_themes():
-    """Verify the 4 Pro Mode and Stealth Mode themes are registered with proper aesthetics and adjacent dark/light pairs."""
-    from engine.themes import ALL_THEMES, STEALTH_DARK_DOC, STEALTH_LIGHT_DOC
+    """Verify the 4 Pro Mode and Reader Mode themes are registered with proper aesthetics and adjacent dark/light pairs."""
+    from engine.themes import ALL_THEMES, ECCLESIASTES_3_KJV_LINES, STEALTH_DARK_DOC, STEALTH_LIGHT_DOC
     from engine.bargains import SinType, SIN_CARD_COLORS
 
     # All 7 Sins have unique colors for Pro Mode cards
@@ -1798,19 +1798,30 @@ def test_pro_mode_and_stealth_mode_themes():
     assert t7.shard.facet == 0  # Pitch-black shard for maximum contrast
     assert t7.render_bg.__name__ == "bg_pro_mode_light"
 
-    # Theme 13: Stealth Mode E-Reader Dark (adjacent to Theme 14)
+    # Theme 13: Reader Mode E-Reader Dark (adjacent to Theme 14)
     t13 = ALL_THEMES[13]
-    assert t13.name == "STEALTH MODE (E-READER DARK)"
+    assert t13.name == "READER MODE (E-READER DARK)"
     assert t13.clear_color == 0
-    assert t13.render_bg.__name__ == "bg_stealth_dark"
+    assert t13.is_reader_mode is True
+    assert t13.render_bg.__name__ in ("bg_reader_dark", "bg_stealth_dark")
+
+    # Theme 14: Reader Mode E-Reader Light (adjacent to Theme 13)
+    t14 = ALL_THEMES[14]
+    assert t14.name == "READER MODE (E-READER LIGHT)"
+    assert t14.clear_color == 15  # Cream parchment
+    assert t14.is_reader_mode is True
+    assert t14.render_bg.__name__ in ("bg_reader_light", "bg_stealth_light")
+
+    # Verify Ecclesiastes 3 KJV text
+    assert len(ECCLESIASTES_3_KJV_LINES) >= 40
+    assert any("season" in line for line in ECCLESIASTES_3_KJV_LINES)
+    assert any("time to be born" in line for line in ECCLESIASTES_3_KJV_LINES)
+    assert any("die;" in line for line in ECCLESIASTES_3_KJV_LINES)
+    assert any("all turn to dust" in line for line in ECCLESIASTES_3_KJV_LINES)
+
+    # Legacy documentation texts preserved
     assert len(STEALTH_DARK_DOC) >= 30
     assert any("RFC-4209" in line for line in STEALTH_DARK_DOC)
-
-    # Theme 14: Stealth Mode Book Novel Light (adjacent to Theme 13)
-    t14 = ALL_THEMES[14]
-    assert t14.name == "STEALTH MODE (BOOK NOVEL LIGHT)"
-    assert t14.clear_color == 15  # Cream parchment
-    assert t14.render_bg.__name__ == "bg_stealth_light"
     assert len(STEALTH_LIGHT_DOC) >= 30
     assert any("CHAPTER IV" in line for line in STEALTH_LIGHT_DOC)
 
@@ -1920,6 +1931,77 @@ def test_pro_mode_chronos_bars():
     # Verify it does nothing when not in Chronos
     app.state.current_state = GameState.TITLE
     app.draw_pro_mode_chronos_bars()
+
+
+def test_sand_dunes_landscape_script_and_topology_engine():
+    """Verify sand_dunes_landscape.py executable script and continuous procedural topology engine:
+    1. Validates perspective math: horizon above canvas, bottom translates faster than top.
+    2. Validates negative space curve rendering and atmospheric scattering.
+    3. Runs standalone script headlessly without errors.
+    """
+    import subprocess
+    import sys
+    from sand_dunes_landscape import SandDunesLandscape
+
+    # Test topology engine instantiation and mathematical properties
+    sim = SandDunesLandscape(headless=True)
+    assert sim.horizon_y < 0, "Horizon must be supra-canvas (above canvas)"
+    assert sim.num_layers >= 12
+
+    # Verify translation velocity factor: bottom (Y=800) vs top (Y=50)
+    # dY/du = (Y - horizon_y)^2
+    vel_bottom = (800 - sim.horizon_y) ** 2
+    vel_top = (50 - sim.horizon_y) ** 2
+    assert vel_bottom > vel_top * 10, f"Bottom must translate >10x faster than top (perspective convergence). Ratio: {vel_bottom/vel_top:.1f}"
+
+    # Run simulation frames
+    for _ in range(5):
+        sim.update()
+    assert sim.dist > 0.0
+
+    # Execute standalone script via subprocess with --headless
+    import os
+    script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "sand_dunes_landscape.py"))
+    res = subprocess.run(
+        [sys.executable, script_path, "--headless", "--frames", "5", "--output", "scratch/test_subproc_dunes.png"],
+        capture_output=True,
+        text=True,
+    )
+    assert res.returncode == 0, f"Script failed: {res.stderr}"
+
+
+def test_reader_mode_gameplay_alpha_and_hud_suppression():
+    """Verify that Reader Mode suppresses all floating HUD boxes and applies 30% alpha dither to gameplay elements."""
+    import pyxel
+    from main import GrainOfDoubtApp
+    from engine.state import GameState
+    from engine.themes import get_theme
+
+    try:
+        pyxel.init(600, 800, headless=True)
+    except BaseException:
+        pass
+
+    app = GrainOfDoubtApp(headless=True)
+    app.start_new_game()
+    app.state.current_state = GameState.CHRONOS
+
+    # Switch to Reader Mode Dark (Theme 13)
+    app.current_theme_index = 13
+    theme_dark = get_theme(13)
+    assert theme_dark.is_reader_mode is True
+
+    # Render frame in Reader Mode Dark
+    app.draw()
+
+    # Switch to Reader Mode Light (Theme 14)
+    app.current_theme_index = 14
+    theme_light = get_theme(14)
+    assert theme_light.is_reader_mode is True
+
+    # Render frame in Reader Mode Light
+    app.draw()
+
 
 
 

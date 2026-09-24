@@ -582,6 +582,18 @@ class GrainOfDoubtApp:
         if self.state.current_state == GameState.CHRONOS:
             prog = self.state.chronos_timer / float(self.state.CHRONOS_FRAMES)
 
+        # Telemetry payload for status-display themes (e.g. Reader Mode)
+        active_pacts = []
+        if hasattr(self, "bargains") and hasattr(self.bargains, "selection_counts"):
+            active_pacts = [sin.name.title() for sin in CANONICAL_SINS if self.bargains.selection_counts.get(sin, 0) > 0]
+        telemetry = {
+            "hearts": self.state.hearts,
+            "max_hearts": getattr(self.state, "max_hearts", 5),
+            "score": self.state.score,
+            "time_remaining": max(0.0, (self.state.CHRONOS_FRAMES - self.state.chronos_timer) / 30.0),
+            "pacts": active_pacts,
+        }
+
         # Render procedural background for active theme
         theme.render(
             pyxel,
@@ -591,6 +603,7 @@ class GrainOfDoubtApp:
             screen_w=self.SCREEN_WIDTH,
             screen_h=self.SCREEN_HEIGHT,
             is_greed=self.state.greed_active,
+            telemetry=telemetry,
         )
 
         if self.state.current_state == GameState.TITLE:
@@ -599,6 +612,11 @@ class GrainOfDoubtApp:
             if self.theme_banner_timer > 0:
                 self.draw_theme_banner()
             return
+
+        # In Reader Mode: gameplay elements (sand, shards, hourglass) rendered with 30% alpha
+        is_reader = getattr(theme, "is_reader_mode", False)
+        if is_reader and hasattr(pyxel, "dither"):
+            pyxel.dither(0.30)
 
         # Draw Sand grains in world coordinates with theme-aware palette
         s_pal = theme.sand
@@ -627,6 +645,11 @@ class GrainOfDoubtApp:
 
         # Draw Player Hourglass in world coordinates with theme-aware palette
         self.draw_player_hourglass(theme.hourglass)
+
+        # Restore 100% full opacity
+        if is_reader and hasattr(pyxel, "dither"):
+            pyxel.dither(1.0)
+
 
         # Reset camera for screen-space UI overlays (Vignette, HUD, Modals)
         pyxel.camera(0, 0)
@@ -966,6 +989,11 @@ class GrainOfDoubtApp:
                 pyxel.line(x0, y0, x1, y1, pal.glint)
 
     def draw_hud(self):
+        theme = get_theme(self.current_theme_index)
+        if getattr(theme, "is_reader_mode", False):
+            # In Reader Mode: All floating UI is suppressed; telemetry is described on line 2 of text
+            return
+
         # 1. Hearts container (Top Left) - solid opaque dark container
         pyxel.rect(10, 8, 172, 30, 0)
         pyxel.rectb(10, 8, 172, 30, 1)
@@ -1364,6 +1392,11 @@ class GrainOfDoubtApp:
         draw_text_scaled(70, 554, txt, 10, scale=2)
 
     def draw_title_screen(self):
+        # Header plaque for high-contrast presentation on any background theme
+        pyxel.rect(40, 52, 520, 226, 0)
+        pyxel.rectb(40, 52, 520, 226, 10)
+        pyxel.rectb(42, 54, 516, 222, 9)
+
         # Pulsing logo centered with dark drop shadow for high contrast on daylight sand
         draw_text_scaled(190, 72, "GRAIN OF DOUBT", 4, scale=4)
         draw_text_scaled(188, 70, "GRAIN OF DOUBT", 10, scale=4)
@@ -1378,9 +1411,9 @@ class GrainOfDoubtApp:
             draw_text_scaled(216, 178, f"VERSION: {self.VERSION} [DEV MODE]", 3, scale=2)
 
         # Subtitles centered in rich indigo & red for crisp daylight contrast
-        draw_text_scaled(110, 205, "FALL DOWN THE DESERT SLOPE", 1, scale=2)
-        draw_text_scaled(110, 232, "COLLECT GOLDEN SAND TO SURVIVE", 4, scale=2)
-        draw_text_scaled(95, 259, "DODGE LETHAL FALLING GLASS SHARDS", 8, scale=2)
+        draw_text_scaled(110, 205, "FALL DOWN THE DESERT SLOPE", 6, scale=2)
+        draw_text_scaled(110, 230, "COLLECT GOLDEN SAND TO SURVIVE", 10, scale=2)
+        draw_text_scaled(95, 255, "DODGE LETHAL FALLING GLASS SHARDS", 8, scale=2)
 
         # Controls box
         pyxel.rect(40, 290, 520, 350, 1)
@@ -1394,10 +1427,10 @@ class GrainOfDoubtApp:
         draw_text_scaled(60, 400, "< LEFT BUTTON   |   RIGHT BUTTON >", 7, scale=2)
         draw_text_scaled(60, 420, "Tap buttons or screen half to steer", 6, scale=2)
 
-        draw_text_scaled(60, 446, "20 DIVERGENT THEMES (PRO & STEALTH MODES)", 10, scale=2)
+        draw_text_scaled(60, 446, "20 DIVERGENT THEMES (PRO & READER MODES)", 10, scale=2)
         draw_text_scaled(60, 470, f"[,] PREV THEME   |   [.] NEXT THEME  ({self.current_theme_index + 1}/20)", 7, scale=2)
         theme = get_theme(self.current_theme_index)
-        draw_text_scaled(60, 492, f"ACTIVE: {theme.name}", 10 if (self.current_theme_index in (6, 7)) else 9, scale=2)
+        draw_text_scaled(60, 492, f"ACTIVE: {theme.name}", 10 if (self.current_theme_index in (6, 7) or getattr(theme, "is_reader_mode", False)) else 9, scale=2)
 
         draw_text_scaled(60, 522, "SHORTCUTS", 9, scale=2)
         if self.dev_mode:
@@ -1409,7 +1442,8 @@ class GrainOfDoubtApp:
         # Start prompt
         blink = (pyxel.frame_count // 12) % 2 == 0
         if blink:
-            draw_text_scaled(62, 654, "PRESS ARROWS OR TOUCH BUTTONS TO START", 4, scale=2)
+            pyxel.rect(50, 646, 500, 26, 0)
+            pyxel.rectb(50, 646, 500, 26, 10)
             draw_text_scaled(60, 652, "PRESS ARROWS OR TOUCH BUTTONS TO START", 10, scale=2)
 
         # Draw the 2 mobile buttons at bottom of title screen (mobile only)
