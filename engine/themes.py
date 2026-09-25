@@ -1020,7 +1020,7 @@ def bg_blood_moon_eclipse(pyxel, cam_x: int, prog: float, dist: int, screen_w: i
 
 def bg_zen_ink_wash(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool):
     """Theme: Zen Ink Wash / Sumi-e White (Calligraphic black brushstrokes on white washi paper)."""
-    col_ink = 6 if not is_greed else 0
+    col_ink = 13 if not is_greed else 0
     col_seal = 0
 
     # Mountain ridges in monochrome wash
@@ -1043,7 +1043,7 @@ def bg_zen_ink_wash(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, sc
 
 def bg_zen_ink_wash_black(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool):
     """Theme: Zen Ink Wash / Sumi-e Black (Calligraphic white/grey brushstrokes on deep black)."""
-    col_ink = 6 if not is_greed else 7
+    col_ink = 13 if not is_greed else 7
     col_seal = 7
 
     # Mountain ridges in monochrome wash
@@ -1297,25 +1297,25 @@ KAIROS_BLOOD_MOON_ECLIPSE = KairosPalette(
 )
 
 KAIROS_ZEN_INK_WASH_WHITE = KairosPalette(
-    modal_bg=7, dimmer=0, border_outer=0, border_inner=6,
-    header_title=0, header_sub=6,
-    timer_bar_bg=6, timer_bar_fill=0, timer_bar_border=0,
-    card_bg=7, card_bg_selected=7, card_border=6, card_border_selected=0,
+    modal_bg=7, dimmer=0, border_outer=0, border_inner=13,
+    header_title=0, header_sub=13,
+    timer_bar_bg=13, timer_bar_fill=0, timer_bar_border=0,
+    card_bg=7, card_bg_selected=7, card_border=13, card_border_selected=0,
     badge_bg=0, badge_text=7, badge_bg_selected=0, badge_text_selected=7,
     selected_btn_bg=0, selected_btn_text=7,
-    sin_title=0, sin_title_selected=0, level_text=6, divider=6,
+    sin_title=0, sin_title_selected=0, level_text=13, divider=13,
     pro_label=0, pro_text=0, con_label=0, con_text=0,
     footer_text=0, footer_warn=0,
 )
 
 KAIROS_ZEN_INK_WASH_BLACK = KairosPalette(
-    modal_bg=0, dimmer=0, border_outer=7, border_inner=6,
-    header_title=7, header_sub=6,
-    timer_bar_bg=0, timer_bar_fill=7, timer_bar_border=6,
-    card_bg=0, card_bg_selected=0, card_border=6, card_border_selected=7,
+    modal_bg=0, dimmer=0, border_outer=7, border_inner=13,
+    header_title=7, header_sub=13,
+    timer_bar_bg=0, timer_bar_fill=7, timer_bar_border=13,
+    card_bg=0, card_bg_selected=0, card_border=13, card_border_selected=7,
     badge_bg=7, badge_text=0, badge_bg_selected=7, badge_text_selected=0,
     selected_btn_bg=7, selected_btn_text=0,
-    sin_title=7, sin_title_selected=7, level_text=6, divider=6,
+    sin_title=7, sin_title_selected=7, level_text=13, divider=13,
     pro_label=7, pro_text=7, con_label=7, con_text=7,
     footer_text=7, footer_warn=7,
 )
@@ -1515,9 +1515,9 @@ ALL_THEMES: List[Theme] = [
         name="ZEN INK WASH (SUMI-E WHITE)",
         clear_color=7,
         greed_clear_color=0,
-        sand=SandPalette(body=0, border=0, glint=7, shadow=6, fat_body=0, fat_border=0, fat_glint=7),
-        shard=ShardPalette(facet=0, border=6, glint=7, shadow=6, fat_facet=0, fat_border=0),
-        hourglass=HourglassPalette(caps=0, cap_hl=7, cap_rivet=6, glass_walls=6, waist_neck=0, sand_a=0, sand_b=6, shadow=6),
+        sand=SandPalette(body=0, border=0, glint=7, shadow=13, fat_body=0, fat_border=0, fat_glint=7),
+        shard=ShardPalette(facet=0, border=13, glint=7, shadow=13, fat_facet=0, fat_border=0),
+        hourglass=HourglassPalette(caps=0, cap_hl=7, cap_rivet=13, glass_walls=13, waist_neck=0, sand_a=0, sand_b=13, shadow=13),
         render_bg=bg_zen_ink_wash,
         kairos=KAIROS_ZEN_INK_WASH_WHITE,
     ),
@@ -1528,8 +1528,8 @@ ALL_THEMES: List[Theme] = [
         clear_color=0,
         greed_clear_color=0,
         sand=SandPalette(body=7, border=7, glint=7, shadow=0, fat_body=7, fat_border=7, fat_glint=7),
-        shard=ShardPalette(facet=7, border=6, glint=7, shadow=0, fat_facet=7, fat_border=6),
-        hourglass=HourglassPalette(caps=7, cap_hl=6, cap_rivet=0, glass_walls=6, waist_neck=7, sand_a=7, sand_b=6, shadow=0),
+        shard=ShardPalette(facet=7, border=13, glint=7, shadow=0, fat_facet=7, fat_border=13),
+        hourglass=HourglassPalette(caps=7, cap_hl=13, cap_rivet=0, glass_walls=13, waist_neck=7, sand_a=7, sand_b=13, shadow=0),
         render_bg=bg_zen_ink_wash_black,
         kairos=KAIROS_ZEN_INK_WASH_BLACK,
     ),

@@ -315,7 +315,7 @@ def is_dev_environment() -> bool:
 
 
 class GrainOfDoubtApp:
-    VERSION: str = "v1.2.1"
+    VERSION: str = "v1.2.2"
     SCREEN_WIDTH: int = 600
     SCREEN_HEIGHT: int = 800
 
@@ -1378,7 +1378,7 @@ class GrainOfDoubtApp:
 
         if is_sumie:
             heart_fill = 0 if is_sumie_white else 7
-            heart_empty = 6
+            heart_empty = 13
             heart_glint = 7 if is_sumie_white else 0
         else:
             heart_fill = 8
@@ -1442,7 +1442,7 @@ class GrainOfDoubtApp:
             # High-contrast font colors: Black on white in light themes, White on dark in dark themes (BW in Sumi-e)
             if is_sumie:
                 col = 0 if is_sumie_white else 7
-                sin_col = (0 if is_sumie_white else 7) if k > 0 else 6
+                sin_col = (0 if is_sumie_white else 7) if k > 0 else 13
             else:
                 col = (8 if is_light else 10) if k > 0 else (0 if is_light else 7)
                 sin_col = SIN_CARD_COLORS.get(sin, 1)
@@ -1489,7 +1489,7 @@ class GrainOfDoubtApp:
         if self.state.greed_active:
             flash = (pyxel.frame_count // 5) % 2 == 0
             if is_sumie:
-                col = (0 if is_sumie_white else 7) if flash else 6
+                col = (0 if is_sumie_white else 7) if flash else 13
             else:
                 col = 8 if flash else 9
             if self.dev_mode:
@@ -1894,79 +1894,151 @@ class GrainOfDoubtApp:
         draw_text_scaled(70, 554, txt, kp.sin_title_selected, scale=2)
 
     def draw_title_screen(self):
+        theme = get_theme(self.current_theme_index)
+        is_sumie = getattr(theme, "id", 0) in (7, 8) or "SUMI" in theme.name.upper()
+        is_sumie_white = is_sumie and ("WHITE" in theme.name.upper() or theme.clear_color == 7)
+
         # Header plaque for high-contrast presentation on any background theme
-        pyxel.rect(40, 30, 520, 160, 0)
-        pyxel.rectb(40, 30, 520, 160, 10)
-        pyxel.rectb(42, 32, 516, 156, 9)
+        if is_sumie:
+            plaque_bg = 7 if is_sumie_white else 0
+            plaque_b1 = 0 if is_sumie_white else 7
+            plaque_b2 = 13
+            logo_col = 0 if is_sumie_white else 7
+            logo_shadow = 13 if is_sumie_white else 0
+            sub_col = 0 if is_sumie_white else 7
+            sub_shadow = 13 if is_sumie_white else 0
+            author_col = 0 if is_sumie_white else 7
+            author_shadow = 13 if is_sumie_white else 0
+            sub1_col = 13
+            sub2_col = 0 if is_sumie_white else 7
+            sub3_col = 13 if is_sumie_white else 7
+        else:
+            plaque_bg = 0
+            plaque_b1 = 10
+            plaque_b2 = 9
+            logo_col = 10
+            logo_shadow = 4
+            sub_col = 9
+            sub_shadow = 4
+            author_col = 7
+            author_shadow = 4
+            sub1_col = 6
+            sub2_col = 10
+            sub3_col = 8
+
+        pyxel.rect(40, 30, 520, 160, plaque_bg)
+        pyxel.rectb(40, 30, 520, 160, plaque_b1)
+        pyxel.rectb(42, 32, 516, 156, plaque_b2)
 
         # Pulsing logo centered mathematically with dark drop shadow for high contrast
-        draw_text_centered(42, "GRAIN OF DOUBT", 4, scale=4)
-        draw_text_centered(40, "GRAIN OF DOUBT", 10, scale=4)
+        draw_text_centered(42, "GRAIN OF DOUBT", logo_shadow, scale=4)
+        draw_text_centered(40, "GRAIN OF DOUBT", logo_col, scale=4)
 
-        draw_text_centered(78, "PYWEEK 42 : BORROWED TIME", 4, scale=2)
-        draw_text_centered(76, "PYWEEK 42 : BORROWED TIME", 9, scale=2)
+        draw_text_centered(78, "PYWEEK 42 : BORROWED TIME", sub_shadow, scale=2)
+        draw_text_centered(76, "PYWEEK 42 : BORROWED TIME", sub_col, scale=2)
 
-        draw_text_centered(102, "BY ARIAN PRABOWO", 4, scale=2)
-        draw_text_centered(100, "BY ARIAN PRABOWO", 7, scale=2)
+        draw_text_centered(102, "BY ARIAN PRABOWO", author_shadow, scale=2)
+        draw_text_centered(100, "BY ARIAN PRABOWO", author_col, scale=2)
 
         # Subtitles centered in crisp daylight contrast
-        draw_text_centered(126, "FALL DOWN THE DESERT SLOPE", 6, scale=2)
-        draw_text_centered(144, "COLLECT GOLDEN SAND FOR POINTS", 10, scale=2)
-        draw_text_centered(162, "DODGE LETHAL FALLING GLASS SHARDS", 8, scale=2)
+        draw_text_centered(126, "FALL DOWN THE DESERT SLOPE", sub1_col, scale=2)
+        draw_text_centered(144, "COLLECT GOLDEN SAND FOR POINTS", sub2_col, scale=2)
+        draw_text_centered(162, "DODGE LETHAL FALLING GLASS SHARDS", sub3_col, scale=2)
 
         # Controls & Themes box (Clean, elevated positioning without redundant plaque)
         box_y = 184
         box_h = 312
-        pyxel.rect(40, box_y, 520, box_h, 1)
-        pyxel.rectb(40, box_y, 520, box_h, 5)
+        if is_sumie:
+            ctrl_bg = 7 if is_sumie_white else 0
+            ctrl_b1 = 0 if is_sumie_white else 7
+            ctrl_hdr = 0 if is_sumie_white else 7
+            ctrl_txt = 0 if is_sumie_white else 7
+            act_col = 0 if is_sumie_white else 7
+            btn_bg = 7 if is_sumie_white else 0
+            btn_border = 0 if is_sumie_white else 7
+            btn_txt = 0 if is_sumie_white else 7
+        else:
+            ctrl_bg = 1
+            ctrl_b1 = 5
+            ctrl_hdr = 10
+            ctrl_txt = 7
+            act_col = 10 if (self.current_theme_index in (1, 2) or getattr(theme, "is_reader_mode", False)) else 9
+            btn_bg = 0
+            btn_border = 10
+            btn_txt = 7
 
-        draw_text_scaled(60, box_y + 8, "CONTROLS", 10, scale=2)
-        draw_text_scaled(60, box_y + 24, "KEYBOARD: [A] / [D]", 7, scale=2)
-        draw_text_scaled(60, box_y + 40, "KEYBOARD: [LEFT] / [RIGHT] ARROWS", 7, scale=2)
-        draw_text_scaled(60, box_y + 56, "TOUCH: [LEFT] / [RIGHT] ON-SCREEN", 7, scale=2)
+        pyxel.rect(40, box_y, 520, box_h, ctrl_bg)
+        pyxel.rectb(40, box_y, 520, box_h, ctrl_b1)
+        if is_sumie:
+            pyxel.rectb(42, box_y + 2, 516, box_h - 4, 13)
+
+        draw_text_scaled(60, box_y + 8, "CONTROLS", ctrl_hdr, scale=2)
+        draw_text_scaled(60, box_y + 24, "KEYBOARD: [A] / [D]", ctrl_txt, scale=2)
+        draw_text_scaled(60, box_y + 40, "KEYBOARD: [LEFT] / [RIGHT] ARROWS", ctrl_txt, scale=2)
+        draw_text_scaled(60, box_y + 56, "TOUCH: [LEFT] / [RIGHT] ON-SCREEN", ctrl_txt, scale=2)
 
         # Line break before Themes (at least 1 full line gap: 36px)
-        theme = get_theme(self.current_theme_index)
-        act_col = 10 if (self.current_theme_index in (1, 2) or getattr(theme, "is_reader_mode", False)) else 9
-        draw_text_scaled(60, box_y + 92, "SELECT THEMES", 10, scale=2)
+        draw_text_scaled(60, box_y + 92, "SELECT THEMES", ctrl_hdr, scale=2)
         draw_text_scaled(60, box_y + 110, f"({self.current_theme_index + 1}/10) {theme.name}", act_col, scale=2)
 
         # Big Prev & Next Theme Touch Buttons (3 lines in height: h=54)
         btn_prev_x, btn_prev_y, btn_prev_w, btn_prev_h = 60, box_y + 128, 230, 54
-        pyxel.rect(btn_prev_x, btn_prev_y, btn_prev_w, btn_prev_h, 0)
-        pyxel.rectb(btn_prev_x, btn_prev_y, btn_prev_w, btn_prev_h, 10)
-        draw_text_scaled(btn_prev_x + 22, btn_prev_y + 20, "< [,] PREV THEME", 7, scale=2)
+        pyxel.rect(btn_prev_x, btn_prev_y, btn_prev_w, btn_prev_h, btn_bg)
+        pyxel.rectb(btn_prev_x, btn_prev_y, btn_prev_w, btn_prev_h, btn_border)
+        draw_text_scaled(btn_prev_x + 22, btn_prev_y + 20, "< [,] PREV THEME", btn_txt, scale=2)
 
         btn_next_x, btn_next_y, btn_next_w, btn_next_h = 310, box_y + 128, 230, 54
-        pyxel.rect(btn_next_x, btn_next_y, btn_next_w, btn_next_h, 0)
-        pyxel.rectb(btn_next_x, btn_next_y, btn_next_w, btn_next_h, 10)
-        draw_text_scaled(btn_next_x + 22, btn_next_y + 20, "NEXT THEME [.] >", 7, scale=2)
+        pyxel.rect(btn_next_x, btn_next_y, btn_next_w, btn_next_h, btn_bg)
+        pyxel.rectb(btn_next_x, btn_next_y, btn_next_w, btn_next_h, btn_border)
+        draw_text_scaled(btn_next_x + 22, btn_next_y + 20, "NEXT THEME [.] >", btn_txt, scale=2)
 
         # 1 full line of space before SHORTCUTS (gap = 84px from y_theme_name, >= 36px)
-        draw_text_scaled(60, box_y + 194, "SHORTCUTS", 10, scale=2)
+        draw_text_scaled(60, box_y + 194, "SHORTCUTS", ctrl_hdr, scale=2)
 
         # Big Lore & Learn Touch Button (3 lines in height: h=54)
         btn_lore_x, btn_lore_y, btn_lore_w, btn_lore_h = 60, box_y + 212, 480, 54
-        pyxel.rect(btn_lore_x, btn_lore_y, btn_lore_w, btn_lore_h, 0)
-        pyxel.rectb(btn_lore_x, btn_lore_y, btn_lore_w, btn_lore_h, 10)
-        draw_text_scaled(btn_lore_x + 86, btn_lore_y + 20, "[L] LORE & LEARN TO PLAY", 10, scale=2)
+        pyxel.rect(btn_lore_x, btn_lore_y, btn_lore_w, btn_lore_h, btn_bg)
+        pyxel.rectb(btn_lore_x, btn_lore_y, btn_lore_w, btn_lore_h, btn_border)
+        lore_btn_col = btn_txt if is_sumie else 10
+        draw_text_scaled(btn_lore_x + 86, btn_lore_y + 20, "[L] LORE & LEARN TO PLAY", lore_btn_col, scale=2)
 
         # Space below [X] QUIT GAME is 20px (ends at 476, box ends at 496)
-        draw_text_scaled(60, box_y + 278, "[X] QUIT GAME", 7, scale=2)
+        draw_text_scaled(60, box_y + 278, "[X] QUIT GAME", ctrl_txt, scale=2)
 
         # Photosensitivity & Pro Mode suggestion directly above start prompt
-        pyxel.rect(40, 508, 520, 48, 0)
-        pyxel.rectb(40, 508, 520, 48, 8)
-        draw_text_centered(514, "PHOTOSENSITIVITY WARNING", 8, scale=2)
-        draw_text_centered(532, "Rapid motion and flashing visuals in some themes.", 7, scale=1)
-        draw_text_centered(544, "Switch to PRO MODE (Themes 2 & 3) for calm high-contrast clinical view.", 6, scale=1)
+        if is_sumie:
+            warn_bg = 7 if is_sumie_white else 0
+            warn_b = 0 if is_sumie_white else 7
+            warn_hdr = 0 if is_sumie_white else 7
+            warn_t1 = 0 if is_sumie_white else 7
+            warn_t2 = 13
+        else:
+            warn_bg = 0
+            warn_b = 8
+            warn_hdr = 8
+            warn_t1 = 7
+            warn_t2 = 6
+
+        pyxel.rect(40, 508, 520, 48, warn_bg)
+        pyxel.rectb(40, 508, 520, 48, warn_b)
+        draw_text_centered(514, "PHOTOSENSITIVITY WARNING", warn_hdr, scale=2)
+        draw_text_centered(532, "Rapid motion and flashing visuals in some themes.", warn_t1, scale=1)
+        draw_text_centered(544, "Switch to PRO MODE (Themes 2 & 3) for calm high-contrast clinical view.", warn_t2, scale=1)
 
         # Start prompt: "PRESS ARROWS OR HERE TO START" (3 lines in height: h=54)
         blink = (pyxel.frame_count // 12) % 2 == 0
         if blink:
-            pyxel.rect(50, 566, 500, 54, 0)
-            pyxel.rectb(50, 566, 500, 54, 10)
-            draw_text_centered(586, "PRESS ARROWS OR HERE TO START", 10, scale=2)
+            if is_sumie:
+                prompt_bg = 7 if is_sumie_white else 0
+                prompt_b = 0 if is_sumie_white else 7
+                prompt_txt = 0 if is_sumie_white else 7
+            else:
+                prompt_bg = 0
+                prompt_b = 10
+                prompt_txt = 10
+            pyxel.rect(50, 566, 500, 54, prompt_bg)
+            pyxel.rectb(50, 566, 500, 54, prompt_b)
+            draw_text_centered(586, "PRESS ARROWS OR HERE TO START", prompt_txt, scale=2)
 
         # Dedicated Dev Mode box at bottom when dev_mode is active
         if self.dev_mode:
@@ -1978,18 +2050,45 @@ class GrainOfDoubtApp:
 
     def draw_lore_screen(self):
         """Render dedicated Multi-Page Lore & Learn to Play manual."""
+        theme = get_theme(self.current_theme_index)
+        is_sumie = getattr(theme, "id", 0) in (7, 8) or "SUMI" in theme.name.upper()
+        is_sumie_white = is_sumie and ("WHITE" in theme.name.upper() or theme.clear_color == 7)
+
         box_x = 24
         box_y = 16
         box_w = 552
         box_h = 768
 
-        # Main background container with gold double frame
-        pyxel.rect(box_x, box_y, box_w, box_h, 0)
-        pyxel.rectb(box_x, box_y, box_w, box_h, 10)
-        pyxel.rectb(box_x + 2, box_y + 2, box_w - 4, box_h - 4, 9)
+        # Main background container with gold double frame (BW in Sumi-e)
+        if is_sumie:
+            bg_col = 7 if is_sumie_white else 0
+            b1_col = 0 if is_sumie_white else 7
+            b2_col = 13
+            hdr_col = 0 if is_sumie_white else 7
+            sub_col = 13
+            div_col = 13
+            txt_col = 0 if is_sumie_white else 7
+            warn_col = 0 if is_sumie_white else 7
+            nav_col = 0 if is_sumie_white else 7
+            ret_col = 0 if is_sumie_white else 7
+        else:
+            bg_col = 0
+            b1_col = 10
+            b2_col = 9
+            hdr_col = 10
+            sub_col = 6
+            div_col = 5
+            txt_col = 7
+            warn_col = 8
+            nav_col = 10
+            ret_col = 10
+
+        pyxel.rect(box_x, box_y, box_w, box_h, bg_col)
+        pyxel.rectb(box_x, box_y, box_w, box_h, b1_col)
+        pyxel.rectb(box_x + 2, box_y + 2, box_w - 4, box_h - 4, b2_col)
 
         # Header Title with dynamic Page Number
-        draw_text_scaled(box_x + 24, box_y + 16, f"GRAIN OF DOUBT : LORE & LEARN [{self.lore_page + 1}/{self.MAX_LORE_PAGES}]", 10, scale=2)
+        draw_text_scaled(box_x + 24, box_y + 16, f"GRAIN OF DOUBT : LORE & LEARN [{self.lore_page + 1}/{self.MAX_LORE_PAGES}]", hdr_col, scale=2)
         subtitles = [
             "THE PREMISE & BORROWED TIME",
             "COSMOLOGY : CHRONOS & KAIROS",
@@ -1997,12 +2096,12 @@ class GrainOfDoubtApp:
             "FAUSTIAN PACTS (PART 2: SINS 5-7)",
             "THEMES, PRO MODE & DEDICATION",
         ]
-        draw_text_scaled(box_x + 24, box_y + 40, subtitles[self.lore_page], 6, scale=2)
-        pyxel.line(box_x + 16, box_y + 60, box_x + box_w - 16, box_y + 60, 5)
+        draw_text_scaled(box_x + 24, box_y + 40, subtitles[self.lore_page], sub_col, scale=2)
+        pyxel.line(box_x + 16, box_y + 60, box_x + box_w - 16, box_y + 60, div_col)
 
         if self.lore_page == 0:
             # PAGE 1: COMPETITION CONTEXT & NARRATIVE PREMISE
-            draw_text_scaled(box_x + 24, box_y + 72, "1. COMPETITION CONTEXT", 10, scale=2)
+            draw_text_scaled(box_x + 24, box_y + 72, "1. COMPETITION CONTEXT", hdr_col, scale=2)
             p1_context = [
                 "Built for PyWeek 42 (September 2026).",
                 "The theme is: Borrowed Time.",
@@ -2010,11 +2109,14 @@ class GrainOfDoubtApp:
                 "Crafted in Python with Pyxel retro engine.",
             ]
             for idx, line in enumerate(p1_context):
-                col = 9 if idx == 1 else (10 if idx == 2 else 7)
-                draw_text_scaled(box_x + 24, box_y + 96 + idx * 18, line, col, scale=2)
+                if is_sumie:
+                    c = txt_col
+                else:
+                    c = 9 if idx == 1 else (10 if idx == 2 else 7)
+                draw_text_scaled(box_x + 24, box_y + 96 + idx * 18, line, c, scale=2)
 
-            pyxel.line(box_x + 16, box_y + 178, box_x + box_w - 16, box_y + 178, 5)
-            draw_text_scaled(box_x + 24, box_y + 188, "2. THE MEANING OF 'BORROWED TIME'", 10, scale=2)
+            pyxel.line(box_x + 16, box_y + 178, box_x + box_w - 16, box_y + 178, div_col)
+            draw_text_scaled(box_x + 24, box_y + 188, "2. THE MEANING OF 'BORROWED TIME'", hdr_col, scale=2)
             p1_borrowed = [
                 "To live on 'borrowed time' is to survive",
                 "past natural limits on compounding debt.",
@@ -2023,10 +2125,10 @@ class GrainOfDoubtApp:
                 "Every second survived is borrowed debt.",
             ]
             for idx, line in enumerate(p1_borrowed):
-                draw_text_scaled(box_x + 24, box_y + 212 + idx * 18, line, 7, scale=2)
+                draw_text_scaled(box_x + 24, box_y + 212 + idx * 18, line, txt_col, scale=2)
 
-            pyxel.line(box_x + 16, box_y + 312, box_x + box_w - 16, box_y + 312, 5)
-            draw_text_scaled(box_x + 24, box_y + 322, "3. THE NARRATIVE PREMISE", 10, scale=2)
+            pyxel.line(box_x + 16, box_y + 312, box_x + box_w - 16, box_y + 312, div_col)
+            draw_text_scaled(box_x + 24, box_y + 322, "3. THE NARRATIVE PREMISE", hdr_col, scale=2)
             p1_narrative = [
                 "You steer a fragile falling hourglass",
                 "down the neck of a colossal shattered",
@@ -2036,10 +2138,10 @@ class GrainOfDoubtApp:
                 "Descent is absolute and unrelenting.",
             ]
             for idx, line in enumerate(p1_narrative):
-                draw_text_scaled(box_x + 24, box_y + 346 + idx * 18, line, 7, scale=2)
+                draw_text_scaled(box_x + 24, box_y + 346 + idx * 18, line, txt_col, scale=2)
 
-            pyxel.line(box_x + 16, box_y + 464, box_x + box_w - 16, box_y + 464, 5)
-            draw_text_scaled(box_x + 24, box_y + 474, "4. WHY 'GRAIN OF DOUBT'?", 10, scale=2)
+            pyxel.line(box_x + 16, box_y + 464, box_x + box_w - 16, box_y + 464, div_col)
+            draw_text_scaled(box_x + 24, box_y + 474, "4. WHY 'GRAIN OF DOUBT'?", hdr_col, scale=2)
             p1_doubt = [
                 "1. Sand grains measure passing time in an",
                 "   hourglass.",
@@ -2050,11 +2152,15 @@ class GrainOfDoubtApp:
                 "   hesitating as the clock runs down.",
             ]
             for idx, line in enumerate(p1_doubt):
-                draw_text_scaled(box_x + 24, box_y + 498 + idx * 18, line, 6 if idx >= 4 else 7, scale=2)
+                if is_sumie:
+                    c = txt_col
+                else:
+                    c = 6 if idx >= 4 else 7
+                draw_text_scaled(box_x + 24, box_y + 498 + idx * 18, line, c, scale=2)
 
         elif self.lore_page == 1:
             # PAGE 2: COSMOLOGY & MECHANICS (LORE FIRST)
-            draw_text_scaled(box_x + 24, box_y + 72, "1. LORE: THE PRICE OF SURVIVAL", 10, scale=2)
+            draw_text_scaled(box_x + 24, box_y + 72, "1. LORE: THE PRICE OF SURVIVAL", hdr_col, scale=2)
             p2_lore = [
                 "In the void, power is never granted free.",
                 "Living on borrowed time requires debts.",
@@ -2063,10 +2169,10 @@ class GrainOfDoubtApp:
                 "You mortgage the future for seconds.",
             ]
             for idx, line in enumerate(p2_lore):
-                draw_text_scaled(box_x + 24, box_y + 96 + idx * 18, line, 7, scale=2)
+                draw_text_scaled(box_x + 24, box_y + 96 + idx * 18, line, txt_col, scale=2)
 
-            pyxel.line(box_x + 16, box_y + 196, box_x + box_w - 16, box_y + 196, 5)
-            draw_text_scaled(box_x + 24, box_y + 206, "2. CHRONOS : THE RELENTLESS STREAM", 10, scale=2)
+            pyxel.line(box_x + 16, box_y + 196, box_x + box_w - 16, box_y + 196, div_col)
+            draw_text_scaled(box_x + 24, box_y + 206, "2. CHRONOS : THE RELENTLESS STREAM", hdr_col, scale=2)
             p2_chronos = [
                 "Chronos is continuous clock time (10.0s).",
                 "Descent kinematics flow uninterrupted.",
@@ -2074,10 +2180,10 @@ class GrainOfDoubtApp:
                 "golden sand grains and evade razor glass.",
             ]
             for idx, line in enumerate(p2_chronos):
-                draw_text_scaled(box_x + 24, box_y + 230 + idx * 18, line, 7, scale=2)
+                draw_text_scaled(box_x + 24, box_y + 230 + idx * 18, line, txt_col, scale=2)
 
-            pyxel.line(box_x + 16, box_y + 312, box_x + box_w - 16, box_y + 312, 5)
-            draw_text_scaled(box_x + 24, box_y + 322, "3. KAIROS : THE SACRED CROSSROADS", 10, scale=2)
+            pyxel.line(box_x + 16, box_y + 312, box_x + box_w - 16, box_y + 312, div_col)
+            draw_text_scaled(box_x + 24, box_y + 322, "3. KAIROS : THE SACRED CROSSROADS", hdr_col, scale=2)
             p2_kairos = [
                 "Every 10.0 seconds, descent freezes in",
                 "an acute panic circuit breaker: Kairos.",
@@ -2086,28 +2192,31 @@ class GrainOfDoubtApp:
                 "time expires: your hourglass shatters!",
             ]
             for idx, line in enumerate(p2_kairos):
-                col = 8 if idx == 4 else 7
-                draw_text_scaled(box_x + 24, box_y + 346 + idx * 18, line, col, scale=2)
+                if is_sumie:
+                    c = txt_col
+                else:
+                    c = 8 if idx == 4 else 7
+                draw_text_scaled(box_x + 24, box_y + 346 + idx * 18, line, c, scale=2)
 
-            pyxel.line(box_x + 16, box_y + 448, box_x + box_w - 16, box_y + 448, 5)
-            draw_text_scaled(box_x + 24, box_y + 458, "4. FAUSTIAN PACTS (IN GENERAL)", 10, scale=2)
+            pyxel.line(box_x + 16, box_y + 448, box_x + box_w - 16, box_y + 448, div_col)
+            draw_text_scaled(box_x + 24, box_y + 458, "4. FAUSTIAN PACTS (IN GENERAL)", hdr_col, scale=2)
             p2_pacts = [
                 "Each pact pairs an immediate boon with",
                 "a permanent hazard. Identical sins",
                 "compound their curses exponentially.",
             ]
             for idx, line in enumerate(p2_pacts):
-                draw_text_scaled(box_x + 24, box_y + 482 + idx * 18, line, 7, scale=2)
+                draw_text_scaled(box_x + 24, box_y + 482 + idx * 18, line, txt_col, scale=2)
 
-            pyxel.line(box_x + 16, box_y + 546, box_x + box_w - 16, box_y + 546, 5)
-            draw_text_scaled(box_x + 24, box_y + 556, "5. KINEMATIC CONTROLS", 10, scale=2)
-            draw_text_scaled(box_x + 24, box_y + 580, "* [A]/[D] or ARROWS : Steer motion.", 7, scale=2)
-            draw_text_scaled(box_x + 24, box_y + 600, "* TOUCH L/R BUTTONS : Steer motion.", 7, scale=2)
-            draw_text_scaled(box_x + 24, box_y + 620, "* KAIROS CROSSROADS : Choose pact.", 9, scale=2)
+            pyxel.line(box_x + 16, box_y + 546, box_x + box_w - 16, box_y + 546, div_col)
+            draw_text_scaled(box_x + 24, box_y + 556, "5. KINEMATIC CONTROLS", hdr_col, scale=2)
+            draw_text_scaled(box_x + 24, box_y + 580, "* [A]/[D] or ARROWS : Steer motion.", txt_col, scale=2)
+            draw_text_scaled(box_x + 24, box_y + 600, "* TOUCH L/R BUTTONS : Steer motion.", txt_col, scale=2)
+            draw_text_scaled(box_x + 24, box_y + 620, "* KAIROS CROSSROADS : Choose pact.", txt_col if is_sumie else 9, scale=2)
 
         elif self.lore_page == 2:
             # PAGE 3: FAUSTIAN PACTS (PART 1: SINS 1-4)
-            draw_text_scaled(box_x + 24, box_y + 72, "FAUSTIAN PACTS (PART 1)", 10, scale=2)
+            draw_text_scaled(box_x + 24, box_y + 72, "FAUSTIAN PACTS (PART 1)", hdr_col, scale=2)
             pacts_p1 = [
                 (
                     "1. PRIDE",
@@ -2152,17 +2261,20 @@ class GrainOfDoubtApp:
             ]
             for idx, (pact_title, narrative_lines, boon, curse, pcol) in enumerate(pacts_p1):
                 py = box_y + 104 + idx * 136
-                pyxel.rect(box_x + 24, py + 2, 6, 80, pcol)
-                draw_text_scaled(box_x + 38, py, pact_title, 10, scale=2)
+                swatch = txt_col if is_sumie else pcol
+                pyxel.rect(box_x + 24, py + 2, 6, 80, swatch)
+                draw_text_scaled(box_x + 38, py, pact_title, hdr_col, scale=2)
                 for n_idx, n_line in enumerate(narrative_lines):
-                    draw_text_scaled(box_x + 38, py + 18 + n_idx * 16, n_line, 7, scale=2)
+                    draw_text_scaled(box_x + 38, py + 18 + n_idx * 16, n_line, txt_col, scale=2)
                 pro_y = py + 18 + len(narrative_lines) * 16
-                draw_text_scaled(box_x + 38, pro_y, f"PRO: {boon}", 11, scale=2)
-                draw_text_scaled(box_x + 38, pro_y + 16, f"CON: {curse}", 8, scale=2)
+                pro_c = txt_col if is_sumie else 11
+                con_c = 13 if is_sumie else 8
+                draw_text_scaled(box_x + 38, pro_y, f"PRO: {boon}", pro_c, scale=2)
+                draw_text_scaled(box_x + 38, pro_y + 16, f"CON: {curse}", con_c, scale=2)
 
         elif self.lore_page == 3:
             # PAGE 4: FAUSTIAN PACTS (PART 2: SINS 5-7) & DECAY
-            draw_text_scaled(box_x + 24, box_y + 72, "FAUSTIAN PACTS (PART 2)", 10, scale=2)
+            draw_text_scaled(box_x + 24, box_y + 72, "FAUSTIAN PACTS (PART 2)", hdr_col, scale=2)
             pacts_p2 = [
                 (
                     "5. GLUTTONY",
@@ -2203,17 +2315,20 @@ class GrainOfDoubtApp:
             curr_py = box_y + 92
             for pact_title, narrative_lines, boon, curse, pcol in pacts_p2:
                 pact_h = 18 + len(narrative_lines) * 16 + 32
-                pyxel.rect(box_x + 24, curr_py + 2, 6, pact_h - 4, pcol)
-                draw_text_scaled(box_x + 38, curr_py, pact_title, 10, scale=2)
+                swatch = txt_col if is_sumie else pcol
+                pyxel.rect(box_x + 24, curr_py + 2, 6, pact_h - 4, swatch)
+                draw_text_scaled(box_x + 38, curr_py, pact_title, hdr_col, scale=2)
                 for n_idx, n_line in enumerate(narrative_lines):
-                    draw_text_scaled(box_x + 38, curr_py + 18 + n_idx * 16, n_line, 7, scale=2)
+                    draw_text_scaled(box_x + 38, curr_py + 18 + n_idx * 16, n_line, txt_col, scale=2)
                 pro_y = curr_py + 18 + len(narrative_lines) * 16
-                draw_text_scaled(box_x + 38, pro_y, f"PRO: {boon}", 11, scale=2)
-                draw_text_scaled(box_x + 38, pro_y + 16, f"CON: {curse}", 8, scale=2)
+                pro_c = txt_col if is_sumie else 11
+                con_c = 13 if is_sumie else 8
+                draw_text_scaled(box_x + 38, pro_y, f"PRO: {boon}", pro_c, scale=2)
+                draw_text_scaled(box_x + 38, pro_y + 16, f"CON: {curse}", con_c, scale=2)
                 curr_py += pact_h + 16
 
-            pyxel.line(box_x + 16, curr_py + 4, box_x + box_w - 16, curr_py + 4, 5)
-            draw_text_scaled(box_x + 24, curr_py + 16, "ADDICTIVE PACTS & COMPOUNDING DECAY", 10, scale=2)
+            pyxel.line(box_x + 16, curr_py + 4, box_x + box_w - 16, curr_py + 4, div_col)
+            draw_text_scaled(box_x + 24, curr_py + 16, "ADDICTIVE PACTS & COMPOUNDING DECAY", hdr_col, scale=2)
             p4_decay = [
                 "Sins are addictive (Pact distribution):",
                 "P(Pact) = (1 + N_pact) / (7 + Total_Pacts)",
@@ -2222,12 +2337,15 @@ class GrainOfDoubtApp:
                 "Wrath Error = min(50%, Wrath_Level * 5%)",
             ]
             for idx, line in enumerate(p4_decay):
-                col = 10 if idx in (0, 1) else (8 if idx in (2, 3) else 7)
-                draw_text_scaled(box_x + 24, curr_py + 40 + idx * 18, line, col, scale=2)
+                if is_sumie:
+                    c = txt_col
+                else:
+                    c = 10 if idx in (0, 1) else (8 if idx in (2, 3) else 7)
+                draw_text_scaled(box_x + 24, curr_py + 40 + idx * 18, line, c, scale=2)
 
         else:
             # PAGE 5: THEMES, PRO MODE & SAKURA DEDICATION
-            draw_text_scaled(box_x + 24, box_y + 72, "1. 10 DIVERGENT AESTHETIC THEMES", 10, scale=2)
+            draw_text_scaled(box_x + 24, box_y + 72, "1. 10 DIVERGENT AESTHETIC THEMES", hdr_col, scale=2)
             p5_themes = [
                 "Press [,] and [.] to cycle themes.",
                 "10 handcrafted procedural aesthetics with",
@@ -2237,10 +2355,10 @@ class GrainOfDoubtApp:
                 "Sumi-e White, Sumi-e Black, Sakura.",
             ]
             for idx, line in enumerate(p5_themes):
-                draw_text_scaled(box_x + 24, box_y + 96 + idx * 18, line, 7, scale=2)
+                draw_text_scaled(box_x + 24, box_y + 96 + idx * 18, line, txt_col, scale=2)
 
-            pyxel.line(box_x + 16, box_y + 214, box_x + box_w - 16, box_y + 214, 5)
-            draw_text_scaled(box_x + 24, box_y + 224, "2. PRO MODE (ACCESSIBILITY)", 10, scale=2)
+            pyxel.line(box_x + 16, box_y + 214, box_x + box_w - 16, box_y + 214, div_col)
+            draw_text_scaled(box_x + 24, box_y + 224, "2. PRO MODE (ACCESSIBILITY)", hdr_col, scale=2)
             p5_pro = [
                 "Themes 2 & 3: Clinical high-contrast.",
                 "Zero motion clutter, dual countdown",
@@ -2248,11 +2366,14 @@ class GrainOfDoubtApp:
                 "(Photosensitive comfort; NOT monochrome.)",
             ]
             for idx, line in enumerate(p5_pro):
-                col = 9 if idx == 3 else 7
-                draw_text_scaled(box_x + 24, box_y + 248 + idx * 18, line, col, scale=2)
+                if is_sumie:
+                    c = txt_col
+                else:
+                    c = 9 if idx == 3 else 7
+                draw_text_scaled(box_x + 24, box_y + 248 + idx * 18, line, c, scale=2)
 
-            pyxel.line(box_x + 16, box_y + 330, box_x + box_w - 16, box_y + 330, 5)
-            draw_text_scaled(box_x + 24, box_y + 340, "3. E-READER STEALTH MODE", 10, scale=2)
+            pyxel.line(box_x + 16, box_y + 330, box_x + box_w - 16, box_y + 330, div_col)
+            draw_text_scaled(box_x + 24, box_y + 340, "3. E-READER STEALTH MODE", hdr_col, scale=2)
             p5_reader = [
                 "Themes 4 & 5: Classic literature look.",
                 "Warm paper or dark OLED night reading.",
@@ -2261,11 +2382,14 @@ class GrainOfDoubtApp:
                 "HUD is suppressed; stats woven into text.",
             ]
             for idx, line in enumerate(p5_reader):
-                col = 10 if idx == 2 else (9 if idx == 3 else 7)
-                draw_text_scaled(box_x + 24, box_y + 364 + idx * 18, line, col, scale=2)
+                if is_sumie:
+                    c = txt_col
+                else:
+                    c = 10 if idx == 2 else (9 if idx == 3 else 7)
+                draw_text_scaled(box_x + 24, box_y + 364 + idx * 18, line, c, scale=2)
 
-            pyxel.line(box_x + 16, box_y + 466, box_x + box_w - 16, box_y + 466, 5)
-            draw_text_scaled(box_x + 24, box_y + 476, "4. SAKURA DEDICATION", 10, scale=2)
+            pyxel.line(box_x + 16, box_y + 466, box_x + box_w - 16, box_y + 466, div_col)
+            draw_text_scaled(box_x + 24, box_y + 476, "4. SAKURA DEDICATION", hdr_col, scale=2)
             p5_sakura = [
                 "Theme 10 (Pastel Sakura) is dedicated",
                 "to my twin sister, girlfriend, and wife--",
@@ -2275,21 +2399,27 @@ class GrainOfDoubtApp:
                 "falling petals, and leaf-green sand.",
             ]
             for idx, line in enumerate(p5_sakura):
-                col = 14 if idx in (1, 2) else (10 if idx == 0 else 7)
+                if is_sumie:
+                    c = txt_col
+                else:
+                    c = 14 if idx in (1, 2) else (10 if idx == 0 else 7)
                 if line:
-                    draw_text_scaled(box_x + 24, box_y + 500 + idx * 18, line, col, scale=2)
+                    draw_text_scaled(box_x + 24, box_y + 500 + idx * 18, line, c, scale=2)
 
         # Navigation Footer on all pages (No [X] on the arrow line)
-        pyxel.line(box_x + 16, box_y + 704, box_x + box_w - 16, box_y + 704, 5)
+        pyxel.line(box_x + 16, box_y + 704, box_x + box_w - 16, box_y + 704, div_col)
         if self.lore_page == 0:
-            draw_text_centered(box_y + 718, "[D / RIGHT] NEXT", 10, scale=2)
+            draw_text_centered(box_y + 718, "[D / RIGHT] NEXT", nav_col, scale=2)
         elif self.lore_page == self.MAX_LORE_PAGES - 1:
-            draw_text_centered(box_y + 718, "[A / LEFT] PREV   |   [D / RIGHT] RETURN", 10, scale=2)
+            draw_text_centered(box_y + 718, "[A / LEFT] PREV   |   [D / RIGHT] RETURN", nav_col, scale=2)
         else:
-            draw_text_centered(box_y + 718, "[A / LEFT] PREV   |   [D / RIGHT] NEXT", 10, scale=2)
+            draw_text_centered(box_y + 718, "[A / LEFT] PREV   |   [D / RIGHT] NEXT", nav_col, scale=2)
 
         blink = (pyxel.frame_count // 12) % 2 == 0
-        p_col = 10 if blink else 7
+        if is_sumie:
+            p_col = txt_col
+        else:
+            p_col = 10 if blink else 7
         draw_text_centered(box_y + 740, "[X] RETURN TO MENU", p_col, scale=2)
 
     def draw_game_over_screen(self):
@@ -2307,9 +2437,9 @@ class GrainOfDoubtApp:
         if is_sumie:
             card_bg = 7 if is_sumie_white else 0
             border_outer = 0 if is_sumie_white else 7
-            border_inner = 6
+            border_inner = 13
             title_col = 0 if is_sumie_white else 7
-            ver_col = 6
+            ver_col = 13
             reason_col = 0 if is_sumie_white else 7
             stats_bg = 7 if is_sumie_white else 0
             stats_border = 0 if is_sumie_white else 7
@@ -2317,15 +2447,15 @@ class GrainOfDoubtApp:
             stat_val_col = 0 if is_sumie_white else 7
             summary_title_col = 0 if is_sumie_white else 7
             pact_active_col = 0 if is_sumie_white else 7
-            pact_inactive_col = 6
+            pact_inactive_col = 13
             prompt_col = 0 if is_sumie_white else 7
             btn_bg = 7 if is_sumie_white else 0
             btn_b1 = 0 if is_sumie_white else 7
-            btn_b2 = 6
+            btn_b2 = 13
             btn_txt1 = 0 if is_sumie_white else 7
             btn_txt2 = 0 if is_sumie_white else 7
-            btn_txt3 = 6
-            dev_col = 6
+            btn_txt3 = 13
+            dev_col = 13
         else:
             card_bg = 0
             border_outer = 8
@@ -2373,7 +2503,7 @@ class GrainOfDoubtApp:
         pacts_fmt = f"{len(self.bargains.history):,}".replace(",", " ")
         draw_text_scaled(80, 202, f"FINAL SCORE   : {score_fmt}", stat_val_col, scale=2)
         draw_text_scaled(80, 228, f"SAND REAPED   : {sand_fmt}", stat_lbl_col if is_sumie else 9, scale=2)
-        draw_text_scaled(80, 254, f"SHARDS EVADED : {shards_fmt}", 6, scale=2)
+        draw_text_scaled(80, 254, f"SHARDS EVADED : {shards_fmt}", 13 if is_sumie else 6, scale=2)
         draw_text_scaled(80, 280, f"PACTS SEALED  : {pacts_fmt}", stat_lbl_col if is_sumie else 8, scale=2)
 
         # Draw all 7 canonical sins vertically without 'k=' or 'canonical order'
@@ -2410,6 +2540,10 @@ class GrainOfDoubtApp:
 
     def draw_touch_buttons(self):
         """Draw 2 high-contrast arcade buttons for mobile browser touch play."""
+        theme = get_theme(self.current_theme_index)
+        is_sumie = getattr(theme, "id", 0) in (7, 8) or "SUMI" in theme.name.upper()
+        is_sumie_white = is_sumie and ("WHITE" in theme.name.upper() or theme.clear_color == 7)
+
         btn_y = 690
         btn_h = 75
         btn_w = 250
@@ -2420,25 +2554,47 @@ class GrainOfDoubtApp:
 
         # Left Button [x=30, y=690, w=250, h=75]
         lx = 30
-        pyxel.rect(lx, btn_y, btn_w, btn_h, 5 if self.touch_left else 1)
+        if is_sumie:
+            bg_l = 13 if self.touch_left else (7 if is_sumie_white else 0)
+            bg_r = 13 if self.touch_right else (7 if is_sumie_white else 0)
+        else:
+            bg_l = 5 if self.touch_left else 1
+            bg_r = 5 if self.touch_right else 1
+        pyxel.rect(lx, btn_y, btn_w, btn_h, bg_l)
         # Right Button [x=320, y=690, w=250, h=75]
         rx = 320
-        pyxel.rect(rx, btn_y, btn_w, btn_h, 5 if self.touch_right else 1)
+        pyxel.rect(rx, btn_y, btn_w, btn_h, bg_r)
 
         if hasattr(pyxel, "dither"):
             pyxel.dither(1.0)
 
-        pyxel.rectb(lx, btn_y, btn_w, btn_h, 10 if self.touch_left else 6)
-        pyxel.rectb(lx + 2, btn_y + 2, btn_w - 4, btn_h - 4, 7 if self.touch_left else 1)
-        draw_text_scaled(lx + 70, btn_y + 24, "< LEFT", 10 if self.touch_left else 7, scale=3)
+        if is_sumie:
+            b1_l = 0 if is_sumie_white else 7
+            b1_r = 0 if is_sumie_white else 7
+            b2_col = 13
+            txt_l = 0 if is_sumie_white else 7
+            txt_r = 0 if is_sumie_white else 7
+        else:
+            b1_l = 10 if self.touch_left else 6
+            b1_r = 10 if self.touch_right else 6
+            b2_col = 7 if self.touch_left else 1
+            txt_l = 10 if self.touch_left else 7
+            txt_r = 10 if self.touch_right else 7
 
-        pyxel.rectb(rx, btn_y, btn_w, btn_h, 10 if self.touch_right else 6)
-        pyxel.rectb(rx + 2, btn_y + 2, btn_w - 4, btn_h - 4, 7 if self.touch_right else 1)
-        draw_text_scaled(rx + 65, btn_y + 24, "RIGHT >", 10 if self.touch_right else 7, scale=3)
+        pyxel.rectb(lx, btn_y, btn_w, btn_h, b1_l)
+        pyxel.rectb(lx + 2, btn_y + 2, btn_w - 4, btn_h - 4, b2_col)
+        draw_text_scaled(lx + 70, btn_y + 24, "< LEFT", txt_l, scale=3)
+
+        pyxel.rectb(rx, btn_y, btn_w, btn_h, b1_r)
+        pyxel.rectb(rx + 2, btn_y + 2, btn_w - 4, btn_h - 4, b2_col)
+        draw_text_scaled(rx + 65, btn_y + 24, "RIGHT >", txt_r, scale=3)
 
     def draw_theme_banner(self):
         """Render prominent theme switcher banner at the bottom of the screen."""
         theme = get_theme(self.current_theme_index)
+        is_sumie = getattr(theme, "id", 0) in (7, 8) or "SUMI" in theme.name.upper()
+        is_sumie_white = is_sumie and ("WHITE" in theme.name.upper() or theme.clear_color == 7)
+
         box_w = 520
         box_h = 46
         box_x = (self.SCREEN_WIDTH - box_w) // 2  # 40
@@ -2446,30 +2602,45 @@ class GrainOfDoubtApp:
 
         if hasattr(pyxel, "dither"):
             pyxel.dither(0.70)
-        pyxel.rect(box_x, box_y, box_w, box_h, 0)
+        box_bg = (7 if is_sumie_white else 0) if is_sumie else 0
+        pyxel.rect(box_x, box_y, box_w, box_h, box_bg)
         if hasattr(pyxel, "dither"):
             pyxel.dither(1.0)
-        pyxel.rectb(box_x, box_y, box_w, box_h, 10)
-        pyxel.rectb(box_x + 1, box_y + 1, box_w - 2, box_h - 2, 9)
+        border_1 = (0 if is_sumie_white else 7) if is_sumie else 10
+        border_2 = 13 if is_sumie else 9
+        pyxel.rectb(box_x, box_y, box_w, box_h, border_1)
+        pyxel.rectb(box_x + 1, box_y + 1, box_w - 2, box_h - 2, border_2)
 
         name_str = f"THEME [{self.current_theme_index + 1}/{len(ALL_THEMES)}]: {theme.name}"
         sub_str = "[,] PREV THEME        [.] NEXT THEME"
-        draw_text_scaled(box_x + 16, box_y + 8, name_str, 10, scale=2)
-        draw_text_scaled(box_x + 16, box_y + 28, sub_str, 7, scale=1)
+        title_col = (0 if is_sumie_white else 7) if is_sumie else 10
+        sub_col = 13 if is_sumie else 7
+        draw_text_scaled(box_x + 16, box_y + 8, name_str, title_col, scale=2)
+        draw_text_scaled(box_x + 16, box_y + 28, sub_str, sub_col, scale=1)
 
     def draw_dev_box(self, box_y: int, translucent: bool = False):
         """Render dedicated Dev Mode box at bottom of screen matching the theme of the top-right pacts board."""
         theme = get_theme(self.current_theme_index)
+        is_sumie = getattr(theme, "id", 0) in (7, 8) or "SUMI" in theme.name.upper()
+        is_sumie_white = is_sumie and ("WHITE" in theme.name.upper() or theme.clear_color == 7)
         is_light = theme.clear_color in (7, 15, 6, 11, 14) or getattr(theme, "id", 0) in (7, 15)
         kp = theme.get_kairos_palette()
-        box_bg = 7 if is_light else 0
-        box_border = 0 if is_light else (kp.border_inner if kp.border_inner != 0 else 1)
-        border_sub = 5 if is_light else (3 if kp.border_inner != 3 else 1)
-
-        hdr_col = 0 if is_light else 11
-        ctrl_col = 0 if is_light else 10
-        pact_col = 0 if is_light else 9
-        metric_col = 0 if is_light else 7
+        if is_sumie:
+            box_bg = 7 if is_sumie_white else 0
+            box_border = 0 if is_sumie_white else 7
+            border_sub = 13
+            hdr_col = 0 if is_sumie_white else 7
+            ctrl_col = 0 if is_sumie_white else 7
+            pact_col = 13
+            metric_col = 0 if is_sumie_white else 7
+        else:
+            box_bg = 7 if is_light else 0
+            box_border = 0 if is_light else (kp.border_inner if kp.border_inner != 0 else 1)
+            border_sub = 5 if is_light else (3 if kp.border_inner != 3 else 1)
+            hdr_col = 0 if is_light else 11
+            ctrl_col = 0 if is_light else 10
+            pact_col = 0 if is_light else 9
+            metric_col = 0 if is_light else 7
 
         box_x = 20
         box_w = 560

@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.2.2] - 2026-09-25
+### Fixed & Enhanced
+- **Root Cause Resolution for Blue Color in Sumi-e Modes**:
+  - Identified root cause: In Pyxel 2.x, `Color 6` is light periwinkle blue (`#A9C1FF`, RGB 169, 193, 255), not neutral grey. In contrast, `Color 13` is true neutral grey (`#A3A3A3`, RGB 163, 163, 163, 0 chroma).
+  - Replaced all occurrences of `Color 6` with `Color 13` across the entire Sumi-e pipeline (Hourglass glass walls/rivets/sand, Shards borders/shadows, Sand shadows, Mountain ridge ink washes, Kairos palette dividers/borders/subtitles, HUD empty hearts/inactive sin swatches, and Game Over borders/stats).
+- **Main Menu / Title Screen NO COLOR**:
+  - Full Sumi-e theme awareness added to `draw_title_screen()`:
+  - Header plaque, logo title, subtitle, author, and description text strictly `{0, 7, 13}`.
+  - Controls & Themes box (previously hardcoded to Navy Blue `Color 1` and Slate Blue `Color 5`): completely converted to pure grayscale `{0, 7, 13}` in both Sumi-e modes.
+  - Prev/Next theme buttons, Lore button, Shortcuts header, Photosensitivity warning box, and flashing Start prompt strictly `{0, 7, 13}`.
+- **Lore & Learn to Play Pages (All 5 Pages) NO COLOR**:
+  - Full Sumi-e theme awareness added to `draw_lore_screen()`:
+  - Replaced Slate Blue `Color 5` divider lines across all pages with Neutral Grey `Color 13`.
+  - Replaced all chromatic headers and labels (`Color 10, 9, 8, 14, 11, 12, 4`) with high-contrast Black `Color 0` (on Sumi-e White) or White `Color 7` (on Sumi-e Black).
+  - All 5 pages of narrative, Faustian pact lists, addictive decay formulas, and footer navigation strictly restricted to `{0, 7, 13}`.
+- **Mobile Touch Buttons, Theme Banner & Dev Overlay NO COLOR**:
+  - `draw_touch_buttons()`: Replaced Navy Blue `Color 1` and Slate Blue `Color 5` backgrounds with `{0, 7, 13}`.
+  - `draw_theme_banner()`: Replaced Yellow `Color 10` and Orange `Color 9` frames with `{0, 7, 13}`.
+  - `draw_dev_box()`: Replaced Slate Blue `Color 5` and Dark Green `Color 3` sub-borders with `{0, 7, 13}`.
+- **Strict Verification**:
+  - Verified via full framebuffer pixel inspection that 100% of pixels rendered on Title, Lore (all 5 pages), Chronos in-game, Kairos modal, and Game Over screen belong strictly to `{0, 7, 13}` in both Sumi-e White and Sumi-e Black.
+
 ## [v1.2.1] - 2026-09-25
 ### Changed & Enhanced
 - **Theme 7 Replaced with Matrix (`RETRO TERMINAL MATRIX`)**:

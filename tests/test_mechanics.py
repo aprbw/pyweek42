@@ -2718,7 +2718,7 @@ def test_v113_comprehensive_feedback_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.1.3", "v1.1.4", "v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1")
+    assert app.VERSION in ("v1.1.3", "v1.1.4", "v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2")
     assert app.MAX_LORE_PAGES == 5
 
     # 1. God mode toggle via [G]
@@ -2895,7 +2895,7 @@ def test_v114_comprehensive_feedback_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.1.4", "v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1")
+    assert app.VERSION in ("v1.1.4", "v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2")
 
     # 1. E-Reader Mode: Telemetry is 3rd paragraph (after 3:1-8 and 3:9-13, before 3:14-15)
     from engine.themes import render_reader_mode_text
@@ -3095,7 +3095,7 @@ def test_v115_comprehensive_feedback_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1")
+    assert app.VERSION in ("v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2")
 
     # 1. Menu Page Controls & Line Breaks
     drawn_calls = []
@@ -3246,7 +3246,7 @@ def test_v116_comprehensive_feedback_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1")
+    assert app.VERSION in ("v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2")
 
     # 1. Pact distribution: Addictive formula P(P) = (1 + N_chosen) / (7 + total_pacts)
     bm = BargainManager()
@@ -3558,7 +3558,7 @@ def test_v117_comprehensive_feedback_validation():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version increment
-    assert app.VERSION in ("v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1"), f"Expected version in v1.1.7-v1.2.1, got {app.VERSION}"
+    assert app.VERSION in ("v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2"), f"Expected version in v1.1.7-v1.2.2, got {app.VERSION}"
 
     # 2. UI Kairos: identical card background for both cards in non-pro themes
     app.state.current_state = GameState.KAIROS
@@ -3729,7 +3729,7 @@ def test_v118_comprehensive_feedback_validation():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version
-    assert app.VERSION in ("v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1"), f"Expected v1.1.8, v1.1.9, v1.2.0 or v1.2.1, got {app.VERSION}"
+    assert app.VERSION in ("v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2"), f"Expected v1.1.8, v1.1.9, v1.2.0, v1.2.1 or v1.2.2, got {app.VERSION}"
 
     # 2. Sakura Theme Dark Green Sand
     t_sakura = get_theme(9)
@@ -3769,7 +3769,7 @@ def test_v118_comprehensive_feedback_validation():
         coords = {c[2]: c[1] for c in drawn_calls}
         assert "[X] QUIT GAME" in coords
         y_quit = coords["[X] QUIT GAME"]
-        box_bottom = 496 if app.VERSION in ("v1.1.9", "v1.2.0", "v1.2.1") else (188 + 286)
+        box_bottom = 496 if app.VERSION in ("v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2") else (188 + 286)
         assert (box_bottom - (y_quit + 14)) >= 16, f"Expected >=16px space below quit, got {box_bottom - (y_quit + 14)}"
     finally:
         main.draw_text_scaled = orig_scaled
@@ -3846,8 +3846,8 @@ def test_v119_comprehensive_feedback_validation():
 
     app = GrainOfDoubtApp(headless=True)
 
-    # 1. Version is v1.1.9, v1.2.0 or v1.2.1
-    assert app.VERSION in ("v1.1.9", "v1.2.0", "v1.2.1"), f"Expected v1.1.9, v1.2.0 or v1.2.1, got {app.VERSION}"
+    # 1. Version is v1.1.9, v1.2.0, v1.2.1 or v1.2.2
+    assert app.VERSION in ("v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2"), f"Expected v1.1.9, v1.2.0, v1.2.1 or v1.2.2, got {app.VERSION}"
 
     # 2. Main Menu 3-Line Buttons (h=54) and click bounds
     app.state.current_state = GameState.TITLE
@@ -3974,7 +3974,7 @@ def test_v119_comprehensive_feedback_validation():
     assert t_sumie_w.name == "ZEN INK WASH (SUMI-E WHITE)"
     t_sumie_b = get_theme(8)
     assert t_sumie_b.name == "ZEN INK WASH (SUMI-E BLACK)"
-    strict_bw_colors = {0, 6, 7}
+    strict_bw_colors = {0, 6, 7, 13}
     for t_s in (t_sumie_w, t_sumie_b):
         kp = t_s.get_kairos_palette()
         for field, val in kp.__dict__.items():
@@ -4008,32 +4008,11 @@ def test_v120_milestone_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.2.0", "v1.2.1"), f"Expected v1.2.0 or v1.2.1, got {app.VERSION}"
+    assert app.VERSION in ("v1.2.0", "v1.2.1", "v1.2.2"), f"Expected v1.2.0, v1.2.1 or v1.2.2, got {app.VERSION}"
 
 
 def test_v121_comprehensive_feedback_validation():
-    """Verify all v1.2.1 2do.md user requirements:
-    1. Version is v1.2.1.
-    2. Theme Reorganization:
-       - Theme 7 (id 6) is RETRO TERMINAL MATRIX.
-       - Theme 8 (id 7) is ZEN INK WASH (SUMI-E WHITE).
-       - Theme 9 (id 8) is ZEN INK WASH (SUMI-E BLACK).
-       - Theme 10 (id 9) is PASTEL SAKURA.
-       - Exactly 10 themes in ALL_THEMES.
-    3. Both Sumi-e Modes Strictly NO COLOR ({0, 6, 7} ONLY):
-       - Hourglass palette fields for Theme 7 & 8 are all in {0, 6, 7} (no 1 navy, no 5 slate).
-       - Sand palette fields for Theme 7 & 8 are all in {0, 6, 7}.
-       - Shard palette fields for Theme 7 & 8 are all in {0, 6, 7}.
-       - Kairos palette fields for Theme 7 & 8 are all in {0, 6, 7}.
-       - HUD drawing for Theme 7 & 8 uses only colors in {0, 6, 7}.
-       - Game over screen drawing for Theme 7 & 8 uses only colors in {0, 6, 7}.
-    4. Kairos Gluttony Full Card-Width Title:
-       - Width calculation: get_text_width_5x7("GLUTTONY", scale=5, char_gap=4) == 228 (exact card width).
-       - In Kairos modal, GLUTTONY title renders starting at x = cx with width 228.
-       - Card frame bends outward around GLUTTONY (bulge_x = 22).
-    5. Font 5x7 Char Gap:
-       - draw_text_5x7 supports optional char_gap parameter.
-    """
+    """Verify all v1.2.1 2do.md user requirements."""
     import main
     from main import GrainOfDoubtApp, get_text_width_5x7
     from engine.themes import ALL_THEMES, get_theme
@@ -4050,7 +4029,7 @@ def test_v121_comprehensive_feedback_validation():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version
-    assert app.VERSION == "v1.2.1", f"Expected v1.2.1, got {app.VERSION}"
+    assert app.VERSION in ("v1.2.1", "v1.2.2"), f"Expected v1.2.1 or v1.2.2, got {app.VERSION}"
 
     # 2. Theme Reorganization
     assert len(ALL_THEMES) == 10
@@ -4063,8 +4042,8 @@ def test_v121_comprehensive_feedback_validation():
     t9 = get_theme(9)
     assert t9.name == "PASTEL SAKURA", f"Theme 10 (id 9) must be Pastel Sakura, got {t9.name}"
 
-    # 3. Both Sumi-e Modes: Strictly {0, 6, 7} NO COLOR
-    strict_bw = {0, 6, 7}
+    # 3. Both Sumi-e Modes: Strictly Grayscale {0, 7, 13} NO COLOR
+    strict_bw = {0, 6, 7, 13}
     for theme_idx in (7, 8):
         th = get_theme(theme_idx)
         # Check Hourglass palette (caps, cap_hl, cap_rivet, glass_walls, waist_neck, sand_a, sand_b, shadow)
@@ -4140,6 +4119,148 @@ def test_v121_comprehensive_feedback_validation():
 
     # 5. Font 5x7 Direct Renderer with char_gap
     draw_text_5x7(pyxel, 10, 10, "GLUTTONY", 7, scale=5, char_gap=4)
+
+
+def test_v122_sumie_strictly_no_color():
+    """Verify v1.2.2 requirements:
+    1. Version is v1.2.2.
+    2. Sumi-e themes (7: Sumi-e White, 8: Sumi-e Black) are STRICTLY {0, 7, 13} (pure black, white, neutral grey).
+       NO BLUE: Color 1 (Midnight Navy), Color 5 (Slate Blue), Color 6 (Periwinkle Blue), Color 12 (Sky Blue)
+       are strictly forbidden anywhere in Sumi-e modes!
+    3. Hourglass: all fields in {0, 7, 13}.
+    4. Sands & Shards: all fields in {0, 7, 13}.
+    5. Title screen / Main menu: strictly {0, 7, 13}.
+    6. Lore & Learn page (all 5 pages): strictly {0, 7, 13}.
+    7. Kairos UI: strictly {0, 7, 13}.
+    8. Game Over screen: strictly {0, 7, 13}.
+    9. Touch buttons, Theme banner, Dev box: strictly {0, 7, 13}.
+    """
+    import main
+    from main import GrainOfDoubtApp
+    from engine.themes import ALL_THEMES, get_theme
+    from engine.state import GameState
+    from engine.bargains import SinType, BARGAIN_REGISTRY
+
+    import pyxel
+    try:
+        pyxel.init(600, 800, headless=True)
+    except BaseException:
+        pass
+
+    app = GrainOfDoubtApp(headless=True)
+
+    # 1. Version
+    assert app.VERSION == "v1.2.2", f"Expected v1.2.2, got {app.VERSION}"
+
+    # Pure grayscale set in Pyxel: 0=Black, 7=White, 13=Neutral Grey
+    # Blue colors (1=Navy, 5=Slate, 6=Periwinkle, 12=Sky Blue) and chromatic colors MUST NOT appear!
+    pure_grayscale = {0, 7, 13}
+    forbidden_blue = {1, 5, 6, 12}
+
+    for theme_idx in (7, 8):
+        th = get_theme(theme_idx)
+
+        # 2. Hourglass palette has NO BLUE and is pure grayscale
+        for field, val in th.hourglass.__dict__.items():
+            assert val in pure_grayscale, f"{th.name} hourglass.{field}={val} is not in {pure_grayscale}"
+            assert val not in forbidden_blue, f"{th.name} hourglass.{field}={val} is a blue color!"
+
+        # 3. Sand palette
+        for field, val in th.sand.__dict__.items():
+            assert val in pure_grayscale, f"{th.name} sand.{field}={val} is not in {pure_grayscale}"
+            assert val not in forbidden_blue, f"{th.name} sand.{field}={val} is a blue color!"
+
+        # 4. Shard palette
+        for field, val in th.shard.__dict__.items():
+            assert val in pure_grayscale, f"{th.name} shard.{field}={val} is not in {pure_grayscale}"
+            assert val not in forbidden_blue, f"{th.name} shard.{field}={val} is a blue color!"
+
+        # 5. Kairos palette
+        kp = th.get_kairos_palette()
+        for field, val in kp.__dict__.items():
+            assert val in pure_grayscale, f"{th.name} kairos.{field}={val} is not in {pure_grayscale}"
+            assert val not in forbidden_blue, f"{th.name} kairos.{field}={val} is a blue color!"
+
+        # 6. Main Menu / Title screen text rendering
+        app.current_theme_index = theme_idx
+        app.state.current_state = GameState.TITLE
+        drawn_calls = []
+        orig_scaled = main.draw_text_scaled
+        orig_centered = main.draw_text_centered
+        try:
+            main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2, char_gap=None: drawn_calls.append((x, y, s, col, scale))
+            main.draw_text_centered = lambda y, s, col, scale=1, img_bank=2: drawn_calls.append((300, y, s, col, scale))
+            app.draw_title_screen()
+            for call in drawn_calls:
+                c_text, c_col = call[2], call[3]
+                assert c_col in pure_grayscale, f"{th.name} Title text '{c_text}' has color {c_col} (expected {pure_grayscale})"
+                assert c_col not in forbidden_blue, f"{th.name} Title text '{c_text}' has blue color {c_col}!"
+        finally:
+            main.draw_text_scaled = orig_scaled
+            main.draw_text_centered = orig_centered
+
+        # 7. Lore & Learn page (all 5 pages)
+        app.state.current_state = GameState.LORE
+        for page in range(app.MAX_LORE_PAGES):
+            app.lore_page = page
+            drawn_calls.clear()
+            try:
+                main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2, char_gap=None: drawn_calls.append((x, y, s, col, scale))
+                main.draw_text_centered = lambda y, s, col, scale=1, img_bank=2: drawn_calls.append((300, y, s, col, scale))
+                app.draw_lore_screen()
+                for call in drawn_calls:
+                    c_text, c_col = call[2], call[3]
+                    assert c_col in pure_grayscale, f"{th.name} Lore Page {page} text '{c_text}' has color {c_col} (expected {pure_grayscale})"
+                    assert c_col not in forbidden_blue, f"{th.name} Lore Page {page} text '{c_text}' has blue color {c_col}!"
+            finally:
+                main.draw_text_scaled = orig_scaled
+                main.draw_text_centered = orig_centered
+
+        # 8. HUD rendering
+        app.state.current_state = GameState.CHRONOS
+        app.state.hearts = 3
+        app.state.greed_active = True
+        app.bargains.selection_counts[SinType.PRIDE] = 1
+        drawn_calls.clear()
+        try:
+            main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2, char_gap=None: drawn_calls.append((x, y, s, col, scale))
+            app.draw_hud()
+            for call in drawn_calls:
+                c_text, c_col = call[2], call[3]
+                assert c_col in pure_grayscale, f"{th.name} HUD text '{c_text}' has color {c_col} (expected {pure_grayscale})"
+                assert c_col not in forbidden_blue, f"{th.name} HUD text '{c_text}' has blue color {c_col}!"
+        finally:
+            main.draw_text_scaled = orig_scaled
+
+        # 9. Game Over screen
+        app.state.current_state = GameState.GAMEOVER
+        app.game_over_timer = 90
+        drawn_calls.clear()
+        try:
+            main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2, char_gap=None: drawn_calls.append((x, y, s, col, scale))
+            main.draw_text_centered = lambda y, s, col, scale=1, img_bank=2: drawn_calls.append((300, y, s, col, scale))
+            app.draw_game_over_screen()
+            for call in drawn_calls:
+                c_text, c_col = call[2], call[3]
+                assert c_col in pure_grayscale, f"{th.name} Game Over text '{c_text}' has color {c_col} (expected {pure_grayscale})"
+                assert c_col not in forbidden_blue, f"{th.name} Game Over text '{c_text}' has blue color {c_col}!"
+        finally:
+            main.draw_text_scaled = orig_scaled
+            main.draw_text_centered = orig_centered
+
+        # 10. Touch buttons & Theme banner
+        drawn_calls.clear()
+        try:
+            main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2, char_gap=None: drawn_calls.append((x, y, s, col, scale))
+            app.draw_touch_buttons()
+            app.draw_theme_banner()
+            for call in drawn_calls:
+                c_text, c_col = call[2], call[3]
+                assert c_col in pure_grayscale, f"{th.name} Button/Banner text '{c_text}' has color {c_col} (expected {pure_grayscale})"
+                assert c_col not in forbidden_blue, f"{th.name} Button/Banner text '{c_text}' has blue color {c_col}!"
+        finally:
+            main.draw_text_scaled = orig_scaled
+
 
 
 
