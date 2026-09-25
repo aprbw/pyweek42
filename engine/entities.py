@@ -53,6 +53,8 @@ class HourglassPlayer:
         self.min_x: float = 45.0
         self.max_x: float = screen_w - 45.0
         self.sand_drain_phase: float = 0.0
+        self.ax: float = 0.0
+        self.accel_display: float = 0.0
 
     @property
     def tilt(self) -> float:
@@ -63,6 +65,8 @@ class HourglassPlayer:
         self.x = self.screen_w / 2.0
         self.y = self.base_y
         self.vx = 0.0
+        self.ax = 0.0
+        self.accel_display = 0.0
         self.sand_drain_phase = 0.0
 
     def apply_input(self, left: bool, right: bool, speed_mod: float = 1.0):
@@ -73,6 +77,9 @@ class HourglassPlayer:
             ax = -effective_accel
         elif right and not left:
             ax = effective_accel
+
+        self.ax = ax
+        self.accel_display = self.accel_display * 0.70 + self.ax * 0.30
 
         # Integrate acceleration into velocity, then apply natural air friction damping
         self.vx += ax

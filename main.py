@@ -282,7 +282,7 @@ def is_dev_environment() -> bool:
 
 
 class GrainOfDoubtApp:
-    VERSION: str = "v1.1.6"
+    VERSION: str = "v1.1.7"
     SCREEN_WIDTH: int = 600
     SCREEN_HEIGHT: int = 800
 
@@ -540,18 +540,18 @@ class GrainOfDoubtApp:
             # Check touch/mouse clicks on interactive UI buttons
             if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
                 mx, my = pyxel.mouse_x, pyxel.mouse_y
-                # 1. Prev Theme button [x=60..290, y=320..356]
-                if 60 <= mx <= 290 and 320 <= my <= 356:
+                # 1. Prev Theme button [x=60..290, y=318..366]
+                if 60 <= mx <= 290 and 318 <= my <= 366:
                     self.current_theme_index = (self.current_theme_index - 1) % len(ALL_THEMES)
                     self.theme_banner_timer = 45
                     return
-                # 2. Next Theme button [x=310..540, y=320..356]
-                elif 310 <= mx <= 540 and 320 <= my <= 356:
+                # 2. Next Theme button [x=310..540, y=318..366]
+                elif 310 <= mx <= 540 and 318 <= my <= 366:
                     self.current_theme_index = (self.current_theme_index + 1) % len(ALL_THEMES)
                     self.theme_banner_timer = 45
                     return
-                # 3. Lore & Learn button [x=60..540, y=382..418]
-                elif 60 <= mx <= 540 and 382 <= my <= 418:
+                # 3. Lore & Learn button [x=60..540, y=388..438]
+                elif 60 <= mx <= 540 and 388 <= my <= 438:
                     self.state.current_state = GameState.LORE
                     self.lore_page = 0
                     return
@@ -717,22 +717,25 @@ class GrainOfDoubtApp:
         elif self.state.current_state == GameState.GAMEOVER:
             self.game_over_timer += 1
 
-            # Check touch/click on [X] RETURN TO MENU button [x=100..500, y=632..676]
+            # Check touch/click on [X] RETURN TO MENU button [x=60..540, y=530..608] or pressing [X] key
+            btn_clicked = False
             if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
                 mx, my = pyxel.mouse_x, pyxel.mouse_y
-                if 100 <= mx <= 500 and 632 <= my <= 676:
-                    self.state.current_state = GameState.TITLE
-                    self.state.reset()
-                    self.entities.reset()
-                    self.bargains.reset()
-                    self.active_options.clear()
-                    self.selected_card_index = 0
-                    self.selected_feedback = None
-                    self.feedback_timer = 0
-                    self.auto_restart_timer = 0
-                    self.game_over_timer = 0
-                    self.reset_stars()
-                    return
+                if 60 <= mx <= 540 and 530 <= my <= 608:
+                    btn_clicked = True
+            if btn_clicked or pyxel.btnp(pyxel.KEY_X):
+                self.state.current_state = GameState.TITLE
+                self.state.reset()
+                self.entities.reset()
+                self.bargains.reset()
+                self.active_options.clear()
+                self.selected_card_index = 0
+                self.selected_feedback = None
+                self.feedback_timer = 0
+                self.auto_restart_timer = 0
+                self.game_over_timer = 0
+                self.reset_stars()
+                return
 
             if self.bot_mode:
                 self.auto_restart_timer += 1
@@ -1063,13 +1066,90 @@ class GrainOfDoubtApp:
         """Backward-compatible alias for draw_braided_sandfall_terrain."""
         self.draw_braided_sandfall_terrain(cam_x, prog)
 
+    def draw_pro_mode_player_display(self, px: float, py: float, theme):
+        """Render clinical aeronautical flight-director display for Pro Mode:
+        - Box / Circle showing exact hitbox boundaries.
+        - Cross displacement indicating lateral velocity (left/right of center).
+        - Cross rotation indicating lateral acceleration (counter-clockwise on left accel, clockwise on right accel).
+        - Dotted circle indicating Lust sand magnet reach.
+        """
+        is_dark = (theme.id == 2 or theme.clear_color == 0)
+        col_main = 7 if is_dark else 0       # White in dark mode, Black in light mode
+        col_cross = 10 if is_dark else 8     # Bright gold in dark mode, Crimson in light mode
+        col_accent = 12 if is_dark else 1    # Cyan in dark mode, Navy in light mode
+
+        player = self.entities.player
+
+        # 1. Exact Hitbox Boundary (Rectangle 60x40 and inscribed Hitbox Circle radius=20)
+        box_w, box_h = HourglassPlayer.WIDTH, HourglassPlayer.HEIGHT
+        hx = int(round(px - box_w / 2.0))
+        hy = int(round(py - box_h / 2.0))
+        pyxel.rectb(hx, hy, box_w, box_h, col_main)
+
+        # Inscribed hitbox circle with radius = box_h / 2 = 20
+        hitbox_r = box_h // 2
+        pyxel.circb(int(round(px)), int(round(py)), hitbox_r, col_main)
+
+        # Center reference point
+        pyxel.pset(int(round(px)), int(round(py)), col_main)
+
+        # 2. Dotted Lust Range Circle
+        lust_r = getattr(self.state, "lust_attract_radius", 0.0)
+        if lust_r > 0:
+            num_dots = max(16, int(lust_r * 0.40))
+            for d_idx in range(num_dots):
+                if d_idx % 2 == 0:
+                    continue
+                angle = (d_idx / float(num_dots)) * (2.0 * math.pi)
+                dx = int(round(px + math.cos(angle) * lust_r))
+                dy = int(round(py + math.sin(angle) * lust_r))
+                if 0 <= dy < self.SCREEN_HEIGHT:
+                    pyxel.pset(dx, dy, col_accent)
+
+        # 3. Flight Cross (Position indicates lateral speed, Rotation indicates acceleration)
+        max_shift = 22.0
+        shift_x = max(-max_shift, min(max_shift, player.vx * 3.2))
+        cross_cx = px + shift_x
+        cross_cy = py
+
+        accel_val = getattr(player, "accel_display", player.vx)
+        phi = max(-0.55, min(0.55, accel_val * 0.22))
+        cos_p = math.cos(phi)
+        sin_p = math.sin(phi)
+
+        arm_len = 14.0
+        # Horizontal cross arm
+        h_x1 = int(round(cross_cx - arm_len * cos_p))
+        h_y1 = int(round(cross_cy - arm_len * sin_p))
+        h_x2 = int(round(cross_cx + arm_len * cos_p))
+        h_y2 = int(round(cross_cy + arm_len * sin_p))
+        pyxel.line(h_x1, h_y1, h_x2, h_y2, col_cross)
+
+        # Vertical cross arm
+        v_x1 = int(round(cross_cx + arm_len * sin_p))
+        v_y1 = int(round(cross_cy - arm_len * cos_p))
+        v_x2 = int(round(cross_cx - arm_len * sin_p))
+        v_y2 = int(round(cross_cy + arm_len * cos_p))
+        pyxel.line(v_x1, v_y1, v_x2, v_y2, col_cross)
+
+        # Center reticle dot
+        pyxel.pset(int(round(cross_cx)), int(round(cross_cy)), col_cross)
+
     def draw_player_hourglass(self, pal: Optional[HourglassPalette] = None):
-        """Draw horizontal hourglass sprite (60x40) that tilts dynamically with control velocity."""
+        """Draw horizontal hourglass sprite (60x40) that tilts dynamically with control velocity, or flight director in Pro Mode."""
+        theme = get_theme(self.current_theme_index)
         if pal is None:
-            pal = get_theme(self.current_theme_index).hourglass
+            pal = theme.hourglass
         player = self.entities.player
         px = player.x
         py = player.y
+
+        # Pro Mode: Replace hourglass sprite with clinical flight director display
+        if theme.name.startswith("PRO MODE"):
+            if self.state.invulnerable_timer > 0 and (self.state.invulnerable_timer // 3) % 2 == 1:
+                return
+            self.draw_pro_mode_player_display(px, py, theme)
+            return
 
         # Cast drop shadow on the terrain below the hourglass
         shadow_y = int(py + 16)
@@ -1442,7 +1522,7 @@ class GrainOfDoubtApp:
                 bg_col = SIN_CARD_COLORS.get(sin, 1)
                 border_col = 10 if (is_selected and (pyxel.frame_count // 3) % 2 == 0) else (7 if is_selected else (0 if theme.id == 7 else 5))
             else:
-                bg_col = kp.card_bg if not is_selected else kp.card_bg_selected
+                bg_col = kp.card_bg
                 flash_col = kp.sin_title_selected if (pyxel.frame_count // 3) % 2 == 0 else kp.card_border_selected
                 border_col = flash_col if is_selected else kp.card_border
 
@@ -1730,8 +1810,8 @@ class GrainOfDoubtApp:
         draw_text_centered(162, "DODGE LETHAL FALLING GLASS SHARDS", 8, scale=2)
 
         # Controls & Themes box (Clean, elevated positioning without redundant plaque)
-        box_y = 196
-        box_h = 254
+        box_y = 192
+        box_h = 262
         pyxel.rect(40, box_y, 520, box_h, 1)
         pyxel.rectb(40, box_y, 520, box_h, 5)
 
@@ -1740,50 +1820,47 @@ class GrainOfDoubtApp:
         draw_text_scaled(60, box_y + 44, "KEYBOARD: [LEFT] / [RIGHT] ARROWS", 7, scale=2)
         draw_text_scaled(60, box_y + 60, "TOUCH: [LEFT] / [RIGHT] ON-SCREEN", 7, scale=2)
 
-        # Bigger line break (1 full line worth of extra space: gap >= 36px) before Themes
+        # Line break before Themes (at least 1 full line gap: 36px)
         theme = get_theme(self.current_theme_index)
         act_col = 10 if (self.current_theme_index in (1, 2) or getattr(theme, "is_reader_mode", False)) else 9
-        draw_text_scaled(60, box_y + 100, "SELECT THEMES", 10, scale=2)
-        draw_text_scaled(60, box_y + 118, f"({self.current_theme_index + 1}/10) {theme.name}", act_col, scale=2)
+        draw_text_scaled(60, box_y + 96, "SELECT THEMES", 10, scale=2)
+        draw_text_scaled(60, box_y + 114, f"({self.current_theme_index + 1}/10) {theme.name}", act_col, scale=2)
 
-        # Big Prev & Next Theme Touch Buttons for Mobile/Desktop
-        btn_prev_x, btn_prev_y, btn_prev_w, btn_prev_h = 60, box_y + 138, 230, 26
+        # Big Prev & Next Theme Touch Buttons (2 lines in height: h=38)
+        btn_prev_x, btn_prev_y, btn_prev_w, btn_prev_h = 60, box_y + 132, 230, 38
         pyxel.rect(btn_prev_x, btn_prev_y, btn_prev_w, btn_prev_h, 0)
         pyxel.rectb(btn_prev_x, btn_prev_y, btn_prev_w, btn_prev_h, 10)
-        draw_text_scaled(btn_prev_x + 22, btn_prev_y + 5, "< [,] PREV THEME", 7, scale=2)
+        draw_text_scaled(btn_prev_x + 22, btn_prev_y + 11, "< [,] PREV THEME", 7, scale=2)
 
-        btn_next_x, btn_next_y, btn_next_w, btn_next_h = 310, box_y + 138, 230, 26
+        btn_next_x, btn_next_y, btn_next_w, btn_next_h = 310, box_y + 132, 230, 38
         pyxel.rect(btn_next_x, btn_next_y, btn_next_w, btn_next_h, 0)
         pyxel.rectb(btn_next_x, btn_next_y, btn_next_w, btn_next_h, 10)
-        draw_text_scaled(btn_next_x + 22, btn_next_y + 5, "NEXT THEME [.] >", 7, scale=2)
+        draw_text_scaled(btn_next_x + 22, btn_next_y + 11, "NEXT THEME [.] >", 7, scale=2)
 
-        draw_text_scaled(60, box_y + 166, "[,] PREV   |   [.] NEXT", 6, scale=1)
+        # 1 full line of space before SHORTCUTS (gap = 26px)
+        draw_text_scaled(60, box_y + 186, "SHORTCUTS", 10, scale=2)
 
-        # Bigger line break (1 full line worth of extra space: gap >= 36px) before Shortcuts
-        draw_text_scaled(60, box_y + 178, "SHORTCUTS", 10, scale=2)
-
-        # Big Lore & Learn Touch Button
-        btn_lore_x, btn_lore_y, btn_lore_w, btn_lore_h = 60, box_y + 192, 480, 26
+        # Big Lore & Learn Touch Button (2 lines in height: h=38)
+        btn_lore_x, btn_lore_y, btn_lore_w, btn_lore_h = 60, box_y + 204, 480, 38
         pyxel.rect(btn_lore_x, btn_lore_y, btn_lore_w, btn_lore_h, 0)
         pyxel.rectb(btn_lore_x, btn_lore_y, btn_lore_w, btn_lore_h, 10)
-        draw_text_scaled(btn_lore_x + 86, btn_lore_y + 5, "[L] LORE & LEARN TO PLAY", 10, scale=2)
+        draw_text_scaled(btn_lore_x + 86, btn_lore_y + 11, "[L] LORE & LEARN TO PLAY", 10, scale=2)
 
-        draw_text_scaled(60, box_y + 226, "[X] QUIT GAME", 7, scale=2)
+        draw_text_scaled(60, box_y + 248, "[X] QUIT GAME", 7, scale=2)
 
         # Photosensitivity & Pro Mode suggestion directly above blinking start prompt
-        pyxel.rect(40, 456, 520, 60, 0)
-        pyxel.rectb(40, 456, 520, 60, 8)
-        # PHOTOSENSITIVITY WARNING is HUGE (scale=2)
-        draw_text_centered(462, "PHOTOSENSITIVITY WARNING", 8, scale=2)
-        draw_text_centered(482, "Rapid motion and flashing visuals in some themes.", 7, scale=1)
+        pyxel.rect(40, 460, 520, 56, 0)
+        pyxel.rectb(40, 460, 520, 56, 8)
+        draw_text_centered(466, "PHOTOSENSITIVITY WARNING", 8, scale=2)
+        draw_text_centered(484, "Rapid motion and flashing visuals in some themes.", 7, scale=1)
         draw_text_centered(498, "Switch to PRO MODE (Themes 2 & 3) for calm high-contrast clinical view.", 6, scale=1)
 
-        # Start prompt: "PRESS ARROWS OR HERE TO START"
+        # Start prompt: "PRESS ARROWS OR HERE TO START" (at least 2 lines in height: h=40)
         blink = (pyxel.frame_count // 12) % 2 == 0
         if blink:
-            pyxel.rect(50, 524, 500, 28, 0)
-            pyxel.rectb(50, 524, 500, 28, 10)
-            draw_text_centered(530, "PRESS ARROWS OR HERE TO START", 10, scale=2)
+            pyxel.rect(50, 524, 500, 40, 0)
+            pyxel.rectb(50, 524, 500, 40, 10)
+            draw_text_centered(536, "PRESS ARROWS OR HERE TO START", 10, scale=2)
 
         # Dedicated Dev Mode box at bottom when dev_mode is active
         if self.dev_mode:
@@ -1968,19 +2045,14 @@ class GrainOfDoubtApp:
                 ),
             ]
             for idx, (pact_title, narrative_lines, boon, curse, pcol) in enumerate(pacts_p1):
-                py = box_y + 96 + idx * 92
-                pyxel.rect(box_x + 24, py + 2, 6, 76, pcol)
+                py = box_y + 104 + idx * 136
+                pyxel.rect(box_x + 24, py + 2, 6, 80, pcol)
                 draw_text_scaled(box_x + 38, py, pact_title, 10, scale=2)
                 for n_idx, n_line in enumerate(narrative_lines):
                     draw_text_scaled(box_x + 38, py + 18 + n_idx * 16, n_line, 7, scale=2)
                 pro_y = py + 18 + len(narrative_lines) * 16
                 draw_text_scaled(box_x + 38, pro_y, f"PRO: {boon}", 11, scale=2)
                 draw_text_scaled(box_x + 38, pro_y + 16, f"CON: {curse}", 8, scale=2)
-
-            pyxel.line(box_x + 16, box_y + 472, box_x + box_w - 16, box_y + 472, 5)
-            draw_text_scaled(box_x + 24, box_y + 484, "NAVIGATION TIP:", 10, scale=2)
-            draw_text_scaled(box_x + 24, box_y + 506, "Press [A]/[D] or ARROWS to turn pages.", 7, scale=2)
-            draw_text_scaled(box_x + 24, box_y + 526, "Press [X] or tap to return to Menu.", 6, scale=2)
 
         elif self.lore_page == 3:
             # PAGE 4: FAUSTIAN PACTS (PART 2: SINS 5-7) & DECAY
@@ -1989,7 +2061,7 @@ class GrainOfDoubtApp:
                 (
                     "5. GLUTTONY",
                     (
-                        "Sand grains swell with value,",
+                        "Sand grains swell with golden value,",
                         "yet glass hazards swell into monoliths.",
                     ),
                     "+Fat Sand Grains (3x Points)",
@@ -1999,9 +2071,10 @@ class GrainOfDoubtApp:
                 (
                     "6. WRATH",
                     (
-                        "You use great force to push all",
-                        "dangers away, but you also push all the",
-                        "good things away too.",
+                        "You use force to push all dangers away,",
+                        "yet you also repel all good fortune.",
+                        "You lose control, and each sealed pact",
+                        "grants you even less control of motion.",
                     ),
                     "+Wrath Blast (3.0s Shard Wipe)",
                     "-Control Inversion (+5%, Cap 50%)",
@@ -2010,27 +2083,29 @@ class GrainOfDoubtApp:
                 (
                     "7. SLOTH",
                     (
-                        "You push all dangers to a later",
-                        "time, so you don't have to do anything",
-                        "now.",
+                        "You delay danger so you need not act,",
+                        "yet all delayed danger accumulates and",
+                        "returns in the future with vengeance.",
                     ),
                     "+Lazy Reprieve (5.0s Points Aligned)",
                     "-Delayed Danger & Sluggish Drag",
                     12,
                 ),
             ]
-            for idx, (pact_title, narrative_lines, boon, curse, pcol) in enumerate(pacts_p2):
-                py = box_y + 96 + idx * 92
-                pyxel.rect(box_x + 24, py + 2, 6, 76, pcol)
-                draw_text_scaled(box_x + 38, py, pact_title, 10, scale=2)
+            curr_py = box_y + 92
+            for pact_title, narrative_lines, boon, curse, pcol in pacts_p2:
+                pact_h = 18 + len(narrative_lines) * 16 + 32
+                pyxel.rect(box_x + 24, curr_py + 2, 6, pact_h - 4, pcol)
+                draw_text_scaled(box_x + 38, curr_py, pact_title, 10, scale=2)
                 for n_idx, n_line in enumerate(narrative_lines):
-                    draw_text_scaled(box_x + 38, py + 18 + n_idx * 16, n_line, 7, scale=2)
-                pro_y = py + 18 + len(narrative_lines) * 16
+                    draw_text_scaled(box_x + 38, curr_py + 18 + n_idx * 16, n_line, 7, scale=2)
+                pro_y = curr_py + 18 + len(narrative_lines) * 16
                 draw_text_scaled(box_x + 38, pro_y, f"PRO: {boon}", 11, scale=2)
                 draw_text_scaled(box_x + 38, pro_y + 16, f"CON: {curse}", 8, scale=2)
+                curr_py += pact_h + 16
 
-            pyxel.line(box_x + 16, box_y + 400, box_x + box_w - 16, box_y + 400, 5)
-            draw_text_scaled(box_x + 24, box_y + 412, "ADDICTIVE PACTS & COMPOUNDING DECAY", 10, scale=2)
+            pyxel.line(box_x + 16, box_y + 444, box_x + box_w - 16, box_y + 444, 5)
+            draw_text_scaled(box_x + 24, box_y + 456, "ADDICTIVE PACTS & COMPOUNDING DECAY", 10, scale=2)
             p4_decay = [
                 "Sins are addictive (Pact distribution):",
                 "P(Pact) = (1 + N_pact) / (7 + Total_Pacts)",
@@ -2040,7 +2115,7 @@ class GrainOfDoubtApp:
             ]
             for idx, line in enumerate(p4_decay):
                 col = 10 if idx in (0, 1) else (8 if idx in (2, 3) else 7)
-                draw_text_scaled(box_x + 24, box_y + 434 + idx * 18, line, col, scale=2)
+                draw_text_scaled(box_x + 24, box_y + 480 + idx * 18, line, col, scale=2)
 
         else:
             # PAGE 5: THEMES, PRO MODE & SAKURA DEDICATION
@@ -2129,50 +2204,49 @@ class GrainOfDoubtApp:
         reason = self.state.death_reason or "Consumed by the Void"
         draw_text_centered(136, reason, 7, scale=2)
 
-        # Inner stats container: SOLID Midnight Navy with Slate border (no checkered noise)
-        pyxel.rect(60, 168, 480, 424, 1)
-        pyxel.rectb(60, 168, 480, 424, 5)
+        # Inner stats container: SOLID Midnight Navy with Slate border (compact, no excess space)
+        pyxel.rect(60, 160, 480, 318, 1)
+        pyxel.rectb(60, 160, 480, 318, 5)
 
         time_survived = self.state.total_frames / 30.0
-        draw_text_scaled(80, 184, f"TIME SURVIVED : {time_survived:6.1f} SECONDS", 10, scale=2)
+        draw_text_scaled(80, 176, f"TIME SURVIVED : {time_survived:6.1f} SECONDS", 10, scale=2)
         score_fmt = f"{self.state.score:,}".replace(",", " ")
         sand_fmt = f"{self.state.total_sand_collected:,}".replace(",", " ")
         shards_fmt = f"{self.state.total_shards_dodged:,}".replace(",", " ")
         pacts_fmt = f"{len(self.bargains.history):,}".replace(",", " ")
-        draw_text_scaled(80, 212, f"FINAL SCORE   : {score_fmt}", 10, scale=2)
-        draw_text_scaled(80, 240, f"SAND REAPED   : {sand_fmt}", 9, scale=2)
-        draw_text_scaled(80, 268, f"SHARDS EVADED : {shards_fmt}", 6, scale=2)
-        draw_text_scaled(80, 296, f"PACTS SEALED  : {pacts_fmt}", 8, scale=2)
+        draw_text_scaled(80, 202, f"FINAL SCORE   : {score_fmt}", 10, scale=2)
+        draw_text_scaled(80, 228, f"SAND REAPED   : {sand_fmt}", 9, scale=2)
+        draw_text_scaled(80, 254, f"SHARDS EVADED : {shards_fmt}", 6, scale=2)
+        draw_text_scaled(80, 280, f"PACTS SEALED  : {pacts_fmt}", 8, scale=2)
 
         # Draw all 7 canonical sins vertically without 'k=' or 'canonical order'
-        draw_text_scaled(80, 326, "PACTS SEALED SUMMARY:", 9, scale=2)
+        draw_text_scaled(80, 310, "PACTS SEALED SUMMARY:", 9, scale=2)
         for idx, sin in enumerate(CANONICAL_SINS):
             k = self.bargains.selection_counts.get(sin, 0)
             col = 10 if k > 0 else 5
-            row_y = 350 + idx * 20
+            row_y = 332 + idx * 19
             draw_text_scaled(100, row_y, f"{idx+1}. {sin.name.upper():<9} : {k}", col, scale=2)
 
         # Debounce prompt, Bot restart indicator & Big Return to Menu Button
         if self.game_over_timer < 60:
             rem = (60 - self.game_over_timer + 29) // 30
-            draw_text_centered(608, f"MOURN THY LOSS ({rem}s)...", 8, scale=2)
+            draw_text_centered(496, f"MOURN THY LOSS ({rem}s)...", 8, scale=2)
         elif self.bot_mode:
             rem_bot = (180 - self.auto_restart_timer + 29) // 30
-            draw_text_centered(604, f"BOT RESTART IN {rem_bot}s", 10, scale=2)
-            draw_text_centered(624, "[SPACE] RESTART NOW", 7, scale=2)
+            draw_text_centered(496, f"BOT RESTART IN {rem_bot}s", 10, scale=2)
         else:
             blink = (pyxel.frame_count // 10) % 2 == 0
             if blink:
-                draw_text_centered(610, "PRESS ANY KEY TO RESTART", 7, scale=2)
+                draw_text_centered(496, "PRESS ANY KEY TO RESTART", 7, scale=2)
 
-        # Big prominent [X] RETURN TO MENU touch button for mobile & desktop
-        btn_menu_x, btn_menu_y, btn_menu_w, btn_menu_h = 100, 636, 400, 36
+        # 3-line tall prominent [X] RETURN TO MENU touch button
+        btn_menu_x, btn_menu_y, btn_menu_w, btn_menu_h = 60, 530, 480, 78
         pyxel.rect(btn_menu_x, btn_menu_y, btn_menu_w, btn_menu_h, 0)
         pyxel.rectb(btn_menu_x, btn_menu_y, btn_menu_w, btn_menu_h, 10)
         pyxel.rectb(btn_menu_x + 1, btn_menu_y + 1, btn_menu_w - 2, btn_menu_h - 2, 9)
-        menu_lbl = "[X] RETURN TO MENU"
-        menu_lbl_w = get_text_width_5x7(menu_lbl, scale=2)
-        draw_text_scaled(btn_menu_x + (btn_menu_w - menu_lbl_w) // 2, btn_menu_y + 10, menu_lbl, 10, scale=2)
+        draw_text_centered(btn_menu_y + 10, "[X] RETURN TO MENU", 10, scale=2)
+        draw_text_centered(btn_menu_y + 32, "PRESS HERE OR [X] TO RETURN TO MENU", 7, scale=2)
+        draw_text_centered(btn_menu_y + 54, "(CLICK, TAP, OR PRESS [X])", 6, scale=2)
 
         if self.dev_mode:
             draw_text_scaled(self.SCREEN_WIDTH - 120, self.SCREEN_HEIGHT - 20, f"[DEV] {self.VERSION}", 11, scale=2)

@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.1.7] - 2026-09-25
+### Added & Changed
+- **UI Kairos Card Consistency**:
+  - All themes except Pro Mode use identical card background (`kp.card_bg`) for both cards, ensuring high-contrast legible typography across all color palettes.
+- **Pro Mode Aeronautical Flight Director**:
+  - Replaced the hourglass player sprite in Pro Modes with an aeronautical flight-director display measuring lateral velocity ($dx \propto v_x$) and lateral acceleration ($\phi \propto a_x$) using a cross and circle.
+  - Circle radius wireframe matches the exact player hitbox ($60 \times 40$ px, radius 20).
+  - Displays Lust magnet reach via a dedicated dotted circle around the flight director.
+- **E-Reader Modes Rock-Solid Text**:
+  - Scripture paragraphs 0, 1, 3, 4 are 100% stationary and stable (zero scroll jitter).
+- **End Game Screen Polishing**:
+  - Shrunk inner blue stats container height to 318px, eliminating excessive empty space at the bottom.
+  - Removed `"space to restart now"` line.
+  - Enlarged `[X] RETURN TO MENU` button to 3 lines in height (78px), explicitly indicating `"PRESS HERE OR [X] TO RETURN TO MENU"`.
+  - Added click and keyboard `[X]` handlers to return directly to menu.
+- **Menu Screen Buttons & Spacing**:
+  - Enforced 1 full line of extra space before `SHORTCUTS` ($\ge 26$px gap).
+  - All interactive buttons enlarged to at least 2 lines in height ($\ge 38$px).
+- **Pastel Sakura Aesthetics**:
+  - Sand grains enriched with pure leaf green (11) and dark green (3), removing all teal tones.
+  - Background sparkles and cherry blossoms feature horizontal parallax displacement when steering left/right.
+  - Final 2.0 seconds of Chronos mode introduces a peaceful, non-epileptic background transition from flat pink into an organic gradient from pink at the top to earthy brown at the bottom.
+- **Lore & Learn Pages 3 & 4 Overhaul**:
+  - Page 3: Completely removed the navigation tips section, providing comfortable vertical spacing for sins 1-4.
+  - Page 4: Layout recalculated dynamically based on text line count, eliminating all overlap between Wrath CON and Sloth.
+  - Wrath narration updated to explain loss of control ("You lose control, and each sealed pact grants you even less control of motion.").
+  - Sloth narration updated to explain delayed danger accumulating and returning in the future with vengeance.
+
 ## [v1.1.6] - 2026-09-25
 ### Added & Changed
 - **Pact Distribution (Addictive Sins)**:

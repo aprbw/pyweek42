@@ -858,15 +858,17 @@ def render_reader_mode_text(
         ),
     ]
 
-    wrapped_lines = []
+    # Wrap scripture paragraphs individually with dedicated fixed vertical layout
     line_h = 19
     para_gap = 10
     char_w = 12  # 5x7 typography at scale=2: 6px stride * 2 = 12px
 
+    wrapped_paras = []
     for para in scripture_paras:
         words = para.split()
         curr_line = []
         curr_w = 0
+        p_lines = []
         for w in words:
             wl = len(w) * char_w
             needed = wl if not curr_line else (char_w + wl)
@@ -875,42 +877,50 @@ def render_reader_mode_text(
                 curr_w += needed
             else:
                 if curr_line:
-                    wrapped_lines.append((curr_line, False))
+                    p_lines.append((curr_line, False))
                 curr_line = [w]
                 curr_w = wl
         if curr_line:
-            wrapped_lines.append((curr_line, True))
+            p_lines.append((curr_line, True))
+        wrapped_paras.append(p_lines)
 
-    total_doc_h = 0
-    line_y_offsets = []
-    for words, is_para_end in wrapped_lines:
-        line_y_offsets.append(total_doc_h)
-        total_doc_h += line_h + (para_gap if is_para_end else 0)
+    # Completely stable, rock-solid vertical positioning:
+    # Paragraphs 0, 1, 3, 4 are 100% stationary and never jiggle.
+    # Paragraph 2 (dynamic telemetry info para) has a dedicated slot in the middle.
+    # scroll_y is fixed at 0 so the entire page behaves like genuine stable digital e-reader ink.
+    start_y = 20
+    p0_h = len(wrapped_paras[0]) * line_h + para_gap
+    p1_h = len(wrapped_paras[1]) * line_h + para_gap
+    p2_slot = 4 * line_h + para_gap  # Dedicated 4-line slot for dynamic telemetry
 
-    # Scroll: At prog=0.0: first line at y=24; At prog=1.0: last line reaches bottom of screen (screen_h - 40)
-    start_y = 24
-    last_line_offset = line_y_offsets[-1] if line_y_offsets else 0
-    max_scroll = max(0, start_y + last_line_offset - (screen_h - 45))
-    scroll_y = int(min(1.0, max(0.0, prog)) * max_scroll)
+    para_y_starts = [
+        start_y,
+        start_y + p0_h,
+        start_y + p0_h + p1_h,
+        start_y + p0_h + p1_h + p2_slot,
+        start_y + p0_h + p1_h + p2_slot + len(wrapped_paras[3]) * line_h + para_gap,
+    ]
 
-    for (words, is_para_end), y_off in zip(wrapped_lines, line_y_offsets):
-        sy = start_y + y_off - scroll_y
-        if -24 <= sy <= screen_h + 10:
-            if is_para_end or len(words) <= 1:
-                # Left-aligned for final line of paragraph
-                wx = margin_l
-                for w in words:
-                    draw_text_scaled_helper(pyxel, int(wx), sy, w, col_ink, scale=2)
-                    wx += len(w) * char_w + char_w
-            else:
-                # Fully justified alignment across margin_l to margin_r
-                tot_words_w = sum(len(w) * char_w for w in words)
-                extra = max_w - tot_words_w
-                gap = max(float(char_w), extra / float(max(1, len(words) - 1)))
-                curr_wx = float(margin_l)
-                for w in words:
-                    draw_text_scaled_helper(pyxel, int(round(curr_wx)), sy, w, col_ink, scale=2)
-                    curr_wx += len(w) * char_w + gap
+    for p_idx, lines in enumerate(wrapped_paras):
+        base_sy = para_y_starts[p_idx]
+        for l_idx, (words, is_para_end) in enumerate(lines):
+            sy = base_sy + l_idx * line_h
+            if 0 <= sy <= screen_h - line_h:
+                if is_para_end or len(words) <= 1:
+                    # Left-aligned for final line of paragraph
+                    wx = margin_l
+                    for w in words:
+                        draw_text_scaled_helper(pyxel, int(wx), sy, w, col_ink, scale=2)
+                        wx += len(w) * char_w + char_w
+                else:
+                    # Fully justified alignment across margin_l to margin_r
+                    tot_words_w = sum(len(w) * char_w for w in words)
+                    extra = max_w - tot_words_w
+                    gap = max(float(char_w), extra / float(max(1, len(words) - 1)))
+                    curr_wx = float(margin_l)
+                    for w in words:
+                        draw_text_scaled_helper(pyxel, int(round(curr_wx)), sy, w, col_ink, scale=2)
+                        curr_wx += len(w) * char_w + gap
 
 
 def bg_reader_dark(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool, telemetry: Optional[dict] = None):
@@ -1035,12 +1045,12 @@ KAIROS_SKIFREE_SANDFALL = KairosPalette(
     modal_bg=4, dimmer=4, border_outer=10, border_inner=9,
     header_title=15, header_sub=10,
     timer_bar_bg=4, timer_bar_fill=10, timer_bar_border=9,
-    card_bg=9, card_bg_selected=10, card_border=4, card_border_selected=7,
-    badge_bg=4, badge_text=15, badge_bg_selected=7, badge_text_selected=0,
-    selected_btn_bg=7, selected_btn_text=0,
-    sin_title=15, sin_title_selected=0, level_text=4, divider=4,
-    pro_label=15, pro_text=15, con_label=8, con_text=4,
-    footer_text=15, footer_warn=8,
+    card_bg=4, card_bg_selected=4, card_border=9, card_border_selected=10,
+    badge_bg=9, badge_text=0, badge_bg_selected=10, badge_text_selected=0,
+    selected_btn_bg=10, selected_btn_text=0,
+    sin_title=10, sin_title_selected=7, level_text=15, divider=9,
+    pro_label=10, pro_text=7, con_label=8, con_text=15,
+    footer_text=7, footer_warn=8,
 )
 
 KAIROS_COSMIC_CHRONOMETER = KairosPalette(
@@ -1274,17 +1284,38 @@ KAIROS_ZEN_INK_WASH = KairosPalette(
 
 def bg_pastel_sakura(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool, telemetry: Optional[dict] = None):
     """Theme 9: Pastel Sakura (Cute, girly blossom drift with floating cherry petals, soft pastel clouds, and twinkling stars)."""
-    # Floating cherry blossom petals drifting with gentle organic sinusoidal sway
+    # 1. Peaceful, non-epileptic Kairos countdown gradient over the final 2.0 seconds (prog >= 0.80).
+    # Slowly transitions background from flat pink (14) into an organic vertical gradient:
+    # Pink at top to earthy brown (4) at bottom.
+    if prog > 0.80 and not is_greed:
+        t_kairos = min(1.0, (prog - 0.80) / 0.20)
+        grad_h = int(screen_h * 0.70 * t_kairos)
+        start_gy = screen_h - grad_h
+        for gy in range(start_gy, screen_h):
+            pos = (gy - start_gy) / float(max(1, grad_h))  # 0.0 at top of gradient, 1.0 at bottom
+            # Dither bands for ultra-smooth organic gradient without color banding or flashing
+            if pos > 0.75:
+                col = 4
+            elif pos > 0.50:
+                col = 4 if ((gy + cam_x) % 2 == 0) else 15
+            elif pos > 0.25:
+                col = 15 if ((gy + cam_x) % 2 == 0) else 14
+            else:
+                col = 14 if ((gy + cam_x) % 4 != 0) else 15
+            pyxel.line(cam_x, gy, cam_x + screen_w, gy, col)
+
+    # 2. Floating cherry blossom petals with organic sinusoidal sway and horizontal parallax
     num_petals = 28
     for i in range(num_petals):
         seed = i * 47 + 13
         speed = 0.45 + 0.35 * ((seed % 7) / 7.0)
         drift_amp = 16.0 + 10.0 * ((seed % 5) / 5.0)
         drift_freq = 0.035 + 0.02 * ((seed % 3) / 3.0)
+        p_factor = 0.45 + 0.30 * ((seed % 4) / 4.0)
 
         base_x = (seed * 83) % (screen_w + 100) - 50
         sway = math.sin((dist * 0.04 + seed) * drift_freq) * drift_amp
-        px = int(cam_x + base_x + sway)
+        px = int(cam_x * p_factor + base_x + sway)
 
         # Petals drift upward relative to camera descent
         py = int((seed * 137 - dist * speed * 1.2) % (screen_h + 40)) - 20
@@ -1304,10 +1335,11 @@ def bg_pastel_sakura(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, s
         pyxel.pset(px, py + 1, c_petal)
         pyxel.pset(px - 1, py - 1, 7)
 
-    # Twinkling fairy sparkles
-    for s_idx in range(14):
+    # 3. Twinkling fairy sparkles with horizontal parallax for clear lateral movement feedback
+    for s_idx in range(16):
         s_seed = s_idx * 61 + 29
-        sx = int(cam_x + (s_seed * 107) % screen_w)
+        p_star = 0.30 + 0.35 * ((s_idx % 5) / 5.0)
+        sx = int(cam_x * p_star + (s_seed * 107) % screen_w)
         sy = int((s_seed * 79 - dist * 0.5) % screen_h)
         twinkle = (pyxel.frame_count // 6 + s_idx) % 4
         if twinkle == 0:
@@ -1321,7 +1353,7 @@ def bg_pastel_sakura(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, s
         elif twinkle == 2:
             pyxel.pset(sx, sy, 15)
 
-    # Soft breeze streaks
+    # 4. Soft breeze streaks
     for w_idx in range(4):
         wy = int((w_idx * 210 - dist * 0.8) % screen_h)
         col_wisp = 15 if (w_idx % 2 == 0) else 7
@@ -1336,7 +1368,7 @@ KAIROS_PASTEL_SAKURA = KairosPalette(
     modal_bg=4, dimmer=2, border_outer=10, border_inner=2,
     header_title=7, header_sub=10,
     timer_bar_bg=2, timer_bar_fill=10, timer_bar_border=7,
-    card_bg=2, card_bg_selected=4, card_border=10, card_border_selected=7,
+    card_bg=2, card_bg_selected=2, card_border=10, card_border_selected=7,
     badge_bg=4, badge_text=10, badge_bg_selected=2, badge_text_selected=7,
     selected_btn_bg=10, selected_btn_text=0,
     sin_title=7, sin_title_selected=10, level_text=10, divider=10,
@@ -1460,15 +1492,15 @@ ALL_THEMES: List[Theme] = [
         render_bg=bg_zen_ink_wash,
         kairos=KAIROS_ZEN_INK_WASH,
     ),
-    # 9. Pastel Sakura (Replaced Liminal Vaporwave with cute girly pastel pink theme)
+    # 9. Pastel Sakura (Cute, girly pastel pink theme with pure leaf green sand)
     Theme(
         id=9,
         name="PASTEL SAKURA",
         clear_color=14,
         greed_clear_color=2,
-        sand=SandPalette(body=11, border=11, glint=7, shadow=4, fat_body=11, fat_border=11, fat_glint=7),
+        sand=SandPalette(body=11, border=3, glint=11, shadow=3, fat_body=11, fat_border=3, fat_glint=11),
         shard=ShardPalette(facet=8, border=7, glint=15, shadow=2, fat_facet=8, fat_border=7),
-        hourglass=HourglassPalette(caps=7, cap_hl=15, cap_rivet=11, glass_walls=7, waist_neck=14, sand_a=11, sand_b=11, shadow=2),
+        hourglass=HourglassPalette(caps=7, cap_hl=15, cap_rivet=11, glass_walls=7, waist_neck=14, sand_a=11, sand_b=3, shadow=2),
         render_bg=bg_pastel_sakura,
         kairos=KAIROS_PASTEL_SAKURA,
     ),
