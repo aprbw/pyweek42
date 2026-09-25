@@ -1247,7 +1247,7 @@ def test_kairos_title_significantly_bigger_and_justified_center():
     title_draws = []
     orig_draw = main.draw_text_scaled
     try:
-        def mock_draw(x, y, s, col, scale=1, img_bank=2):
+        def mock_draw(x, y, s, col, scale=1, img_bank=2, *args, **kwargs):
             if s in ["GLUTTONY", "PRIDE"]:
                 title_draws.append((x, y, s, scale))
         main.draw_text_scaled = mock_draw
@@ -1255,13 +1255,13 @@ def test_kairos_title_significantly_bigger_and_justified_center():
 
         assert len(title_draws) == 2, f"Expected 2 title draw calls, got {title_draws}"
 
-        # 1. Significantly bigger: scale must be >= 3 and <= 4 (calibrated for 5x7 font without overflowing card)
+        # 1. Significantly bigger: scale must be >= 3 and <= 5 (calibrated for 5x7 font without overflowing card)
         for x, y, s, scale in title_draws:
-            assert scale in (3, 4), f"Title {s} scale must be 3 or 4 in 5x7 font, got {scale}"
+            assert scale in (3, 4, 5), f"Title {s} scale must be 3, 4, or 5 in 5x7 font, got {scale}"
 
         # 2. Longest character/name (GLUTTONY, 8 chars) must fill box horizontally in 5x7 font (col_w = 228)
         glut_x, glut_y, glut_s, glut_scale = [d for d in title_draws if d[2] == "GLUTTONY"][0]
-        glut_rendered_w = (len(glut_s) * 6 - 1) * glut_scale
+        glut_rendered_w = main.get_text_width_5x7(glut_s, glut_scale)
         assert glut_rendered_w >= 180, f"GLUTTONY rendered width ({glut_rendered_w}px) must fill >= 180px of the 228px card"
 
         # 3. Justified center: for each card, text must be centered within ±1px of the card box
@@ -1270,7 +1270,7 @@ def test_kairos_title_significantly_bigger_and_justified_center():
         start_x = 30 + 32
         for i, (x, y, s, scale) in enumerate(title_draws):
             cx = start_x + i * (col_w + col_gap)
-            text_w = (len(s) * 6 - 1) * scale
+            text_w = main.get_text_width_5x7(s, scale)
             expected_x = cx + col_w // 2 - text_w // 2
             assert abs(x - expected_x) <= 1, f"Title {s} must be justified center at {expected_x}, got {x}"
     finally:
@@ -2582,7 +2582,7 @@ def test_kairos_modal_text_bounds_all_sins():
         drawn = []
         orig_draw = main.draw_text_scaled
         try:
-            main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2: drawn.append((x, y, s, scale))
+            main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2, *args, **kwargs: drawn.append((x, y, s, scale))
             app.draw_kairos_modal()
 
             col_w = 228
@@ -2718,7 +2718,7 @@ def test_v113_comprehensive_feedback_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.1.3", "v1.1.4", "v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0")
+    assert app.VERSION in ("v1.1.3", "v1.1.4", "v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1")
     assert app.MAX_LORE_PAGES == 5
 
     # 1. God mode toggle via [G]
@@ -2895,7 +2895,7 @@ def test_v114_comprehensive_feedback_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.1.4", "v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0")
+    assert app.VERSION in ("v1.1.4", "v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1")
 
     # 1. E-Reader Mode: Telemetry is 3rd paragraph (after 3:1-8 and 3:9-13, before 3:14-15)
     from engine.themes import render_reader_mode_text
@@ -3095,7 +3095,7 @@ def test_v115_comprehensive_feedback_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0")
+    assert app.VERSION in ("v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1")
 
     # 1. Menu Page Controls & Line Breaks
     drawn_calls = []
@@ -3246,7 +3246,7 @@ def test_v116_comprehensive_feedback_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0")
+    assert app.VERSION in ("v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1")
 
     # 1. Pact distribution: Addictive formula P(P) = (1 + N_chosen) / (7 + total_pacts)
     bm = BargainManager()
@@ -3402,10 +3402,10 @@ def test_v116_comprehensive_feedback_validation():
         assert header_call[4] == 3
         assert abs(header_call[0] + get_text_width_5x7("KAIROS TIME", scale=3) // 2 - 300) <= 2
 
-        # Titles for GLUTTONY and PRIDE both have scale=4
+        # Titles for GLUTTONY and PRIDE have scale in (4, 5)
         glut_call = [c for c in drawn_calls if c[2] == "GLUTTONY"][0]
         pride_call = [c for c in drawn_calls if c[2] == "PRIDE"][0]
-        assert glut_call[4] == 4
+        assert glut_call[4] in (4, 5)
         assert pride_call[4] == 4
 
         # 7. Theme Pastel Sakura colors (leaf green 11 or dark green 3)
@@ -3558,7 +3558,7 @@ def test_v117_comprehensive_feedback_validation():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version increment
-    assert app.VERSION in ("v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0"), f"Expected version in v1.1.7-v1.2.0, got {app.VERSION}"
+    assert app.VERSION in ("v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1"), f"Expected version in v1.1.7-v1.2.1, got {app.VERSION}"
 
     # 2. UI Kairos: identical card background for both cards in non-pro themes
     app.state.current_state = GameState.KAIROS
@@ -3729,7 +3729,7 @@ def test_v118_comprehensive_feedback_validation():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version
-    assert app.VERSION in ("v1.1.8", "v1.1.9", "v1.2.0"), f"Expected v1.1.8, v1.1.9 or v1.2.0, got {app.VERSION}"
+    assert app.VERSION in ("v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1"), f"Expected v1.1.8, v1.1.9, v1.2.0 or v1.2.1, got {app.VERSION}"
 
     # 2. Sakura Theme Dark Green Sand
     t_sakura = get_theme(9)
@@ -3769,7 +3769,7 @@ def test_v118_comprehensive_feedback_validation():
         coords = {c[2]: c[1] for c in drawn_calls}
         assert "[X] QUIT GAME" in coords
         y_quit = coords["[X] QUIT GAME"]
-        box_bottom = 496 if app.VERSION in ("v1.1.9", "v1.2.0") else (188 + 286)
+        box_bottom = 496 if app.VERSION in ("v1.1.9", "v1.2.0", "v1.2.1") else (188 + 286)
         assert (box_bottom - (y_quit + 14)) >= 16, f"Expected >=16px space below quit, got {box_bottom - (y_quit + 14)}"
     finally:
         main.draw_text_scaled = orig_scaled
@@ -3846,8 +3846,8 @@ def test_v119_comprehensive_feedback_validation():
 
     app = GrainOfDoubtApp(headless=True)
 
-    # 1. Version is v1.1.9 or v1.2.0
-    assert app.VERSION in ("v1.1.9", "v1.2.0"), f"Expected v1.1.9 or v1.2.0, got {app.VERSION}"
+    # 1. Version is v1.1.9, v1.2.0 or v1.2.1
+    assert app.VERSION in ("v1.1.9", "v1.2.0", "v1.2.1"), f"Expected v1.1.9, v1.2.0 or v1.2.1, got {app.VERSION}"
 
     # 2. Main Menu 3-Line Buttons (h=54) and click bounds
     app.state.current_state = GameState.TITLE
@@ -3969,29 +3969,33 @@ def test_v119_comprehensive_feedback_validation():
     finally:
         main.draw_text_scaled = orig_scaled
 
-    # 6. Sumi-e Mode (Theme 8) Fully BW / Grayscale
-    t_sumie = get_theme(8)
-    assert t_sumie.name == "ZEN INK WASH (SUMI-E)"
-    kp = t_sumie.get_kairos_palette()
-    grayscale_colors = {0, 5, 6, 7}
-    for field, val in kp.__dict__.items():
-        assert val in grayscale_colors, f"Sumi-e KairosPalette field {field}={val} is not grayscale {grayscale_colors}"
+    # 6. Sumi-e Modes (Theme 7: White, Theme 8: Black) Fully BW / Grayscale {0, 6, 7}
+    t_sumie_w = get_theme(7)
+    assert t_sumie_w.name == "ZEN INK WASH (SUMI-E WHITE)"
+    t_sumie_b = get_theme(8)
+    assert t_sumie_b.name == "ZEN INK WASH (SUMI-E BLACK)"
+    strict_bw_colors = {0, 6, 7}
+    for t_s in (t_sumie_w, t_sumie_b):
+        kp = t_s.get_kairos_palette()
+        for field, val in kp.__dict__.items():
+            assert val in strict_bw_colors, f"{t_s.name} KairosPalette field {field}={val} is not strict BW {strict_bw_colors}"
 
-    # Test HUD drawing in Sumi-e
-    app.current_theme_index = 8
-    app.state.current_state = GameState.CHRONOS
-    app.state.hearts = 4
-    app.bargains.selection_counts[SinType.PRIDE] = 1
-    drawn_calls.clear()
-    try:
-        main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2: drawn_calls.append((x, y, s, col, scale))
-        app.draw_hud()
-        # All drawn text in Sumi-e HUD must be grayscale
-        for call in drawn_calls:
-            c_text, c_col = call[2], call[3]
-            assert c_col in grayscale_colors, f"Sumi-e HUD text '{c_text}' has chromatic color {c_col}"
-    finally:
-        main.draw_text_scaled = orig_scaled
+    # Test HUD drawing in Sumi-e (Both White and Black)
+    for s_idx in (7, 8):
+        app.current_theme_index = s_idx
+        app.state.current_state = GameState.CHRONOS
+        app.state.hearts = 4
+        app.bargains.selection_counts[SinType.PRIDE] = 1
+        drawn_calls.clear()
+        try:
+            main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2, char_gap=None: drawn_calls.append((x, y, s, col, scale))
+            app.draw_hud()
+            # All drawn text in Sumi-e HUD must be strict BW
+            for call in drawn_calls:
+                c_text, c_col = call[2], call[3]
+                assert c_col in strict_bw_colors, f"Sumi-e HUD text '{c_text}' has chromatic color {c_col}"
+        finally:
+            main.draw_text_scaled = orig_scaled
 
 
 def test_v120_milestone_validation():
@@ -4004,7 +4008,139 @@ def test_v120_milestone_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION == "v1.2.0", f"Expected v1.2.0, got {app.VERSION}"
+    assert app.VERSION in ("v1.2.0", "v1.2.1"), f"Expected v1.2.0 or v1.2.1, got {app.VERSION}"
+
+
+def test_v121_comprehensive_feedback_validation():
+    """Verify all v1.2.1 2do.md user requirements:
+    1. Version is v1.2.1.
+    2. Theme Reorganization:
+       - Theme 7 (id 6) is RETRO TERMINAL MATRIX.
+       - Theme 8 (id 7) is ZEN INK WASH (SUMI-E WHITE).
+       - Theme 9 (id 8) is ZEN INK WASH (SUMI-E BLACK).
+       - Theme 10 (id 9) is PASTEL SAKURA.
+       - Exactly 10 themes in ALL_THEMES.
+    3. Both Sumi-e Modes Strictly NO COLOR ({0, 6, 7} ONLY):
+       - Hourglass palette fields for Theme 7 & 8 are all in {0, 6, 7} (no 1 navy, no 5 slate).
+       - Sand palette fields for Theme 7 & 8 are all in {0, 6, 7}.
+       - Shard palette fields for Theme 7 & 8 are all in {0, 6, 7}.
+       - Kairos palette fields for Theme 7 & 8 are all in {0, 6, 7}.
+       - HUD drawing for Theme 7 & 8 uses only colors in {0, 6, 7}.
+       - Game over screen drawing for Theme 7 & 8 uses only colors in {0, 6, 7}.
+    4. Kairos Gluttony Full Card-Width Title:
+       - Width calculation: get_text_width_5x7("GLUTTONY", scale=5, char_gap=4) == 228 (exact card width).
+       - In Kairos modal, GLUTTONY title renders starting at x = cx with width 228.
+       - Card frame bends outward around GLUTTONY (bulge_x = 22).
+    5. Font 5x7 Char Gap:
+       - draw_text_5x7 supports optional char_gap parameter.
+    """
+    import main
+    from main import GrainOfDoubtApp, get_text_width_5x7
+    from engine.themes import ALL_THEMES, get_theme
+    from engine.state import GameState
+    from engine.bargains import SinType, BARGAIN_REGISTRY
+    from engine.font5x7 import draw_text_5x7
+
+    import pyxel
+    try:
+        pyxel.init(600, 800, headless=True)
+    except BaseException:
+        pass
+
+    app = GrainOfDoubtApp(headless=True)
+
+    # 1. Version
+    assert app.VERSION == "v1.2.1", f"Expected v1.2.1, got {app.VERSION}"
+
+    # 2. Theme Reorganization
+    assert len(ALL_THEMES) == 10
+    t6 = get_theme(6)
+    assert t6.name == "RETRO TERMINAL MATRIX", f"Theme 7 (id 6) must be Matrix, got {t6.name}"
+    t7 = get_theme(7)
+    assert t7.name == "ZEN INK WASH (SUMI-E WHITE)", f"Theme 8 (id 7) must be Sumi-e White, got {t7.name}"
+    t8 = get_theme(8)
+    assert t8.name == "ZEN INK WASH (SUMI-E BLACK)", f"Theme 9 (id 8) must be Sumi-e Black, got {t8.name}"
+    t9 = get_theme(9)
+    assert t9.name == "PASTEL SAKURA", f"Theme 10 (id 9) must be Pastel Sakura, got {t9.name}"
+
+    # 3. Both Sumi-e Modes: Strictly {0, 6, 7} NO COLOR
+    strict_bw = {0, 6, 7}
+    for theme_idx in (7, 8):
+        th = get_theme(theme_idx)
+        # Check Hourglass palette (caps, cap_hl, cap_rivet, glass_walls, waist_neck, sand_a, sand_b, shadow)
+        for field, val in th.hourglass.__dict__.items():
+            assert val in strict_bw, f"{th.name} hourglass.{field}={val} is not in {strict_bw}"
+        # Check Sand palette
+        for field, val in th.sand.__dict__.items():
+            assert val in strict_bw, f"{th.name} sand.{field}={val} is not in {strict_bw}"
+        # Check Shard palette
+        for field, val in th.shard.__dict__.items():
+            assert val in strict_bw, f"{th.name} shard.{field}={val} is not in {strict_bw}"
+        # Check Kairos palette
+        kp = th.get_kairos_palette()
+        for field, val in kp.__dict__.items():
+            assert val in strict_bw, f"{th.name} kairos.{field}={val} is not in {strict_bw}"
+
+        # Test HUD drawing produces only strict BW colors
+        app.current_theme_index = theme_idx
+        app.state.current_state = GameState.CHRONOS
+        app.state.hearts = 3
+        app.state.greed_active = True
+        app.state.godmode = True
+        app.bot_mode = True
+        app.bargains.selection_counts[SinType.PRIDE] = 2
+        drawn_calls = []
+        orig_scaled = main.draw_text_scaled
+        try:
+            main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2, char_gap=None: drawn_calls.append((x, y, s, col, scale))
+            app.draw_hud()
+            for call in drawn_calls:
+                c_text, c_col = call[2], call[3]
+                assert c_col in strict_bw, f"{th.name} HUD text '{c_text}' has chromatic color {c_col} (expected {strict_bw})"
+        finally:
+            main.draw_text_scaled = orig_scaled
+
+        # Test Game Over screen drawing produces only strict BW colors
+        app.state.current_state = GameState.GAMEOVER
+        app.game_over_timer = 90
+        drawn_calls.clear()
+        try:
+            main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2, char_gap=None: drawn_calls.append((x, y, s, col, scale))
+            main.draw_text_centered = lambda y, s, col, scale=1, img_bank=2: drawn_calls.append((300, y, s, col, scale))
+            app.draw_game_over_screen()
+            for call in drawn_calls:
+                c_text, c_col = call[2], call[3]
+                assert c_col in strict_bw, f"{th.name} Game Over text '{c_text}' has chromatic color {c_col} (expected {strict_bw})"
+        finally:
+            main.draw_text_scaled = orig_scaled
+
+    # 4. Kairos Gluttony Full Card-Width Title (228px)
+    w_glut = get_text_width_5x7("GLUTTONY", scale=5, char_gap=4)
+    assert w_glut == 228, f"Expected 228px for GLUTTONY, got {w_glut}"
+
+    # Verify rendering in Kairos modal
+    app.state.current_state = GameState.KAIROS
+    app.active_options = [
+        (SinType.GLUTTONY, BARGAIN_REGISTRY[SinType.GLUTTONY], 1),
+        (SinType.PRIDE, BARGAIN_REGISTRY[SinType.PRIDE], 0),
+    ]
+    drawn_calls.clear()
+    orig_scaled = main.draw_text_scaled
+    try:
+        main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2, char_gap=None: drawn_calls.append((x, y, s, col, scale, char_gap))
+        app.draw_kairos_modal()
+        glut_calls = [c for c in drawn_calls if c[2] == "GLUTTONY"]
+        assert len(glut_calls) >= 1
+        g_call = glut_calls[0]
+        assert g_call[0] == 62, f"GLUTTONY must start at cx=62 with zero margins, got {g_call[0]}"
+        assert g_call[4] == 5, f"GLUTTONY scale must be 5, got {g_call[4]}"
+        assert g_call[5] == 4, f"GLUTTONY char_gap must be 4, got {g_call[5]}"
+    finally:
+        main.draw_text_scaled = orig_scaled
+
+    # 5. Font 5x7 Direct Renderer with char_gap
+    draw_text_5x7(pyxel, 10, 10, "GLUTTONY", 7, scale=5, char_gap=4)
+
 
 
 

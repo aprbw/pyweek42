@@ -1,7 +1,7 @@
 # Grain of Doubt
 
 > **By Arian Prabowo**  
-> **Version:** v1.2.0  
+> **Version:** v1.2.1  
 > **PyWeek 42 Entry ("Borrowed Time")** — September 2026  
 > An endless retro downhill falling-hourglass arcade runner built with the **Pyxel** retro game engine.  
 > **Target Resolution:** 600 × 800 pixels (3:4 Portrait Aspect Ratio, Infinite Horizontal Arena).  
@@ -81,6 +81,7 @@ Every 10.0 seconds (300 frames), normal time flow stops and **Kairos** strikes. 
      * **Innermost circle** (full clear vision): radius = 1000 × 0.8^(k+3) px (Pact 1: 409.6px, Pact 2: 327.7px, Pact 3: 262.1px, Pact 4: 209.7px, Pact 5: 167.8px).
 5. **Gluttony:**
    * At Gluttony level $N$, normal entity chance is $0.9^N$ and fat entity chance is $1.0 - 0.9^N$ (Level 0: 0% fat, 100% normal).
+   * In Kairos selection, the GLUTTONY title is rendered so massive that it spans the full card width (228px, 0 margins), forcing the card frame to visibly bend outward around it.
    * *Boon:* **Fat Sand Grains** — $\sim 3\times$ larger radius/length-wise ($10\times$ area), awarding $3\times$ score ($3$ points per grain).
    * *Curse:* **Fat Glass Shards** — $\sim 2.8\times$ linear dimensions ($10\times$ area), creating massive, menacing hazard obstacles.
 6. **Wrath:**
@@ -102,9 +103,9 @@ You can freely switch between **10 completely unique, maximally divergent aesthe
 3. **E-Reader Light**: Warm cream parchment digital e-reader displaying genuine **Ecclesiastes 3:1-22 (King James Version)** in double-sized font (`scale=2`, $8 \times 12$ px characters) formatted as continuous prose with smooth 10s Chronos background scrolling and zero sub-pixel horizontal jitter. During Kairos crossroads, covenant paragraphs are elegantly aligned to the center. Floating arcade HUD panels are 100% suppressed; gameplay telemetry is seamlessly disguised as an authentic scripture paragraph between verses 13 and 14 without modern brackets or parentheses. Shards render at **30% alpha** and sand/hourglass at **60% alpha** as subtle translucent watermarks.
 4. **E-Reader Dark**: Midnight slate companion to E-Reader Light. Double-sized Ecclesiastes 3 KJV text with smooth 10s Chronos scrolling background, zero jitter, center-aligned Kairos text, disguised KJV scripture telemetry paragraph, 100% suppressed floating HUD, and 30%/60% alpha translucent gameplay elements.
 5. **Glacial Crevasse**: Deep sub-zero glacial chasm with sheer vertical meltwater streams, horizontal firn ice strata, and shimmering crystalline frost motes.
-6. **Magma Caldera**: Volcanic caldera, basalt crags, obsidian riverbed, and bubbling liquid lava flumes with glowing embers.
-7. **Retro Terminal Matrix**: Phosphor green cathode-ray tube monitor with falling hexadecimal digital glyph rain and scanline texture.
-8. **Zen Ink Wash (Sumi-e)**: Traditional Japanese washi parchment and black ink calligraphy brush strokes. Fully Black & White / Grayscale aesthetic: black hearts (color 0), elapsed time, pact list swatches and labels, and 100% monochrome Kairos modal UI.
+6. **Retro Terminal Matrix**: Phosphor green cathode-ray tube monitor with falling hexadecimal digital glyph rain and scanline texture.
+7. **Zen Ink Wash (Sumi-e White)**: Traditional Japanese washi parchment and black ink calligraphy brush strokes. Strictly 100% Black, White & Neutral Light Grey ONLY (Colors 0, 7, 6) across hourglass, HUD, pacts list swatches, Kairos modal, and game over screen (zero color, zero blue or navy).
+8. **Zen Ink Wash (Sumi-e Black)**: Deep black background with pure white calligraphic brushstrokes and mountain mist washes. Strictly 100% Black, White & Neutral Light Grey ONLY (Colors 0, 7, 6) across hourglass, HUD, pacts list swatches, Kairos modal, and game over screen (zero color, zero blue or navy).
 9. **Pastel Sakura**: Cute, girly pastel pink aesthetic with cherry blossom petals drifting with organic sinusoidal sway, soft peach clouds, rich dark-green sand (`Color 3`), and twinkling fairy stars. Lovingly dedicated to my twin sister, girlfriend, and wife—who happen to be the exact same person!
 
 Each theme dynamically transforms the procedural background terrain as well as the complete color palettes of the player's hourglass, sand grains, and glass shards to ensure aesthetic harmony and sharp contrast!

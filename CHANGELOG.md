@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.2.1] - 2026-09-25
+### Changed & Enhanced
+- **Theme 7 Replaced with Matrix (`RETRO TERMINAL MATRIX`)**:
+  - Removed Magma Caldera from active theme registry and promoted Retro Terminal Matrix to Theme 7 (index 6).
+- **Dual Sumi-e Modes (Theme 8: Sumi-e White, Theme 9: Sumi-e Black)**:
+  - Theme 8 (index 7): `ZEN INK WASH (SUMI-E WHITE)` with white washi parchment (`Color 7`) and calligraphic black strokes (`Color 0`).
+  - Theme 9 (index 8): `ZEN INK WASH (SUMI-E BLACK)` with deep black background (`Color 0`) and pure white/light-grey washes (`Color 7`/`Color 6`).
+  - Theme 10 (index 9): `PASTEL SAKURA` preserved as dedicated pink theme with green sand.
+- **Strictly 100% Monochrome / Grayscale in Both Sumi-e Modes**:
+  - Completely eliminated all chromatic colors, specifically Navy Blue (`Color 1`) and Slate Blue/Lavender (`Color 5`).
+  - Hourglass: caps, highlights, rivets, glass walls, sand levels, and drop shadows strictly restricted to `{0, 6, 7}`.
+  - Faustian Pacts board: swatches, labels, borders, and level counters strictly restricted to `{0, 6, 7}`.
+  - HUD: health hearts (black in White mode, white in Black mode, light-grey empty), elapsed time, score, and multiplier strictly `{0, 6, 7}`.
+  - Kairos Modal: all dimmer, backgrounds, borders, headers, countdown timers, and button text strictly `{0, 6, 7}`.
+  - Game Over Screen: all backdrop cards, double borders, stat boxes, labels, values, prompts, and return-to-menu buttons strictly `{0, 6, 7}`.
+- **Kairos Gluttony Full Card-Width Title**:
+  - "GLUTTONY" card title rendered with `scale=5, char_gap=4`, spanning $8 \times 25 + 7 \times 4 = 228\text{px}$—the exact width of the card.
+  - Starts at $x = cx$ with zero margins on either side, visually pushing against the card frame which bulges outward by 22px to accommodate the massive sin.
+
 ## [v1.2.0] - 2026-09-25
 ### Changed
 - **Official Milestone Release v1.2.0**:

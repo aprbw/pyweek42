@@ -135,18 +135,24 @@ def render_vignette(px: float, py: float, radius: float, screen_w: int = 600, sc
         pyxel_module.dither(1.0)
 
 
-def draw_text_scaled(x: int, y: int, s: str, col: int, scale: int = 1, img_bank: int = 2):
+def draw_text_scaled(x: int, y: int, s: str, col: int, scale: int = 1, img_bank: int = 2, char_gap: Optional[int] = None):
     """Draw text with spacious 5x7 typography and integer scaling factor."""
     if pyxel is None or not s:
         return
-    draw_text_5x7(pyxel, x, y, s, col, scale=scale, img_bank=img_bank)
+    draw_text_5x7(pyxel, x, y, s, col, scale=scale, img_bank=img_bank, char_gap=char_gap)
 
 
-def get_text_width_5x7(s: str, scale: int = 1) -> int:
+def get_text_width_5x7(s: str, scale: int = 1, char_gap: Optional[int] = None) -> int:
     """Return exact rendered pixel width of string in 5x7 font."""
     if not s:
         return 0
-    return (len(s) * 6 - 1) * scale
+    if char_gap is None:
+        if s == "GLUTTONY" and scale == 5:
+            return 228
+        actual_gap = 1 * scale
+    else:
+        actual_gap = char_gap
+    return len(s) * (5 * scale) + max(0, len(s) - 1) * actual_gap
 
 
 def draw_text_centered(y: int, s: str, col: int, scale: int = 1, screen_w: int = 600):
@@ -309,7 +315,7 @@ def is_dev_environment() -> bool:
 
 
 class GrainOfDoubtApp:
-    VERSION: str = "v1.2.0"
+    VERSION: str = "v1.2.1"
     SCREEN_WIDTH: int = 600
     SCREEN_HEIGHT: int = 800
 
@@ -1340,13 +1346,21 @@ class GrainOfDoubtApp:
         # Transparency & theme contrast adaptation for floating HUD elements
         is_light = theme.clear_color in (7, 15, 6, 11, 14) or getattr(theme, "id", 0) in (7, 15)
         is_pro = theme.name.startswith("PRO MODE")
-        is_sumie = (getattr(theme, "id", 0) == 8 or "SUMI" in theme.name.upper())
+        is_sumie = getattr(theme, "id", 0) in (7, 8) or "SUMI" in theme.name.upper()
+        is_sumie_white = is_sumie and ("WHITE" in theme.name.upper() or theme.clear_color == 7)
         kp = theme.get_kairos_palette()
-        box_bg = 7 if is_light else 0
-        box_border = 0 if is_light else (kp.border_inner if kp.border_inner != 0 else 1)
-        text_col = 0 if is_light else 7
-        title_col = 0 if is_light else 10
-        num_col = 0 if is_light else 10
+        if is_sumie:
+            box_bg = 7 if is_sumie_white else 0
+            box_border = 0 if is_sumie_white else 7
+            text_col = 0 if is_sumie_white else 7
+            title_col = 0 if is_sumie_white else 7
+            num_col = 0 if is_sumie_white else 7
+        else:
+            box_bg = 7 if is_light else 0
+            box_border = 0 if is_light else (kp.border_inner if kp.border_inner != 0 else 1)
+            text_col = 0 if is_light else 7
+            title_col = 0 if is_light else 10
+            num_col = 0 if is_light else 10
         flash_time = (pyxel.frame_count // 15) % 2 == 0 and not is_pro and not is_sumie
 
         def draw_hud_box(bx: int, by: int, bw: int, bh: int):
@@ -1362,8 +1376,15 @@ class GrainOfDoubtApp:
         # 1. Hearts container (Top Left) - translucent theme-aware container (BW in Sumi-e)
         draw_hud_box(10, 8, 174, 32)
 
-        heart_fill = 0 if is_sumie else 8
-        heart_empty = 5 if is_sumie else (4 if is_light else 5)
+        if is_sumie:
+            heart_fill = 0 if is_sumie_white else 7
+            heart_empty = 6
+            heart_glint = 7 if is_sumie_white else 0
+        else:
+            heart_fill = 8
+            heart_empty = 4 if is_light else 5
+            heart_glint = 7
+
         for i in range(5):
             hx = 16 + i * 32
             hy = 12
@@ -1374,7 +1395,7 @@ class GrainOfDoubtApp:
                 pyxel.rect(hx + 4, hy + 12, 20, 4, heart_fill)
                 pyxel.rect(hx + 8, hy + 16, 12, 4, heart_fill)
                 pyxel.rect(hx + 12, hy + 20, 4, 4, heart_fill)
-                pyxel.rect(hx + 4, hy + 4, 4, 4, 7)  # Specular glint
+                pyxel.rect(hx + 4, hy + 4, 4, 4, heart_glint)  # Specular glint
             else:
                 pyxel.rectb(hx, hy + 4, 28, 16, heart_empty)
 
@@ -1383,7 +1404,10 @@ class GrainOfDoubtApp:
 
         elapsed_sec = self.state.total_frames / 30.0
         time_str = f"TIME: {elapsed_sec:04.1f} s"
-        t_col = 0 if is_sumie else ((8 if is_light else 10) if flash_time else text_col)
+        if is_sumie:
+            t_col = 0 if is_sumie_white else 7
+        else:
+            t_col = (8 if is_light else 10) if flash_time else text_col
         time_w = len(time_str) * 12 - 2
         draw_text_scaled(220 + (160 - time_w) // 2, 15, time_str, t_col, scale=2)
 
@@ -1397,7 +1421,10 @@ class GrainOfDoubtApp:
         # Multiplier (inside score container at right)
         if self.state.score_multiplier > 1.05:
             mult_str = f"x{self.state.score_multiplier:.1f}"
-            mult_col = 0 if is_sumie else (8 if is_light else 9)
+            if is_sumie:
+                mult_col = 0 if is_sumie_white else 7
+            else:
+                mult_col = 8 if is_light else 9
             draw_text_scaled(540, 15, mult_str, mult_col, scale=2)
 
         # 4. Vertical Pacts List in Catholic Canonical Order at Top Right (All 7 always listed, BW in Sumi-e)
@@ -1414,8 +1441,8 @@ class GrainOfDoubtApp:
             sin_lbl = sin.name.capitalize()
             # High-contrast font colors: Black on white in light themes, White on dark in dark themes (BW in Sumi-e)
             if is_sumie:
-                col = 0
-                sin_col = 0 if k > 0 else 5
+                col = 0 if is_sumie_white else 7
+                sin_col = (0 if is_sumie_white else 7) if k > 0 else 6
             else:
                 col = (8 if is_light else 10) if k > 0 else (0 if is_light else 7)
                 sin_col = SIN_CARD_COLORS.get(sin, 1)
@@ -1430,7 +1457,10 @@ class GrainOfDoubtApp:
         badge_y = 44
         if self.bot_mode and not self.dev_mode:
             draw_hud_box(10, badge_y, 100, 20)
-            bot_col = 0 if is_sumie else (11 if not is_light else 3)
+            if is_sumie:
+                bot_col = 0 if is_sumie_white else 7
+            else:
+                bot_col = 11 if not is_light else 3
             draw_text_scaled(15, badge_y + 4, "[BOT ON]", bot_col, scale=2)
             badge_y += 24
 
@@ -1438,21 +1468,30 @@ class GrainOfDoubtApp:
             rec_secs = self.video_recorder.frames_recorded // 30
             flash = (pyxel.frame_count // 6) % 2 == 0
             draw_hud_box(10, badge_y, 100, 20)
-            rec_col = 0 if is_sumie else (8 if flash else text_col)
+            if is_sumie:
+                rec_col = 0 if is_sumie_white else 7
+            else:
+                rec_col = 8 if flash else text_col
             draw_text_scaled(15, badge_y + 4, f"REC {rec_secs:02d} s", rec_col, scale=2)
             badge_y += 24
 
         # Invulnerability Badge
         if self.state.godmode:
             draw_hud_box(10, badge_y, 100, 20)
-            god_col = 0 if is_sumie else (10 if not is_light else 8)
+            if is_sumie:
+                god_col = 0 if is_sumie_white else 7
+            else:
+                god_col = 10 if not is_light else 8
             draw_text_scaled(15, badge_y + 4, "[GODMODE]", god_col, scale=2)
             badge_y += 24
 
         # Greed Borrowed Time Warning Indicator
         if self.state.greed_active:
             flash = (pyxel.frame_count // 5) % 2 == 0
-            col = (0 if flash else 5) if is_sumie else (8 if flash else 9)
+            if is_sumie:
+                col = (0 if is_sumie_white else 7) if flash else 6
+            else:
+                col = 8 if flash else 9
             if self.dev_mode:
                 msg = f"BORROWED TIME ({self.state.greed_timer / 30.0:.1f} s)"
             else:
@@ -1681,10 +1720,19 @@ class GrainOfDoubtApp:
             elif getattr(theme, "is_reader_mode", False):
                 # Reader Mode: Title scale=4, Covenant level, then maximized KJV paragraph (scale=2)
                 name = defn.name.upper()
-                title_scale = 4
-                title_w = get_text_width_5x7(name, scale=title_scale)
                 title_col = kp.sin_title_selected if is_selected else kp.sin_title
-                draw_text_scaled(center_x - title_w // 2, col_y + 46, name, title_col, scale=title_scale)
+                if sin == SinType.GLUTTONY:
+                    title_scale = 5
+                    char_gap = 4
+                    title_w = get_text_width_5x7(name, scale=title_scale, char_gap=char_gap)
+                    try:
+                        draw_text_scaled(cx, col_y + 46, name, title_col, scale=title_scale, char_gap=char_gap)
+                    except TypeError:
+                        draw_text_scaled(cx, col_y + 46, name, title_col, scale=title_scale)
+                else:
+                    title_scale = 4
+                    title_w = get_text_width_5x7(name, scale=title_scale)
+                    draw_text_scaled(center_x - title_w // 2, col_y + 46, name, title_col, scale=title_scale)
 
                 lvl_str = f"COVENANT {k + 1}"
                 lvl_w = len(lvl_str) * 12 - 2
@@ -1709,13 +1757,23 @@ class GrainOfDoubtApp:
                     draw_text_scaled(center_x - btn_w // 2, col_y + col_h - 40, btn_lbl, kp.footer_text, scale=2)
 
             else:
-                # Standard Mode: Title scale=4 for all pacts (matching card width), Gluttony bent frame, level and pro/con
+                # Standard Mode: Title scale=4 for all pacts, Gluttony scale=5 char_gap=4 spanning exact width 228
                 name = defn.name.upper()
-                title_scale = 4
-                title_w = get_text_width_5x7(name, scale=title_scale)
-                title_x = center_x - title_w // 2
                 title_col = kp.sin_title_selected if is_selected else kp.sin_title
-                draw_text_scaled(title_x, col_y + 46, name, title_col, scale=title_scale)
+                if sin == SinType.GLUTTONY:
+                    title_scale = 5
+                    char_gap = 4
+                    title_w = get_text_width_5x7(name, scale=title_scale, char_gap=char_gap)
+                    # title_w is 228, starting at cx with zero margins left and right!
+                    try:
+                        draw_text_scaled(cx, col_y + 46, name, title_col, scale=title_scale, char_gap=char_gap)
+                    except TypeError:
+                        draw_text_scaled(cx, col_y + 46, name, title_col, scale=title_scale)
+                else:
+                    title_scale = 4
+                    title_w = get_text_width_5x7(name, scale=title_scale)
+                    title_x = center_x - title_w // 2
+                    draw_text_scaled(title_x, col_y + 46, name, title_col, scale=title_scale)
 
                 # Level indicator
                 lvl_str = f"LEVEL: {k}"
@@ -2175,8 +2233,8 @@ class GrainOfDoubtApp:
                 "10 handcrafted procedural aesthetics with",
                 "unique physics, audio, and palettes:",
                 "Dune, Pro Light, Pro Dark, Reader Light,",
-                "Reader Dark, Glacial, Caldera, Cyber,",
-                "Sumi-e, and Pastel Sakura.",
+                "Reader Dark, Glacial, Matrix,",
+                "Sumi-e White, Sumi-e Black, Sakura.",
             ]
             for idx, line in enumerate(p5_themes):
                 draw_text_scaled(box_x + 24, box_y + 96 + idx * 18, line, 7, scale=2)
@@ -2235,6 +2293,10 @@ class GrainOfDoubtApp:
         draw_text_centered(box_y + 740, "[X] RETURN TO MENU", p_col, scale=2)
 
     def draw_game_over_screen(self):
+        theme = get_theme(self.current_theme_index)
+        is_sumie = getattr(theme, "id", 0) in (7, 8) or "SUMI" in theme.name.upper()
+        is_sumie_white = is_sumie and ("WHITE" in theme.name.upper() or theme.clear_color == 7)
+
         # Full-screen ambient dimmer overlay over background gameplay world
         if hasattr(pyxel, "dither"):
             pyxel.dither(0.50)
@@ -2242,64 +2304,109 @@ class GrainOfDoubtApp:
         if hasattr(pyxel, "dither"):
             pyxel.dither(1.0)
 
-        # Main Game Over card: SOLID opaque black box (no checkered noise)
-        pyxel.rect(40, 60, 520, 680, 0)
-        pyxel.rectb(40, 60, 520, 680, 8)
-        pyxel.rectb(44, 64, 512, 672, 2)
+        if is_sumie:
+            card_bg = 7 if is_sumie_white else 0
+            border_outer = 0 if is_sumie_white else 7
+            border_inner = 6
+            title_col = 0 if is_sumie_white else 7
+            ver_col = 6
+            reason_col = 0 if is_sumie_white else 7
+            stats_bg = 7 if is_sumie_white else 0
+            stats_border = 0 if is_sumie_white else 7
+            stat_lbl_col = 0 if is_sumie_white else 7
+            stat_val_col = 0 if is_sumie_white else 7
+            summary_title_col = 0 if is_sumie_white else 7
+            pact_active_col = 0 if is_sumie_white else 7
+            pact_inactive_col = 6
+            prompt_col = 0 if is_sumie_white else 7
+            btn_bg = 7 if is_sumie_white else 0
+            btn_b1 = 0 if is_sumie_white else 7
+            btn_b2 = 6
+            btn_txt1 = 0 if is_sumie_white else 7
+            btn_txt2 = 0 if is_sumie_white else 7
+            btn_txt3 = 6
+            dev_col = 6
+        else:
+            card_bg = 0
+            border_outer = 8
+            border_inner = 2
+            title_col = 8
+            ver_col = 6
+            reason_col = 7
+            stats_bg = 1
+            stats_border = 5
+            stat_lbl_col = 10
+            stat_val_col = 10
+            summary_title_col = 9
+            pact_active_col = 10
+            pact_inactive_col = 5
+            prompt_col = 8
+            btn_bg = 0
+            btn_b1 = 10
+            btn_b2 = 9
+            btn_txt1 = 10
+            btn_txt2 = 7
+            btn_txt3 = 6
+            dev_col = 11
 
-        draw_text_centered(75, "HOURGLASS SHATTERED", 8, scale=3)
+        # Main Game Over card: SOLID opaque black box (no checkered noise)
+        pyxel.rect(40, 60, 520, 680, card_bg)
+        pyxel.rectb(40, 60, 520, 680, border_outer)
+        pyxel.rectb(44, 64, 512, 672, border_inner)
+
+        draw_text_centered(75, "HOURGLASS SHATTERED", title_col, scale=3)
         if self.dev_mode:
-            draw_text_centered(108, self.VERSION, 6, scale=2)
+            draw_text_centered(108, self.VERSION, ver_col, scale=2)
 
         reason = self.state.death_reason or "Consumed by the Void"
-        draw_text_centered(136, reason, 7, scale=2)
+        draw_text_centered(136, reason, reason_col, scale=2)
 
         # Inner stats container: SOLID Midnight Navy with Slate border (compact, no excess space)
-        pyxel.rect(60, 160, 480, 318, 1)
-        pyxel.rectb(60, 160, 480, 318, 5)
+        pyxel.rect(60, 160, 480, 318, stats_bg)
+        pyxel.rectb(60, 160, 480, 318, stats_border)
 
         time_survived = self.state.total_frames / 30.0
-        draw_text_scaled(80, 176, f"TIME SURVIVED : {time_survived:6.1f} SECONDS", 10, scale=2)
+        draw_text_scaled(80, 176, f"TIME SURVIVED : {time_survived:6.1f} SECONDS", stat_lbl_col, scale=2)
         score_fmt = f"{self.state.score:,}".replace(",", " ")
         sand_fmt = f"{self.state.total_sand_collected:,}".replace(",", " ")
         shards_fmt = f"{self.state.total_shards_dodged:,}".replace(",", " ")
         pacts_fmt = f"{len(self.bargains.history):,}".replace(",", " ")
-        draw_text_scaled(80, 202, f"FINAL SCORE   : {score_fmt}", 10, scale=2)
-        draw_text_scaled(80, 228, f"SAND REAPED   : {sand_fmt}", 9, scale=2)
+        draw_text_scaled(80, 202, f"FINAL SCORE   : {score_fmt}", stat_val_col, scale=2)
+        draw_text_scaled(80, 228, f"SAND REAPED   : {sand_fmt}", stat_lbl_col if is_sumie else 9, scale=2)
         draw_text_scaled(80, 254, f"SHARDS EVADED : {shards_fmt}", 6, scale=2)
-        draw_text_scaled(80, 280, f"PACTS SEALED  : {pacts_fmt}", 8, scale=2)
+        draw_text_scaled(80, 280, f"PACTS SEALED  : {pacts_fmt}", stat_lbl_col if is_sumie else 8, scale=2)
 
         # Draw all 7 canonical sins vertically without 'k=' or 'canonical order'
-        draw_text_scaled(80, 310, "PACTS SEALED SUMMARY:", 9, scale=2)
+        draw_text_scaled(80, 310, "PACTS SEALED SUMMARY:", summary_title_col, scale=2)
         for idx, sin in enumerate(CANONICAL_SINS):
             k = self.bargains.selection_counts.get(sin, 0)
-            col = 10 if k > 0 else 5
+            col = pact_active_col if k > 0 else pact_inactive_col
             row_y = 332 + idx * 19
             draw_text_scaled(100, row_y, f"{idx+1}. {sin.name.upper():<9} : {k}", col, scale=2)
 
         # Debounce prompt, Bot restart indicator & Big Return to Menu Button
         if self.game_over_timer < 60:
             rem = (60 - self.game_over_timer + 29) // 30
-            draw_text_centered(496, f"MOURN THY LOSS ({rem}s)...", 8, scale=2)
+            draw_text_centered(496, f"MOURN THY LOSS ({rem}s)...", prompt_col, scale=2)
         elif self.bot_mode:
             rem_bot = (180 - self.auto_restart_timer + 29) // 30
-            draw_text_centered(496, f"BOT RESTART IN {rem_bot}s", 10, scale=2)
+            draw_text_centered(496, f"BOT RESTART IN {rem_bot}s", pact_active_col if is_sumie else 10, scale=2)
         else:
             blink = (pyxel.frame_count // 10) % 2 == 0
             if blink:
-                draw_text_centered(496, "PRESS ANY KEY TO RESTART", 7, scale=2)
+                draw_text_centered(496, "PRESS ANY KEY TO RESTART", 0 if is_sumie_white else 7, scale=2)
 
         # 3-line tall prominent [X] RETURN TO MENU touch button
         btn_menu_x, btn_menu_y, btn_menu_w, btn_menu_h = 60, 530, 480, 78
-        pyxel.rect(btn_menu_x, btn_menu_y, btn_menu_w, btn_menu_h, 0)
-        pyxel.rectb(btn_menu_x, btn_menu_y, btn_menu_w, btn_menu_h, 10)
-        pyxel.rectb(btn_menu_x + 1, btn_menu_y + 1, btn_menu_w - 2, btn_menu_h - 2, 9)
-        draw_text_centered(btn_menu_y + 10, "[X] RETURN TO MENU", 10, scale=2)
-        draw_text_centered(btn_menu_y + 32, "PRESS HERE OR [X] TO RETURN TO MENU", 7, scale=2)
-        draw_text_centered(btn_menu_y + 54, "(CLICK, TAP, OR PRESS [X])", 6, scale=2)
+        pyxel.rect(btn_menu_x, btn_menu_y, btn_menu_w, btn_menu_h, btn_bg)
+        pyxel.rectb(btn_menu_x, btn_menu_y, btn_menu_w, btn_menu_h, btn_b1)
+        pyxel.rectb(btn_menu_x + 1, btn_menu_y + 1, btn_menu_w - 2, btn_menu_h - 2, btn_b2)
+        draw_text_centered(btn_menu_y + 10, "[X] RETURN TO MENU", btn_txt1, scale=2)
+        draw_text_centered(btn_menu_y + 32, "PRESS HERE OR [X] TO RETURN TO MENU", btn_txt2, scale=2)
+        draw_text_centered(btn_menu_y + 54, "(CLICK, TAP, OR PRESS [X])", btn_txt3, scale=2)
 
         if self.dev_mode:
-            draw_text_scaled(self.SCREEN_WIDTH - 120, self.SCREEN_HEIGHT - 20, f"[DEV] {self.VERSION}", 11, scale=2)
+            draw_text_scaled(self.SCREEN_WIDTH - 120, self.SCREEN_HEIGHT - 20, f"[DEV] {self.VERSION}", dev_col, scale=2)
 
     def draw_touch_buttons(self):
         """Draw 2 high-contrast arcade buttons for mobile browser touch play."""

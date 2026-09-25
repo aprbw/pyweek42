@@ -1019,8 +1019,8 @@ def bg_blood_moon_eclipse(pyxel, cam_x: int, prog: float, dist: int, screen_w: i
 
 
 def bg_zen_ink_wash(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool):
-    """Theme 20: Zen Ink Wash / Sumi-e (Calligraphic brushstrokes and mountain mist washes)."""
-    col_ink = 0 if is_greed else 5
+    """Theme: Zen Ink Wash / Sumi-e White (Calligraphic black brushstrokes on white washi paper)."""
+    col_ink = 6 if not is_greed else 0
     col_seal = 0
 
     # Mountain ridges in monochrome wash
@@ -1035,7 +1035,30 @@ def bg_zen_ink_wash(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, sc
             pyxel.line(prev_x, prev_y, x, cur_y, col_ink)
             prev_x, prev_y = x, cur_y
 
-    # Red seal stamp
+    # Seal stamp
+    seal_y = (dist // 2) % 400
+    pyxel.rectb(cam_x + screen_w - 40, seal_y, 16, 16, col_seal)
+    pyxel.pset(cam_x + screen_w - 32, seal_y + 8, col_seal)
+
+
+def bg_zen_ink_wash_black(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool):
+    """Theme: Zen Ink Wash / Sumi-e Black (Calligraphic white/grey brushstrokes on deep black)."""
+    col_ink = 6 if not is_greed else 7
+    col_seal = 7
+
+    # Mountain ridges in monochrome wash
+    spacing = 150
+    y_off = int(dist * 0.4) % spacing
+    for base_y in range(-spacing, screen_h + spacing, spacing):
+        sy = base_y - y_off
+        prev_x = cam_x
+        prev_y = sy + int(28 * math.sin((cam_x + base_y) * 0.007))
+        for x in range(cam_x + 6, cam_x + screen_w + 6, 6):
+            cur_y = sy + int(28 * math.sin((x + base_y) * 0.007))
+            pyxel.line(prev_x, prev_y, x, cur_y, col_ink)
+            prev_x, prev_y = x, cur_y
+
+    # Seal stamp
     seal_y = (dist // 2) % 400
     pyxel.rectb(cam_x + screen_w - 40, seal_y, 16, 16, col_seal)
     pyxel.pset(cam_x + screen_w - 32, seal_y + 8, col_seal)
@@ -1273,17 +1296,31 @@ KAIROS_BLOOD_MOON_ECLIPSE = KairosPalette(
     footer_text=7, footer_warn=8,
 )
 
-KAIROS_ZEN_INK_WASH = KairosPalette(
-    modal_bg=7, dimmer=5, border_outer=0, border_inner=5,
-    header_title=0, header_sub=5,
-    timer_bar_bg=6, timer_bar_fill=0, timer_bar_border=5,
-    card_bg=7, card_bg_selected=7, card_border=0, card_border_selected=5,
-    badge_bg=0, badge_text=7, badge_bg_selected=5, badge_text_selected=7,
+KAIROS_ZEN_INK_WASH_WHITE = KairosPalette(
+    modal_bg=7, dimmer=0, border_outer=0, border_inner=6,
+    header_title=0, header_sub=6,
+    timer_bar_bg=6, timer_bar_fill=0, timer_bar_border=0,
+    card_bg=7, card_bg_selected=7, card_border=6, card_border_selected=0,
+    badge_bg=0, badge_text=7, badge_bg_selected=0, badge_text_selected=7,
     selected_btn_bg=0, selected_btn_text=7,
-    sin_title=0, sin_title_selected=5, level_text=5, divider=5,
-    pro_label=0, pro_text=0, con_label=5, con_text=0,
+    sin_title=0, sin_title_selected=0, level_text=6, divider=6,
+    pro_label=0, pro_text=0, con_label=0, con_text=0,
     footer_text=0, footer_warn=0,
 )
+
+KAIROS_ZEN_INK_WASH_BLACK = KairosPalette(
+    modal_bg=0, dimmer=0, border_outer=7, border_inner=6,
+    header_title=7, header_sub=6,
+    timer_bar_bg=0, timer_bar_fill=7, timer_bar_border=6,
+    card_bg=0, card_bg_selected=0, card_border=6, card_border_selected=7,
+    badge_bg=7, badge_text=0, badge_bg_selected=7, badge_text_selected=0,
+    selected_btn_bg=7, selected_btn_text=0,
+    sin_title=7, sin_title_selected=7, level_text=6, divider=6,
+    pro_label=7, pro_text=7, con_label=7, con_text=7,
+    footer_text=7, footer_warn=7,
+)
+
+KAIROS_ZEN_INK_WASH = KAIROS_ZEN_INK_WASH_WHITE
 
 
 def bg_pastel_sakura(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool, telemetry: Optional[dict] = None):
@@ -1460,21 +1497,9 @@ ALL_THEMES: List[Theme] = [
         render_bg=bg_glacial_crevasse,
         kairos=KAIROS_GLACIAL_CREVASSE,
     ),
-    # 6. Magma Caldera
+    # 6. Retro Terminal Matrix (Moved to Theme 7 per user requirement)
     Theme(
         id=6,
-        name="MAGMA CALDERA",
-        clear_color=0,
-        greed_clear_color=2,
-        sand=SandPalette(body=10, border=8, glint=7, shadow=0, fat_body=10, fat_border=8, fat_glint=7),
-        shard=ShardPalette(facet=0, border=8, glint=7, shadow=8, fat_facet=0, fat_border=7),
-        hourglass=HourglassPalette(caps=5, cap_hl=8, cap_rivet=10, glass_walls=8, waist_neck=7, sand_a=10, sand_b=8, shadow=0),
-        render_bg=bg_magma_caldera,
-        kairos=KAIROS_MAGMA_CALDERA,
-    ),
-    # 7. Retro Terminal Matrix
-    Theme(
-        id=7,
         name="RETRO TERMINAL MATRIX",
         clear_color=0,
         greed_clear_color=2,
@@ -1484,17 +1509,29 @@ ALL_THEMES: List[Theme] = [
         render_bg=bg_retro_terminal_matrix,
         kairos=KAIROS_RETRO_TERMINAL_MATRIX,
     ),
-    # 8. Zen Ink Wash (Sumi-e)
+    # 7. Zen Ink Wash (Sumi-e White)
     Theme(
-        id=8,
-        name="ZEN INK WASH (SUMI-E)",
+        id=7,
+        name="ZEN INK WASH (SUMI-E WHITE)",
         clear_color=7,
         greed_clear_color=0,
-        sand=SandPalette(body=0, border=5, glint=7, shadow=5, fat_body=0, fat_border=5, fat_glint=7),
-        shard=ShardPalette(facet=0, border=5, glint=7, shadow=5, fat_facet=0, fat_border=0),
-        hourglass=HourglassPalette(caps=0, cap_hl=7, cap_rivet=5, glass_walls=5, waist_neck=0, sand_a=0, sand_b=5, shadow=5),
+        sand=SandPalette(body=0, border=0, glint=7, shadow=6, fat_body=0, fat_border=0, fat_glint=7),
+        shard=ShardPalette(facet=0, border=6, glint=7, shadow=6, fat_facet=0, fat_border=0),
+        hourglass=HourglassPalette(caps=0, cap_hl=7, cap_rivet=6, glass_walls=6, waist_neck=0, sand_a=0, sand_b=6, shadow=6),
         render_bg=bg_zen_ink_wash,
-        kairos=KAIROS_ZEN_INK_WASH,
+        kairos=KAIROS_ZEN_INK_WASH_WHITE,
+    ),
+    # 8. Zen Ink Wash (Sumi-e Black)
+    Theme(
+        id=8,
+        name="ZEN INK WASH (SUMI-E BLACK)",
+        clear_color=0,
+        greed_clear_color=0,
+        sand=SandPalette(body=7, border=7, glint=7, shadow=0, fat_body=7, fat_border=7, fat_glint=7),
+        shard=ShardPalette(facet=7, border=6, glint=7, shadow=0, fat_facet=7, fat_border=6),
+        hourglass=HourglassPalette(caps=7, cap_hl=6, cap_rivet=0, glass_walls=6, waist_neck=7, sand_a=7, sand_b=6, shadow=0),
+        render_bg=bg_zen_ink_wash_black,
+        kairos=KAIROS_ZEN_INK_WASH_BLACK,
     ),
     # 9. Pastel Sakura (Cute, girly pastel pink theme with pure leaf green sand)
     Theme(

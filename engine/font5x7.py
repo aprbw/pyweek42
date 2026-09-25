@@ -166,7 +166,7 @@ def get_pyxel_font(pyxel_module) -> Optional[object]:
         return None
 
 
-def draw_text_5x7(pyxel_module, x: int, y: int, s: str, col: int, scale: int = 1, img_bank: int = 2):
+def draw_text_5x7(pyxel_module, x: int, y: int, s: str, col: int, scale: int = 1, img_bank: int = 2, char_gap: Optional[int] = None):
     """Draw text using the custom 5x7 font.
 
     Fast, crisp, and spacious with full 5-pixel width for 'W' and 'w'.
@@ -183,8 +183,8 @@ def draw_text_5x7(pyxel_module, x: int, y: int, s: str, col: int, scale: int = 1
 
     cur_x = x
     char_w = 5 * scale
-    char_gap = 1 * scale
-    step = char_w + char_gap
+    actual_gap = char_gap if char_gap is not None else 1 * scale
+    step = char_w + actual_gap
 
     for ch in s:
         if ch == " ":
