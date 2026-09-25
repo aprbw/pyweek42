@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.1.9] - 2026-09-25
+### Added & Changed
+- **Main Menu 3-Line Buttons**:
+  - Theme switching buttons (`< PREV THEME`, `NEXT THEME >`), Lore & Learn button (`[L] LORE & LEARN TO PLAY`), and Start button (`PRESS ARROWS OR HERE TO START`) updated to 3 lines in height (height 54px).
+  - Main menu container dynamically expanded to height 312px, preserving 20px of bottom space beneath `[X] QUIT GAME`.
+  - Mouse and touch click target bounding boxes updated to match 54px button heights.
+- **Lore Page 4 Sloth Narrative & PRO Specification**:
+  - Paraphrased Sloth narrative into 4 elegant lines covering all 5 core points: (1) delay danger, (2) gather grains, (3) no need to act, (4) delayed hazards accumulate and strike at once, (5) vessel becomes permanently sluggish.
+  - Updated Sloth PRO to `+Lazy Reprieve (5.0s Safe Reprieve)` (specifically seconds, not points).
+  - Calculated decay section vertical offset dynamically from pacts end position (`curr_py + 4`), ensuring zero visual overlap.
+- **Pro Light Mode Thicker Crosshair**:
+  - Reticle crosshair arms reinforced to 3-pixel parallel thickness for high-contrast flight director clarity.
+  - Center reticle dot enlarged to a solid 3x3 block.
+- **E-Reader Mode Background Scroll & Zero-Jitter Text**:
+  - Restored 10s Chronos scrolling background while keeping scripture text stationary.
+  - Typesetting gap distribution converted to pure integer arithmetic in screen-relative space, completely eliminating horizontal sub-pixel word jitter.
+  - Center-aligned scripture covenant paragraphs during Kairos crossroads.
+- **Sumi-e Mode (Theme 8) Complete Black & White / Grayscale Aesthetic**:
+  - Hearts rendered in solid black (Color 0) with white glints (Color 7) and slate grey empty borders (Color 5).
+  - Elapsed time, score multiplier, and active badges rendered in black/monochrome.
+  - Faustian pacts list swatches rendered in black (Color 0) when active or slate grey (Color 5) when inactive, eliminating chromatic swatches.
+  - Kairos modal palette (`KAIROS_ZEN_INK_WASH`) fully validated for 100% monochrome grayscale values (0, 5, 6, 7).
+
 ## [v1.1.8] - 2026-09-25
 ### Added & Changed
 - **Sakura Theme Dark Green Sand**:

@@ -884,43 +884,47 @@ def render_reader_mode_text(
             p_lines.append((curr_line, True))
         wrapped_paras.append(p_lines)
 
-    # Completely stable, rock-solid vertical positioning:
-    # Paragraphs 0, 1, 3, 4 are 100% stationary and never jiggle.
-    # Paragraph 2 (dynamic telemetry info para) has a dedicated slot in the middle.
-    # scroll_y is fixed at 0 so the entire page behaves like genuine stable digital e-reader ink.
-    start_y = 20
-    p0_h = len(wrapped_paras[0]) * line_h + para_gap
-    p1_h = len(wrapped_paras[1]) * line_h + para_gap
-    p2_slot = 4 * line_h + para_gap  # Dedicated 4-line slot for dynamic telemetry
+    # 10-second Chronos scrolling background with integer typesetting to eliminate all horizontal word jitter
+    start_y = 24
+    para_line_y = []
+    curr_doc_y = start_y
+    for p_idx, lines in enumerate(wrapped_paras):
+        p_y = curr_doc_y
+        para_line_y.append(p_y)
+        if p_idx == 2:
+            # Dedicate at least 4 lines for telemetry slot to prevent shifting subsequent paragraphs
+            p_h = max(4, len(lines)) * line_h + para_gap
+        else:
+            p_h = len(lines) * line_h + para_gap
+        curr_doc_y += p_h
 
-    para_y_starts = [
-        start_y,
-        start_y + p0_h,
-        start_y + p0_h + p1_h,
-        start_y + p0_h + p1_h + p2_slot,
-        start_y + p0_h + p1_h + p2_slot + len(wrapped_paras[3]) * line_h + para_gap,
-    ]
+    total_doc_h = curr_doc_y - start_y
+    max_scroll = max(0, start_y + total_doc_h - (screen_h - 45))
+    scroll_y = int(min(1.0, max(0.0, prog)) * max_scroll)
 
     for p_idx, lines in enumerate(wrapped_paras):
-        base_sy = para_y_starts[p_idx]
+        base_sy = para_line_y[p_idx] - scroll_y
         for l_idx, (words, is_para_end) in enumerate(lines):
             sy = base_sy + l_idx * line_h
-            if 0 <= sy <= screen_h - line_h:
+            if -line_h <= sy <= screen_h:
                 if is_para_end or len(words) <= 1:
-                    # Left-aligned for final line of paragraph
-                    wx = margin_l
+                    # Left-aligned for final line of paragraph: fixed 12px space between words
+                    curr_screen_x = 36
                     for w in words:
-                        draw_text_scaled_helper(pyxel, int(wx), sy, w, col_ink, scale=2)
-                        wx += len(w) * char_w + char_w
+                        draw_text_scaled_helper(pyxel, cam_x + curr_screen_x, sy, w, col_ink, scale=2)
+                        curr_screen_x += len(w) * char_w + char_w
                 else:
-                    # Fully justified alignment across margin_l to margin_r
+                    # Fully justified alignment using exact integer space distribution: zero sub-pixel float jitter!
                     tot_words_w = sum(len(w) * char_w for w in words)
                     extra = max_w - tot_words_w
-                    gap = max(float(char_w), extra / float(max(1, len(words) - 1)))
-                    curr_wx = float(margin_l)
-                    for w in words:
-                        draw_text_scaled_helper(pyxel, int(round(curr_wx)), sy, w, col_ink, scale=2)
-                        curr_wx += len(w) * char_w + gap
+                    num_gaps = max(1, len(words) - 1)
+                    base_gap = max(char_w, extra // num_gaps)
+                    rem = max(0, extra - base_gap * num_gaps)
+                    curr_screen_x = 36
+                    for w_i, w in enumerate(words):
+                        draw_text_scaled_helper(pyxel, cam_x + curr_screen_x, sy, w, col_ink, scale=2)
+                        gap = base_gap + (1 if w_i < rem else 0) if w_i < num_gaps else 0
+                        curr_screen_x += len(w) * char_w + gap
 
 
 def bg_reader_dark(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool, telemetry: Optional[dict] = None):
@@ -1272,8 +1276,8 @@ KAIROS_BLOOD_MOON_ECLIPSE = KairosPalette(
 KAIROS_ZEN_INK_WASH = KairosPalette(
     modal_bg=7, dimmer=5, border_outer=0, border_inner=5,
     header_title=0, header_sub=5,
-    timer_bar_bg=15, timer_bar_fill=0, timer_bar_border=5,
-    card_bg=15, card_bg_selected=7, card_border=0, card_border_selected=5,
+    timer_bar_bg=6, timer_bar_fill=0, timer_bar_border=5,
+    card_bg=7, card_bg_selected=7, card_border=0, card_border_selected=5,
     badge_bg=0, badge_text=7, badge_bg_selected=5, badge_text_selected=7,
     selected_btn_bg=0, selected_btn_text=7,
     sin_title=0, sin_title_selected=5, level_text=5, divider=5,
