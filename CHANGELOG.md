@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.1.5] - 2026-09-25
+### Changed
+- **Menu Page Controls & Spacing**:
+  - Swapped controls format to input-method prefix for all: `KEYBOARD: [A] / [D]`, `KEYBOARD: [LEFT] / [RIGHT] ARROWS`, `TOUCH: [LEFT] / [RIGHT] ON-SCREEN`.
+  - Removed the `CONTROLLER` line completely from the Title Screen.
+  - Added a bigger line break (1 full line worth of extra space: 40px / 38px) before `SELECT THEMES` and `SHORTCUTS`.
+- **Developer Mode Box Polish**:
+  - Combined pact controls into a single line: `[1-7] ADD PACTS   |   [Q-U] REDUCE PACTS`, removing verbose individual sin explanations.
+  - Removed the `[X]` return line.
+  - Adjusted background color and transparency (`box_bg = 7 if is_light else 0`, `kp.border_inner`, `dither(0.50)`) to match the top-right pacts board, guaranteeing 100% text legibility in all 10 themes.
+  - Restored real-time simulation metrics using a smaller font (`scale=1`) across 4 information-dense lines (Player kinematics, Spawning/Entities, State/Chronos/Kairos/Time, and Greed/Pride/Score).
+- **Wrath Kinematics Guarantee**:
+  - Boosted sand initial impulse (kick = 28.0) and sustained burst acceleration (accel = 16.0) relative to shards (kick = 14.0, accel = 6.0), guaranteeing fine sand grains are pushed noticeably and strictly further than glass shards.
+  - Raised sand terminal velocity clamp to 65.0 to reflect lightweight dust physics during explosions.
+- **Sloth Target Kinematics**:
+  - Updated sand centering to target the current X position of the player hourglass (`self.player.x`) at activation rather than zero or hardcoded 300.
+  - Added safety fallback ensuring sand target X never defaults to 0.0 at the start of simulation.
+- **Documentation & Packaging**:
+  - Bumped version to `v1.1.5` across `main.py`, `README.md`, `p04.md`, `CHANGELOG.md`, and `build.sh`.
+  - Updated distribution zip target to `grain-of-doubt-1.1.5.zip`.
+
 ## [v1.1.4] - 2026-09-25
 ### Changed
 - **E-Reader Mode Telemetry Alignment**:

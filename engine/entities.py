@@ -1,7 +1,7 @@
 """Entities, Kinematics, Hitboxes, and Particle Physics for 600x800 resolution."""
 import math
 import random
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 
 def aabb_overlap(
@@ -124,6 +124,7 @@ class SandGrain:
         self.burst_ay: float = 0.0
         self.sloth_centering: bool = False
         self.stay_in_middle: bool = False
+        self.sloth_target_x: Optional[float] = None
         self.is_fat: bool = is_fat
         self.point_value: int = 3 if is_fat else 1
         if is_fat:
@@ -189,20 +190,25 @@ class SandGrain:
         self.vx *= 0.94
         self.vy *= 0.94
 
-        # Terminal velocity clamp to keep simulation stable
+        # Terminal velocity clamp to keep simulation stable (65.0 for fine lightweight sand grains)
         spd_sq = self.vx * self.vx + self.vy * self.vy
-        if spd_sq > 50.0 * 50.0:
+        if spd_sq > 65.0 * 65.0:
             spd = math.sqrt(spd_sq)
-            self.vx = (self.vx / spd) * 50.0
-            self.vy = (self.vy / spd) * 50.0
+            self.vx = (self.vx / spd) * 65.0
+            self.vy = (self.vy / spd) * 65.0
 
-        # Integrate velocity into position (with Sloth linear centering and staying in the middle)
+        # Integrate velocity into position (with Sloth linear centering and staying at player's current X)
+        target_x = getattr(self, "sloth_target_x", None)
+        if target_x is None:
+            # Fallback: ensure target_x never defaults to 0.0 at the start of simulation
+            target_x = player_x if (player_x is not None and player_x != 0.0) else 300.0
+            self.sloth_target_x = target_x
+
         if getattr(self, "stay_in_middle", False):
-            self.x = 300.0
+            self.x = target_x
             self.vx = 0.0
             self.lateral_drift = 0.0
         elif getattr(self, "sloth_centering", False):
-            target_x = 300.0
             diff_x = target_x - self.x
             step = 16.0
             if abs(diff_x) <= step:
@@ -456,10 +462,11 @@ class EntityManager:
                 ux = dx / dist
                 uy = dy / dist
                 dist_factor = (1.0 - 0.4 * (dist / grain_radius))
-                initial_kick = 16.0 * dist_factor
+                # Boost sand impulse and burst to guarantee sand is pushed significantly further than shards
+                initial_kick = 28.0 * dist_factor
                 sand.vx += ux * initial_kick
                 sand.vy += uy * initial_kick
-                rem_accel = 8.0 * dist_factor
+                rem_accel = 16.0 * dist_factor
                 sand.burst_ax = ux * rem_accel
                 sand.burst_ay = uy * rem_accel
                 sand.burst_timer = burst_frames
@@ -512,7 +519,7 @@ class EntityManager:
         self.shards.extend(new_oncoming)
 
         centered = 0
-        target_x = 300.0
+        target_x = float(px) if px is not None else 300.0
         for sand in self.sands:
             if not sand.alive:
                 continue
@@ -521,16 +528,17 @@ class EntityManager:
             # AOE: 1600 to left, right, and down
             if abs(dx) <= aoe_horizontal and (0.0 <= dy <= aoe_down):
                 sand.sloth_centering = True
+                sand.sloth_target_x = target_x
                 sand.lateral_drift = 0.0
                 sand.vx = 0.0
-                # Move linearly towards target_x (300.0)
-                dist_to_mid = target_x - sand.x
+                # Move linearly towards target_x (the current x location of player hourglass)
+                dist_to_target = target_x - sand.x
                 step = 16.0
-                if abs(dist_to_mid) <= step:
+                if abs(dist_to_target) <= step:
                     sand.x = target_x
                     sand.stay_in_middle = True
                 else:
-                    sand.x += math.copysign(step, dist_to_mid)
+                    sand.x += math.copysign(step, dist_to_target)
                 centered += 1
 
         return SlothResult(thrown, centered)

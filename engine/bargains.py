@@ -267,7 +267,7 @@ class BargainManager:
             summary = {
                 "sin": defn.name,
                 "boon": f"Lazy Reprieve: {thrown_count} shards hurled down (~2s safe)",
-                "curse": f"Sand Locked to Center & -{drag_reduction * 100:.1f}% drag (mod={state.sloth_player_speed_mod:.2f})",
+                "curse": f"Sand Locked to Hourglass X & -{drag_reduction * 100:.1f}% drag (mod={state.sloth_player_speed_mod:.2f})",
             }
 
         self.selection_counts[sin] += 1

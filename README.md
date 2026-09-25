@@ -1,7 +1,7 @@
 # Grain of Doubt
 
 > **By Arian Prabowo**  
-> **Version:** v1.1.4  
+> **Version:** v1.1.5  
 > **PyWeek 42 Entry ("Borrowed Time")** — September 2026  
 > An endless retro downhill falling-hourglass arcade runner built with the **Pyxel** retro game engine.  
 > **Target Resolution:** 600 × 800 pixels (3:4 Portrait Aspect Ratio, Infinite Horizontal Arena).  
@@ -40,9 +40,9 @@ Steer left or right to avoid falling glass shards while collecting glistening go
 
 | Control | Action | Mechanic |
 | :--- | :--- | :--- |
-| `[A]` / `[D]` or `[Left]` / `[Right]` | Keyboard Steering | Steer hourglass horizontally (viscous damping coefficient: 0.82) |
-| `[D-Pad]` / `[Thumbstick]` | Gamepad Steering | Steer hourglass horizontally via controller |
-| Touch `[< LEFT]` / `[RIGHT >]` | Mobile Touch Steering | High-contrast on-screen buttons (visible on mobile only) or bottom screen tap |
+| `KEYBOARD: [A] / [D]` | Keyboard Steering | Steer hourglass horizontally (viscous damping coefficient: 0.82) |
+| `KEYBOARD: [LEFT] / [RIGHT] ARROWS` | Keyboard Steering | Steer hourglass horizontally |
+| `TOUCH: [< LEFT]` / `[RIGHT >]` | Mobile Touch Steering | High-contrast on-screen buttons (visible on mobile only) or bottom screen tap |
 | `[Left]` / `[Right]` or Tap Card | Select Faustian Bargain | Steer left or right during Kairos to choose between the 2 bargain cards within 10.0s (1.0s safety lockout; requires fresh press after release) |
 | `[L]` / `[H]` | Lore & Learn to Play Manual | Open 5-page interactive manual (Premise, Cosmology, Pacts Part 1, Pacts Part 2, Themes & Dedication). Navigate with `[A]`/`[D]` or arrows; press `[X]` to return |
 | `[Space]` / `[Enter]` or Tap Screen | Start / Restart | Start game or restart after a 2.0s post-mortem lockout (debounced) |
@@ -50,7 +50,7 @@ Steer left or right to avoid falling glass shards while collecting glistening go
 | `[0]` - `[9]` | Direct Theme Select | Jump instantly to any of the 10 curated themes (0:Dunes, 1:Pro Light, 2:Pro Dark, 3:E-Reader Light, 4:E-Reader Dark, 5:Glacial, 6:Caldera, 7:Terminal, 8:Sumi-e, 9:Pastel Sakura) |
 | `[,]` (Comma) | Previous Theme | Cycle backwards through all 10 curated themes (works on Title Screen and in-game) |
 | `[.]` (Period) | Next Theme | Cycle forward through all 10 curated themes (works on Title Screen and in-game) |
-| `[~]` / `[` `]` (Backtick) | Toggle Dev Mode | On-screen debug HUD, live telemetry, and shortcut cheats (`[key] NAME: STATS` format) |
+| `[~]` / `[` `]` (Backtick) | Toggle Dev Mode | Theme-adaptive debug HUD matching top-right pacts board, live telemetry metrics, and combined pact shortcuts (`[1-7] ADD PACTS   |   [Q-U] REDUCE PACTS`) |
 | `[G]` / `[I]` (in Dev Mode) | Toggle God Mode | Invulnerability toggle (immune to glass shards and void collision) |
 | `[B]` (in Dev Mode) | Toggle GOFAI Bot | Autonomous kinematic AI playtesting agent (human-like 2.0s deliberation delay, 80% speed handicap) |
 | `[V]` (in Dev Mode) | Toggle MP4 Recording | Lossless FFmpeg background canvas video recorder |
@@ -86,10 +86,10 @@ Every 10.0 seconds (300 frames), normal time flow stops and **Kairos** strikes. 
    * *Curse:* **Fat Glass Shards** — $\sim 2.8\times$ linear dimensions ($10\times$ area), creating massive, menacing hazard obstacles.
 6. **Wrath:**
    * *Boon:* **Shard Shockwave Blast (1600px)** — Detonates an instant kinetic explosion centered on the player: glass shards within a **1600-pixel radius** are blasted outward with a smooth multi-frame acceleration impulse away from the hourglass. Zero visual particle clutter.
-   * *Curse:* **Sand Grain Blast Wave (3200px)** — The shockwave blast also violently hurls all golden sand grains within an immense **3200-pixel radius** far away from the hourglass, scattering your reaped grains into the deep void. There is no zero-score yield penalty; this massive loss and dispersal of sand IS the curse!
+   * *Curse:* **Sand Grain Blast Wave (3200px)** — The shockwave blast also violently hurls all golden sand grains within an immense **3200-pixel radius** far away from the hourglass (pushed noticeably and strictly further than glass shards due to low sand inertia and higher impulse velocity), scattering your reaped grains into the deep void. There is no zero-score yield penalty; this massive loss and dispersal of sand IS the curse!
 7. **Sloth:**
    * *Boon:* **Lazy Reprieve (1600px, ~2s Safe)** — Sloth means lazy; lazy means doing nothing! All glass shards within a 1600px area of effect (left, right, and down) are hurled downward toward the bottom horizon over a multi-frame burst. For ~2.0 seconds (60 frames), the descent space below you is completely cleared of hazards, allowing you to literally do nothing and survive.
-   * *Curse:* **Center Locked Sands & Drag** — The hurled glass shards catch up and overlap with bottom-seeded hazards, forming a dense wave of glass at the bottom horizon that scrolls back upward. Additionally, golden sand grains within the 1600px AOE are moved linearly to the center ($x=300$) and stay locked in the middle once there, while permanent compounding lateral drag is imposed on hourglass steering, reducing horizontal translation speed by -20% × 1.5^k (0.20 reduction on 1st pact, 0.30 on 2nd, 0.45 on 3rd; minimum modifier 0.20).
+   * *Curse:* **Hourglass X Locked Sands & Drag** — The hurled glass shards catch up and overlap with bottom-seeded hazards, forming a dense wave of glass at the bottom horizon that scrolls back upward. Additionally, golden sand grains within the 1600px AOE are moved linearly to the current X location of the player hourglass (`self.player.x`) and stay locked at that position once there (never jumping to zero at the start), while permanent compounding lateral drag is imposed on hourglass steering, reducing horizontal translation speed by -20% × 1.5^k (0.20 reduction on 1st pact, 0.30 on 2nd, 0.45 on 3rd; minimum modifier 0.20).
 
 ---
 

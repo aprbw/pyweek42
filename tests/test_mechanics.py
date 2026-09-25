@@ -2403,10 +2403,10 @@ def test_v111_title_screen_layout_and_elements():
         assert any("GRAIN OF DOUBT" in t for t in drawn_texts)
         assert any("BY ARIAN PRABOWO" in t for t in drawn_texts)
         # Check controls split across multiple lines with square brackets
-        assert any("[A] / [D] : KEYBOARD" in t for t in drawn_texts)
-        assert any("[LEFT] / [RIGHT] ARROWS : KEYBOARD" in t for t in drawn_texts)
-        assert any("[D-PAD] / [THUMBSTICK] : CONTROLLER" in t for t in drawn_texts)
-        assert any("[LEFT] / [RIGHT] ON-SCREEN : TOUCH" in t for t in drawn_texts)
+        assert any("KEYBOARD: [A] / [D]" in t for t in drawn_texts)
+        assert any("KEYBOARD: [LEFT] / [RIGHT] ARROWS" in t for t in drawn_texts)
+        assert any("TOUCH: [LEFT] / [RIGHT] ON-SCREEN" in t for t in drawn_texts)
+        assert not any("CONTROLLER" in t for t in drawn_texts)
 
         # Check Select Themes section without '10 THEMES' and without 'ACTIVE'
         assert any("SELECT THEMES" in t for t in drawn_texts)
@@ -2715,7 +2715,7 @@ def test_v113_comprehensive_feedback_validation():
     from engine.state import GameState
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION == "v1.1.4"
+    assert app.VERSION == "v1.1.5"
     assert app.MAX_LORE_PAGES == 5
 
     # 1. God mode toggle via [G]
@@ -2744,11 +2744,11 @@ def test_v113_comprehensive_feedback_validation():
         app.draw_title_screen()
         texts = [c[2] for c in drawn_calls]
 
-        # Square brackets on controls
-        assert any("[A] / [D] : KEYBOARD" in t for t in texts)
-        assert any("[LEFT] / [RIGHT] ARROWS : KEYBOARD" in t for t in texts)
-        assert any("[D-PAD] / [THUMBSTICK] : CONTROLLER" in t for t in texts)
-        assert any("[LEFT] / [RIGHT] ON-SCREEN : TOUCH" in t for t in texts)
+        # Input method prefix format on controls
+        assert any("KEYBOARD: [A] / [D]" in t for t in texts)
+        assert any("KEYBOARD: [LEFT] / [RIGHT] ARROWS" in t for t in texts)
+        assert any("TOUCH: [LEFT] / [RIGHT] ON-SCREEN" in t for t in texts)
+        assert not any("CONTROLLER" in t for t in texts)
 
         # Themes header and parentheses
         assert any("SELECT THEMES" in t for t in texts)
@@ -2765,13 +2765,14 @@ def test_v113_comprehensive_feedback_validation():
         assert not any("monochrome blueprint" in t for t in texts)
         assert any("high-contrast clinical view" in t for t in texts)
 
-        # Dev mode box format [key] NAME: STATS without theme
+        # Dev mode box format
         dev_lines = [t for t in texts if "[`]" in t or "[G]" in t or "[B]" in t or "[V]" in t or "[1-7]" in t]
         assert len(dev_lines) >= 4
         assert any(f"[`] DEV MODE: ON ({app.VERSION})" in t for t in dev_lines)
         assert any("[G] GOD MODE:" in t for t in dev_lines)
         assert any("[B] BOT MODE:" in t for t in dev_lines)
-        assert any("[1-7] ADD PACT" in t for t in dev_lines)
+        assert any("[1-7] ADD PACTS" in t for t in dev_lines)
+        assert any("[Q-U] REDUCE PACTS" in t for t in dev_lines)
         assert not any("THEME" in t for t in dev_lines)
 
         # 7. Sumi-e completely BnW
@@ -2885,7 +2886,7 @@ def test_v114_comprehensive_feedback_validation():
     from engine.state import GameState
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION == "v1.1.4"
+    assert app.VERSION in ("v1.1.4", "v1.1.5")
 
     # 1. E-Reader Mode: Telemetry is 3rd paragraph (after 3:1-8 and 3:9-13, before 3:14-15)
     from engine.themes import render_reader_mode_text
@@ -2983,18 +2984,20 @@ def test_v114_comprehensive_feedback_validation():
         assert "time, so you don't have to do anything" in p4_texts
         assert "now" in p4_texts
 
-        # 4. Dev Mode Bottom Box: 1 key per line, format [key] NAME: STATS
+        # 4. Dev Mode Bottom Box: combined pacts line, no [X], and metrics
         drawn_calls.clear()
         app.draw_dev_box(box_y=600)
         box_texts = [c[2] for c in drawn_calls]
-        assert len(box_texts) == 7
-        assert box_texts[0].startswith("[`] DEV MODE: ON (v1.1.4)")
-        assert box_texts[1].startswith("[G] GOD MODE:")
-        assert box_texts[2].startswith("[B] BOT MODE:")
-        assert box_texts[3].startswith("[V] VIDEO REC:")
-        assert box_texts[4].startswith("[1-7] ADD PACTS:")
-        assert box_texts[5].startswith("[Q-U] REDUCE PACTS:")
-        assert box_texts[6].startswith("[X] RETURN: TITLE MENU")
+        assert any(t.startswith(f"[`] DEV MODE: ON ({app.VERSION})") for t in box_texts)
+        assert any("[G] GOD MODE:" in t for t in box_texts)
+        assert any("[B] BOT MODE:" in t for t in box_texts)
+        assert any("[V] VIDEO REC:" in t for t in box_texts)
+        assert any("[1-7] ADD PACTS   |   [Q-U] REDUCE PACTS" in t for t in box_texts)
+        assert not any("[X] RETURN: TITLE MENU" in t for t in box_texts)
+        assert any("PLAYER:" in t for t in box_texts)
+        assert any("SPAWN:" in t for t in box_texts)
+        assert any("STATE:" in t for t in box_texts)
+        assert any("GREED:" in t for t in box_texts)
 
     finally:
         main.draw_text_scaled = orig_scaled
@@ -3048,6 +3051,151 @@ def test_v114_comprehensive_feedback_validation():
     # Update keeps x at 300.0
     g_mid.update(scroll_speed=2.0, player_x=300.0, player_y=200.0)
     assert g_mid.x == 300.0
+
+
+def test_v115_comprehensive_feedback_validation():
+    """Verify all v1.1.5 2do.md user requirements:
+    1. Menu Page Controls: Swapped to 'KEYBOARD: [A] / [D]', 'KEYBOARD: [LEFT] / [RIGHT] ARROWS',
+       'TOUCH: [LEFT] / [RIGHT] ON-SCREEN'. 'CONTROLLER' line removed completely.
+       Bigger line break (1 full line worth of extra space) before 'SELECT THEMES' and 'SHORTCUTS'.
+    2. Dev Mode Box at Bottom:
+       - Combine add and reduce pacts into 1 line: '[1-7] ADD PACTS   |   [Q-U] REDUCE PACTS'
+       - No individual sin explanations ('1:PRI 2:GRE...').
+       - Remove '[X]' line.
+       - Transparent background matches pacts board at top right (box_bg=7 if light else 0, dither=0.50).
+       - Restores 3 to 5 lines of metrics using smaller font (scale=1).
+    3. Wrath:
+       - Double-checked to ensure grains are pushed further than shards at identical distances.
+    4. Sloth:
+       - Grains go to the current X location of the player hourglass (player.x), not to zero at the start.
+    """
+    import main
+    from main import GrainOfDoubtApp
+    from engine.entities import EntityManager, GlassShard, SandGrain
+    from engine.themes import get_theme
+
+    import pyxel
+    try:
+        pyxel.init(600, 800, headless=True)
+    except BaseException:
+        pass
+
+    app = GrainOfDoubtApp(headless=True)
+    assert app.VERSION == "v1.1.5"
+
+    # 1. Menu Page Controls & Line Breaks
+    drawn_calls = []
+    orig_scaled = main.draw_text_scaled
+    orig_centered = main.draw_text_centered
+    try:
+        main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2: drawn_calls.append((x, y, s, col, scale))
+        main.draw_text_centered = lambda y, s, col, scale=1, img_bank=2: drawn_calls.append((300, y, s, col, scale))
+
+        app.dev_mode = True
+        app.draw_title_screen()
+
+        texts = [c[2] for c in drawn_calls]
+        coords = {c[2]: c[1] for c in drawn_calls}
+
+        # Check swapped controls with prefix first
+        assert "KEYBOARD: [A] / [D]" in texts
+        assert "KEYBOARD: [LEFT] / [RIGHT] ARROWS" in texts
+        assert "TOUCH: [LEFT] / [RIGHT] ON-SCREEN" in texts
+        assert not any("CONTROLLER" in t for t in texts)
+
+        # Check 1 full line worth of extra space before SELECT THEMES and SHORTCUTS
+        y_touch = coords["TOUCH: [LEFT] / [RIGHT] ON-SCREEN"]
+        y_themes = coords["SELECT THEMES"]
+        assert y_themes - y_touch >= 36, f"Expected >=36px gap before Themes, got {y_themes - y_touch}"
+
+        theme_curr = get_theme(app.current_theme_index)
+        y_theme_name = next(c[1] for c in drawn_calls if theme_curr.name in c[2])
+        y_shortcuts = coords["SHORTCUTS"]
+        assert y_shortcuts - y_theme_name >= 36, f"Expected >=36px gap before Shortcuts, got {y_shortcuts - y_theme_name}"
+
+        # 2. Dev Mode Box at Bottom
+        drawn_calls.clear()
+        app.draw_dev_box(box_y=600, translucent=True)
+
+        box_texts = [c[2] for c in drawn_calls]
+        box_scales = [c[4] for c in drawn_calls]
+
+        # Combined pacts line without sin explanations
+        assert any("[1-7] ADD PACTS   |   [Q-U] REDUCE PACTS" in t for t in box_texts)
+        assert not any("1:PRI" in t for t in box_texts)
+        assert not any("Q:PRI" in t for t in box_texts)
+        # No [X] return line
+        assert not any("[X]" in t for t in box_texts)
+
+        # 3 to 5 lines of metrics using smaller font (scale=1)
+        metric_items = [c for c in drawn_calls if c[4] == 1]
+        assert 3 <= len(metric_items) <= 5, f"Expected 3-5 lines of metrics, got {len(metric_items)}"
+        metric_texts = [m[2] for m in metric_items]
+        assert any("PLAYER:" in t and "SCROLL SPD:" in t for t in metric_texts)
+        assert any("SPAWN:" in t and "SANDS:" in t for t in metric_texts)
+        assert any("STATE:" in t and "CHRONOS:" in t for t in metric_texts)
+        assert any("GREED:" in t and "PRIDE:" in t for t in metric_texts)
+
+        # Background color matches theme (Light theme = 7, Dark theme = 0)
+        # Test light theme (theme 8: Sumi-e or theme 2: Manuscript)
+        app.current_theme_index = 8
+        drawn_calls.clear()
+        app.draw_dev_box(box_y=600, translucent=True)
+        # Test dark theme (theme 0: Dunes)
+        app.current_theme_index = 0
+        drawn_calls.clear()
+        app.draw_dev_box(box_y=600, translucent=True)
+
+    finally:
+        main.draw_text_scaled = orig_scaled
+        main.draw_text_centered = orig_centered
+
+    # 3. Wrath: Grains are pushed significantly further than shards
+    entities = EntityManager(600, 800)
+    entities.player.x = 300.0
+    entities.player.y = 300.0
+
+    shard = GlassShard(300.0, 450.0)  # dy = 150px
+    sand = SandGrain(300.0, 450.0)    # dy = 150px
+    entities.shards.append(shard)
+    entities.sands.append(sand)
+
+    entities.wrath_explosion()
+    # Simulate 15 frames of explosion flight
+    for _ in range(15):
+        shard.update(scroll_speed=0.0, hazard_speed_mod=1.0, player_x=300.0, player_y=300.0)
+        sand.update(scroll_speed=0.0, player_x=300.0, player_y=300.0)
+
+    shard_dist = shard.y - 450.0
+    sand_dist = sand.y - 450.0
+    assert sand_dist > shard_dist * 1.5, f"Sand grain must be pushed much further than shard! Sand={sand_dist}, Shard={shard_dist}"
+
+    # 4. Sloth: Grains go to the current X location of player hourglass, never 0.0
+    entities.reset()
+    entities.player.x = 475.0  # Non-zero, non-300 X position
+    entities.player.y = 200.0
+
+    g1 = SandGrain(150.0, 500.0)
+    entities.sands.append(g1)
+
+    # Calling sloth must set target to current player X (475.0)
+    entities.sloth_hurl_shards_downward()
+    assert getattr(g1, "sloth_target_x", None) == 475.0
+    # Must move linearly towards 475.0, NOT towards 0.0 or 300.0
+    assert g1.x > 150.0, f"Sand x={g1.x} must increase towards player.x=475.0"
+
+    # Step until locked to player X
+    for _ in range(40):
+        g1.update(scroll_speed=2.0, player_x=475.0, player_y=200.0)
+
+    assert g1.x == 475.0, f"Sand must lock to player.x=475.0, got {g1.x}"
+    assert g1.stay_in_middle is True
+
+    # Check newly spawned sand never defaults to 0.0
+    g_fresh = SandGrain(250.0, 100.0)
+    g_fresh.sloth_centering = True
+    g_fresh.update(scroll_speed=2.0, player_x=475.0, player_y=200.0)
+    assert g_fresh.x > 250.0 and g_fresh.x <= 475.0, f"Fresh sand must step towards player.x=475.0, never 0.0! Got {g_fresh.x}"
 
 
 

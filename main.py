@@ -282,7 +282,7 @@ def is_dev_environment() -> bool:
 
 
 class GrainOfDoubtApp:
-    VERSION: str = "v1.1.4"
+    VERSION: str = "v1.1.5"
     SCREEN_WIDTH: int = 600
     SCREEN_HEIGHT: int = 800
 
@@ -1644,22 +1644,21 @@ class GrainOfDoubtApp:
         pyxel.rectb(40, 196, 520, 234, 5)
 
         draw_text_scaled(60, 206, "CONTROLS", 10, scale=2)
-        draw_text_scaled(60, 224, "[A] / [D] : KEYBOARD", 7, scale=2)
-        draw_text_scaled(60, 242, "[LEFT] / [RIGHT] ARROWS : KEYBOARD", 7, scale=2)
-        draw_text_scaled(60, 260, "[D-PAD] / [THUMBSTICK] : CONTROLLER", 7, scale=2)
-        draw_text_scaled(60, 278, "[LEFT] / [RIGHT] ON-SCREEN : TOUCH", 7, scale=2)
+        draw_text_scaled(60, 224, "KEYBOARD: [A] / [D]", 7, scale=2)
+        draw_text_scaled(60, 242, "KEYBOARD: [LEFT] / [RIGHT] ARROWS", 7, scale=2)
+        draw_text_scaled(60, 260, "TOUCH: [LEFT] / [RIGHT] ON-SCREEN", 7, scale=2)
 
-        # 1 line break before Themes
-        draw_text_scaled(60, 302, "SELECT THEMES", 10, scale=2)
-        draw_text_scaled(60, 320, "[,] PREV   |   [.] NEXT", 7, scale=2)
+        # Bigger line break (1 full line worth of extra space) before Themes
+        draw_text_scaled(60, 300, "SELECT THEMES", 10, scale=2)
+        draw_text_scaled(60, 318, "[,] PREV   |   [.] NEXT", 7, scale=2)
         theme = get_theme(self.current_theme_index)
         act_col = 10 if (self.current_theme_index in (1, 2) or getattr(theme, "is_reader_mode", False)) else 9
-        draw_text_scaled(60, 338, f"({self.current_theme_index + 1}/10) {theme.name}", act_col, scale=2)
+        draw_text_scaled(60, 336, f"({self.current_theme_index + 1}/10) {theme.name}", act_col, scale=2)
 
-        # 1 line break before Shortcuts (1 key per line)
-        draw_text_scaled(60, 362, "SHORTCUTS", 10, scale=2)
-        draw_text_scaled(60, 380, "[L] LORE & LEARN TO PLAY", 7, scale=2)
-        draw_text_scaled(60, 398, "[X] QUIT GAME", 7, scale=2)
+        # Bigger line break (1 full line worth of extra space) before Shortcuts
+        draw_text_scaled(60, 374, "SHORTCUTS", 10, scale=2)
+        draw_text_scaled(60, 392, "[L] LORE & LEARN TO PLAY", 7, scale=2)
+        draw_text_scaled(60, 410, "[X] QUIT GAME", 7, scale=2)
 
         # Photosensitivity & Pro Mode suggestion directly above blinking start prompt
         pyxel.rect(40, 438, 520, 72, 0)
@@ -1851,7 +1850,7 @@ class GrainOfDoubtApp:
             pacts_p2 = [
                 ("5. GLUTTONY", "+Fat Sand Grains (3x Value)", "-Monstrous Enlarged Shards", 4),
                 ("6. WRATH", "+1600px Shard Shockwave Blast", "-3200px Blast Hurls Away All Sand", 8),
-                ("7. SLOTH", "+Hurls Shards Downward (~2s Safe)", "-Locks Sand to Middle & Drag", 12),
+                ("7. SLOTH", "+Hurls Shards Downward (~2s Safe)", "-Locks Sand to Hourglass X & Drag", 12),
             ]
             for idx, (pact_title, boon, curse, pcol) in enumerate(pacts_p2):
                 py = box_y + 100 + idx * 70
@@ -2068,39 +2067,75 @@ class GrainOfDoubtApp:
         draw_text_scaled(box_x + 16, box_y + 28, sub_str, 7, scale=1)
 
     def draw_dev_box(self, box_y: int, translucent: bool = False):
-        """Render dedicated Dev Mode box adhering strictly to 1 key per line in `[key] NAME: STATS` format."""
+        """Render dedicated Dev Mode box at bottom of screen matching the theme of the top-right pacts board."""
+        theme = get_theme(self.current_theme_index)
+        is_light = theme.clear_color in (7, 15, 6, 11, 14) or getattr(theme, "id", 0) in (7, 15)
+        kp = theme.get_kairos_palette()
+        box_bg = 7 if is_light else 0
+        box_border = 0 if is_light else (kp.border_inner if kp.border_inner != 0 else 1)
+        border_sub = 5 if is_light else (3 if kp.border_inner != 3 else 1)
+
+        hdr_col = 0 if is_light else 11
+        ctrl_col = 0 if is_light else 10
+        pact_col = 0 if is_light else 9
+        metric_col = 0 if is_light else 7
+
         box_x = 20
         box_w = 560
-        box_h = 148
+        box_h = 156
 
         if translucent and hasattr(pyxel, "dither"):
-            pyxel.dither(0.70)
-        pyxel.rect(box_x, box_y, box_w, box_h, 0)
+            pyxel.dither(0.50)
+        pyxel.rect(box_x, box_y, box_w, box_h, box_bg)
         if hasattr(pyxel, "dither"):
             pyxel.dither(1.0)
-        pyxel.rectb(box_x, box_y, box_w, box_h, 11)
-        pyxel.rectb(box_x + 1, box_y + 1, box_w - 2, box_h - 2, 3)
+        pyxel.rectb(box_x, box_y, box_w, box_h, box_border)
+        pyxel.rectb(box_x + 1, box_y + 1, box_w - 2, box_h - 2, border_sub)
 
         god_txt = "ON" if self.state.godmode else "OFF"
         bot_txt = "ON" if self.bot_mode else "OFF"
         rec_txt = f"{self.video_recorder.frames_recorded // 30}s" if self.video_recorder.is_recording else "OFF"
 
-        lines = [
-            (f"[`] DEV MODE: ON ({self.VERSION})", 11),
-            (f"[G] GOD MODE: {god_txt}", 10),
-            (f"[B] BOT MODE: {bot_txt}", 10),
-            (f"[V] VIDEO REC: {rec_txt}", 7),
-            ("[1-7] ADD PACTS: 1:PRI 2:GRE 3:LUS 4:ENV 5:GLU 6:WRA 7:SLO", 9),
-            ("[Q-U] REDUCE PACTS: Q:PRI W:GRE E:LUS R:ENV T:GLU Y:WRA U:SLO", 9),
-            ("[X] RETURN: TITLE MENU", 8),
+        lines_controls = [
+            (f"[`] DEV MODE: ON ({self.VERSION})", hdr_col),
+            (f"[G] GOD MODE: {god_txt}", ctrl_col),
+            (f"[B] BOT MODE: {bot_txt}", ctrl_col),
+            (f"[V] VIDEO REC: {rec_txt}", ctrl_col),
+            ("[1-7] ADD PACTS   |   [Q-U] REDUCE PACTS", pact_col),
         ]
 
-        for idx, (line_text, col) in enumerate(lines):
-            draw_text_scaled(box_x + 14, box_y + 10 + idx * 18, line_text, col, scale=2)
+        for idx, (line_text, col) in enumerate(lines_controls):
+            draw_text_scaled(box_x + 14, box_y + 8 + idx * 16, line_text, col, scale=2)
+
+        # Subtle divider between dev controls and simulation metrics
+        pyxel.line(box_x + 12, box_y + 92, box_x + box_w - 12, box_y + 92, box_border)
+
+        # Real-time simulation metrics (3 to 5 lines using smaller font scale=1)
+        px = self.entities.player.x
+        py = self.entities.player.y
+        vx = self.entities.player.vx
+        spd = self.state.scroll_speed
+        sp_m = self.state.speed_multiplier
+        spawn_m = self.state.spawn_rate_multiplier
+        n_sands = len(self.entities.sands)
+        n_shards = len(self.entities.shards)
+        st_name = self.state.current_state.name
+        greed_str = f"{self.state.greed_timer / 30.0:4.1f}s" if self.state.greed_active else "OFF"
+        elapsed = self.state.total_frames / 30.0
+
+        metric_lines = [
+            f"PLAYER: X={px:6.1f}  Y={py:6.1f}  VX={vx:+5.2f} | SCROLL SPD: {spd:4.1f} (x{sp_m:.2f})",
+            f"SPAWN: x{spawn_m:.2f} | SANDS: {n_sands:3d} | SHARDS: {n_shards:3d} | VIGNETTE: {self.state.vignette_radius:.0f}px",
+            f"STATE: {st_name:<7} | CHRONOS: {self.state.chronos_timer / 30.0:4.1f}s | KAIROS: {self.state.kairos_timer / 30.0:4.1f}s | TIME: {elapsed:5.1f}s",
+            f"GREED: {greed_str:<10} | PRIDE: LVL {self.state.pride_level} | SCORE: {self.state.score:,} (x{self.state.score_multiplier:.2f})",
+        ]
+
+        for m_idx, m_text in enumerate(metric_lines):
+            draw_text_scaled(box_x + 14, box_y + 98 + m_idx * 13, m_text, metric_col, scale=1)
 
     def draw_dev_overlay(self):
         """Render developer debug overlay at bottom of screen with translucent background."""
-        box_y = self.SCREEN_HEIGHT - 148 - 10
+        box_y = self.SCREEN_HEIGHT - 156 - 8
         self.draw_dev_box(box_y=box_y, translucent=True)
 
 
