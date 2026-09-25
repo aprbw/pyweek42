@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.2.0] - 2026-09-25
+### Changed
+- **Official Milestone Release v1.2.0**:
+  - Full consolidation and production release of all verified game mechanics, 10 aesthetic themes, 3-line menu buttons, enhanced accessibility controls, and performance optimizations.
+
 ## [v1.1.9] - 2026-09-25
 ### Added & Changed
 - **Main Menu 3-Line Buttons**:
