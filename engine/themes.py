@@ -995,7 +995,7 @@ def bg_blood_moon_eclipse(pyxel, cam_x: int, prog: float, dist: int, screen_w: i
 def bg_zen_ink_wash(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool):
     """Theme 20: Zen Ink Wash / Sumi-e (Calligraphic brushstrokes and mountain mist washes)."""
     col_ink = 0 if is_greed else 5
-    col_seal = 8
+    col_seal = 0
 
     # Mountain ridges in monochrome wash
     spacing = 150
@@ -1248,15 +1248,15 @@ KAIROS_BLOOD_MOON_ECLIPSE = KairosPalette(
 )
 
 KAIROS_ZEN_INK_WASH = KairosPalette(
-    modal_bg=7, dimmer=5, border_outer=0, border_inner=8,
-    header_title=0, header_sub=8,
-    timer_bar_bg=15, timer_bar_fill=0, timer_bar_border=8,
-    card_bg=15, card_bg_selected=7, card_border=0, card_border_selected=8,
-    badge_bg=0, badge_text=7, badge_bg_selected=8, badge_text_selected=7,
-    selected_btn_bg=8, selected_btn_text=7,
-    sin_title=0, sin_title_selected=8, level_text=8, divider=5,
-    pro_label=3, pro_text=0, con_label=8, con_text=0,
-    footer_text=0, footer_warn=8,
+    modal_bg=7, dimmer=5, border_outer=0, border_inner=5,
+    header_title=0, header_sub=5,
+    timer_bar_bg=15, timer_bar_fill=0, timer_bar_border=5,
+    card_bg=15, card_bg_selected=7, card_border=0, card_border_selected=5,
+    badge_bg=0, badge_text=7, badge_bg_selected=5, badge_text_selected=7,
+    selected_btn_bg=0, selected_btn_text=7,
+    sin_title=0, sin_title_selected=5, level_text=5, divider=5,
+    pro_label=0, pro_text=0, con_label=5, con_text=0,
+    footer_text=0, footer_warn=0,
 )
 
 
@@ -1439,10 +1439,10 @@ ALL_THEMES: List[Theme] = [
         id=8,
         name="ZEN INK WASH (SUMI-E)",
         clear_color=7,
-        greed_clear_color=2,
-        sand=SandPalette(body=9, border=0, glint=10, shadow=5, fat_body=9, fat_border=0, fat_glint=10),
+        greed_clear_color=0,
+        sand=SandPalette(body=0, border=5, glint=7, shadow=5, fat_body=0, fat_border=5, fat_glint=7),
         shard=ShardPalette(facet=0, border=5, glint=7, shadow=5, fat_facet=0, fat_border=0),
-        hourglass=HourglassPalette(caps=0, cap_hl=5, cap_rivet=8, glass_walls=5, waist_neck=0, sand_a=9, sand_b=0, shadow=5),
+        hourglass=HourglassPalette(caps=0, cap_hl=7, cap_rivet=5, glass_walls=5, waist_neck=0, sand_a=0, sand_b=5, shadow=5),
         render_bg=bg_zen_ink_wash,
         kairos=KAIROS_ZEN_INK_WASH,
     ),
@@ -1452,9 +1452,9 @@ ALL_THEMES: List[Theme] = [
         name="PASTEL SAKURA",
         clear_color=14,
         greed_clear_color=2,
-        sand=SandPalette(body=10, border=14, glint=7, shadow=2, fat_body=10, fat_border=14, fat_glint=7),
+        sand=SandPalette(body=11, border=3, glint=7, shadow=3, fat_body=11, fat_border=3, fat_glint=7),
         shard=ShardPalette(facet=8, border=7, glint=15, shadow=2, fat_facet=8, fat_border=7),
-        hourglass=HourglassPalette(caps=7, cap_hl=15, cap_rivet=10, glass_walls=7, waist_neck=14, sand_a=10, sand_b=15, shadow=2),
+        hourglass=HourglassPalette(caps=7, cap_hl=15, cap_rivet=11, glass_walls=7, waist_neck=14, sand_a=11, sand_b=3, shadow=2),
         render_bg=bg_pastel_sakura,
         kairos=KAIROS_PASTEL_SAKURA,
     ),

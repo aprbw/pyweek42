@@ -999,13 +999,13 @@ def test_dev_mode_title_screen_version_display():
 
         # In non-dev mode, title screen does not show [DEV MODE]
         app.draw_title_screen()
-        assert not any("VERSION:" in t and "[DEV MODE]" in t for t in drawn_texts)
+        assert not any("DEV MODE: ON" in t for t in drawn_texts)
 
-        # In dev mode, title screen shows VERSION v0.9.0 [DEV MODE]
+        # In dev mode, title screen shows [`] DEV MODE: ON (v1.1.3)
         app.dev_mode = True
         drawn_texts.clear()
         app.draw_title_screen()
-        assert any(f"VERSION: {app.VERSION} [DEV MODE]" in t for t in drawn_texts)
+        assert any(f"DEV MODE: ON ({app.VERSION})" in t for t in drawn_texts)
     finally:
         main.draw_text_scaled = orig_draw
 
@@ -1078,7 +1078,7 @@ def test_dev_mode_bottom_menu_shows_invulnerability_shortcut():
     try:
         main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2: drawn_texts.append(s)
         app.draw_dev_overlay()
-        assert any("SHORTCUT: [I] INVULNERABILITY" in t for t in drawn_texts)
+        assert any("[G] GOD MODE:" in t for t in drawn_texts)
     finally:
         main.draw_text_scaled = orig_draw
 
@@ -2397,30 +2397,35 @@ def test_v111_title_screen_layout_and_elements():
         # Check logo and author
         assert any("GRAIN OF DOUBT" in t for t in drawn_texts)
         assert any("BY ARIAN PRABOWO" in t for t in drawn_texts)
-        assert any("[L] LORE & LEARN TO PLAY" in t for t in drawn_texts)
+        # Check controls split across multiple lines with square brackets
+        assert any("[A] / [D] : KEYBOARD" in t for t in drawn_texts)
+        assert any("[LEFT] / [RIGHT] ARROWS : KEYBOARD" in t for t in drawn_texts)
+        assert any("[D-PAD] / [THUMBSTICK] : CONTROLLER" in t for t in drawn_texts)
+        assert any("[LEFT] / [RIGHT] ON-SCREEN : TOUCH" in t for t in drawn_texts)
 
-        # Check 10 Themes section
-        assert any("10 THEMES" in t for t in drawn_texts)
-        assert not any("10 DIVERGENT THEMES" in t for t in drawn_texts)
+        # Check Select Themes section without '10 THEMES' and without 'ACTIVE'
+        assert any("SELECT THEMES" in t for t in drawn_texts)
+        assert not any("10 THEMES" in t for t in drawn_texts)
         assert any("[,] PREV   |   [.] NEXT" in t for t in drawn_texts)
-        assert not any("[0-9] SELECT" in t for t in drawn_texts)
-        assert any("ACTIVE [1/10]: DUNES IN THE COSMIC HOURGLASS" in t for t in drawn_texts)
+        assert any("(1/10) DUNES IN THE COSMIC HOURGLASS" in t for t in drawn_texts)
+        assert not any("ACTIVE" in t for t in drawn_texts)
 
-        # Check shortcuts
-        assert any("[L] LORE & LEARN TO PLAY   |   [X] QUIT" in t for t in drawn_texts)
-        assert not any("[SPACE] START" in t for t in drawn_texts)
+        # Check shortcuts (1 key per line)
+        assert any("[L] LORE & LEARN TO PLAY" in t for t in drawn_texts)
+        assert any("[X] QUIT GAME" in t for t in drawn_texts)
 
         # Check photosensitivity warning and start prompt
         assert any("PHOTOSENSITIVITY WARNING" in t for t in drawn_texts)
         assert any("Switch to PRO MODE" in t for t in drawn_texts)
+        assert not any("monochrome blueprint" in t for t in drawn_texts)
         assert any("PRESS ARROWS OR TOUCH BUTTONS TO START" in t for t in drawn_texts)
 
         # Dev mode dedicated box test
         app.dev_mode = True
         drawn_texts.clear()
         app.draw_title_screen()
-        assert any("VERSION: v1.1.2 [DEV MODE]" in t for t in drawn_texts)
-        assert any("[I] GODMODE" in t for t in drawn_texts)
+        assert any(f"DEV MODE: ON ({app.VERSION})" in t for t in drawn_texts)
+        assert any("[G] GOD MODE:" in t for t in drawn_texts)
     finally:
         main.draw_text_scaled = orig_draw
 
@@ -2434,56 +2439,71 @@ def test_multi_page_lore_navigation_and_content():
     app = GrainOfDoubtApp(headless=True)
     app.state.current_state = GameState.LORE
     assert app.lore_page == 0
-    assert app.MAX_LORE_PAGES == 4
+    assert app.MAX_LORE_PAGES == 5
 
     drawn_texts = []
     orig_draw = main.draw_text_scaled
     try:
         main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2: drawn_texts.append(s)
 
-        # PAGE 0 (Page 1/4): Narrative Premise
+        # PAGE 0 (Page 1/5): Premise & Meaning of Borrowed Time
         app.lore_page = 0
         drawn_texts.clear()
         app.draw_lore_screen()
-        assert any("LORE & LEARN [1/4]" in t for t in drawn_texts)
-        assert any("PYWEEK 42 (SEP 2026)" in t for t in drawn_texts)
+        assert any("LORE & LEARN [1/5]" in t for t in drawn_texts)
+        assert any("THE MEANING OF 'BORROWED TIME'" in t for t in drawn_texts)
         assert any("BORROWED TIME" in t for t in drawn_texts)
         assert any("NARRATIVE PREMISE" in t for t in drawn_texts)
-        assert any("UNSTOPPABLE DOWNWARD DESCENT" in t for t in drawn_texts)
-        assert any("GRAIN OF DOUBT" in t for t in drawn_texts)
-        # MUST NOT mention Ecclesiastes on lore screen
+        assert any("WHY 'GRAIN OF DOUBT'?" in t for t in drawn_texts)
         assert not any("ECCLESIASTES" in t.upper() for t in drawn_texts)
 
-        # PAGE 1 (Page 2/4): Chronos vs Kairos
+        # PAGE 1 (Page 2/5): Cosmology & Mechanics (Lore first)
         app.lore_page = 1
         drawn_texts.clear()
         app.draw_lore_screen()
-        assert any("LORE & LEARN [2/4]" in t for t in drawn_texts)
+        assert any("LORE & LEARN [2/5]" in t for t in drawn_texts)
+        assert any("THE PRICE OF SURVIVAL" in t for t in drawn_texts)
         assert any("CHRONOS" in t for t in drawn_texts)
         assert any("KAIROS" in t for t in drawn_texts)
-        assert any("PREDATORY DEBT" in t for t in drawn_texts)
+        assert any("FAUSTIAN PACTS (IN GENERAL)" in t for t in drawn_texts)
         assert not any("ECCLESIASTES" in t.upper() for t in drawn_texts)
 
-        # PAGE 2 (Page 3/4): Faustian Pacts
+        # PAGE 2 (Page 3/5): Faustian Pacts Part 1
         app.lore_page = 2
         drawn_texts.clear()
         app.draw_lore_screen()
-        assert any("LORE & LEARN [3/4]" in t for t in drawn_texts)
-        assert any("SEVEN FAUSTIAN PACTS" in t for t in drawn_texts)
+        assert any("LORE & LEARN [3/5]" in t for t in drawn_texts)
+        assert any("FAUSTIAN PACTS (PART 1" in t for t in drawn_texts)
         assert any("1. PRIDE" in t for t in drawn_texts)
         assert any("2. GREED" in t for t in drawn_texts)
-        assert any("COMPOUNDING DECAY" in t for t in drawn_texts)
+        assert any("3. LUST" in t for t in drawn_texts)
+        assert any("4. ENVY" in t for t in drawn_texts)
         assert not any("ECCLESIASTES" in t.upper() for t in drawn_texts)
 
-        # PAGE 3 (Page 4/4): Themes & E-Reader Stealth Mode
+        # PAGE 3 (Page 4/5): Faustian Pacts Part 2 & Decay
         app.lore_page = 3
         drawn_texts.clear()
         app.draw_lore_screen()
-        assert any("LORE & LEARN [4/4]" in t for t in drawn_texts)
+        assert any("LORE & LEARN [4/5]" in t for t in drawn_texts)
+        assert any("FAUSTIAN PACTS (PART 2" in t for t in drawn_texts)
+        assert any("5. GLUTTONY" in t for t in drawn_texts)
+        assert any("6. WRATH" in t for t in drawn_texts)
+        assert any("7. SLOTH" in t for t in drawn_texts)
+        assert any("COMPOUNDING DECAY" in t for t in drawn_texts)
+        assert not any("ECCLESIASTES" in t.upper() for t in drawn_texts)
+
+        # PAGE 4 (Page 5/5): Themes, Pro Mode, E-Reader & Sakura Dedication
+        app.lore_page = 4
+        drawn_texts.clear()
+        app.draw_lore_screen()
+        assert any("LORE & LEARN [5/5]" in t for t in drawn_texts)
         assert any("10 DIVERGENT AESTHETIC THEMES" in t for t in drawn_texts)
         assert any("PRO MODE" in t for t in drawn_texts)
+        assert not any("monochrome blueprint" in t for t in drawn_texts)
         assert any("E-READER STEALTH MODE" in t for t in drawn_texts)
         assert any("PhD Comics" in t for t in drawn_texts)
+        assert any("SAKURA DEDICATION" in t for t in drawn_texts)
+        assert any("twin sister, girlfriend, and wife" in t for t in drawn_texts)
         assert not any("ECCLESIASTES" in t.upper() for t in drawn_texts)
     finally:
         main.draw_text_scaled = orig_draw
@@ -2669,5 +2689,175 @@ def test_v112_wrath_2k_radius_and_sloth_horizontal_grain_pull():
     assert g_right.vx < 0, "Sand on right must accelerate leftward (-X) toward player"
     assert g_right.burst_ax < 0
     assert g_right.burst_ay == 0.0, "Sand Y-axis acceleration must be zero (X-axis only!)"
+
+
+def test_v113_comprehensive_feedback_validation():
+    """Verify all v1.1.3 2do.md user requirements:
+    1. God mode toggle via [G] key in dev mode.
+    2. Title screen controls formatted with square brackets on 4 lines.
+    3. Select Themes header without '10' and without 'ACTIVE', with normal parentheses '(?/10)'.
+    4. Shortcuts 1 key per line.
+    5. Photosensitivity does not claim monochrome.
+    6. Dev mode box format: [key] NAME: STATS on all lines without theme.
+    7. Sumi-e completely BnW (no color 8 in seal or kairos palette).
+    8. Pastel Sakura leaf-green sand (body 11, border 3) and high-contrast HUD font colors.
+    9. Game over screen: 'HOURGLASS SHATTERED' centered at x=130, no 'BY ARIAN PRABOWO', multi-line prompts.
+    10. 5-Page Lore manual: borrowed time explained first on page 1, lore before mechanics on page 2,
+        scale=2 PRO/CON on pages 3 and 4, Sakura dedication to twin sister/girlfriend/wife on page 5,
+        no [X] on navigation arrow line, strict word wrap (all lines <= 41 chars at scale=2).
+    """
+    import pyxel
+    import main
+    from main import GrainOfDoubtApp, get_text_width_5x7
+    from engine.themes import get_theme, ALL_THEMES, KAIROS_ZEN_INK_WASH
+    from engine.state import GameState
+
+    app = GrainOfDoubtApp(headless=True)
+    assert app.VERSION == "v1.1.3"
+    assert app.MAX_LORE_PAGES == 5
+
+    # 1. God mode toggle via [G]
+    app.dev_mode = True
+    app.state.godmode = False
+    orig_btnp = pyxel.btnp
+    try:
+        # Simulate pressing KEY_G
+        pyxel.btnp = lambda k: k == pyxel.KEY_G
+        app.update()
+        assert app.state.godmode is True, "Pressing [G] in dev mode must enable godmode!"
+        app.update()
+        assert app.state.godmode is False, "Pressing [G] again must toggle godmode off!"
+    finally:
+        pyxel.btnp = orig_btnp
+
+    # 2-6. Title screen layout checks
+    drawn_calls = []
+    orig_scaled = main.draw_text_scaled
+    orig_centered = main.draw_text_centered
+    try:
+        main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2: drawn_calls.append((x, y, s, col, scale))
+        main.draw_text_centered = lambda y, s, col, scale=1, img_bank=2: drawn_calls.append(((600 - get_text_width_5x7(s, scale)) // 2, y, s, col, scale))
+
+        app.dev_mode = True
+        app.draw_title_screen()
+        texts = [c[2] for c in drawn_calls]
+
+        # Square brackets on controls
+        assert any("[A] / [D] : KEYBOARD" in t for t in texts)
+        assert any("[LEFT] / [RIGHT] ARROWS : KEYBOARD" in t for t in texts)
+        assert any("[D-PAD] / [THUMBSTICK] : CONTROLLER" in t for t in texts)
+        assert any("[LEFT] / [RIGHT] ON-SCREEN : TOUCH" in t for t in texts)
+
+        # Themes header and parentheses
+        assert any("SELECT THEMES" in t for t in texts)
+        assert not any("10 THEMES" in t for t in texts)
+        assert not any("ACTIVE" in t for t in texts)
+        assert any(f"({app.current_theme_index + 1}/10)" in t for t in texts)
+
+        # Shortcuts 1 key per line
+        assert any("[L] LORE & LEARN TO PLAY" in t for t in texts)
+        assert any("[X] QUIT GAME" in t for t in texts)
+        assert not any("[L] LORE & LEARN TO PLAY   |" in t for t in texts)
+
+        # Photosensitivity does not claim monochrome
+        assert not any("monochrome blueprint" in t for t in texts)
+        assert any("high-contrast clinical view" in t for t in texts)
+
+        # Dev mode box format [key] NAME: STATS without theme
+        dev_lines = [t for t in texts if "[`]" in t or "[G]" in t or "[B]" in t or "[V]" in t or "[1-7]" in t]
+        assert len(dev_lines) >= 4
+        assert any(f"[`] DEV MODE: ON ({app.VERSION})" in t for t in dev_lines)
+        assert any("[G] GOD MODE:" in t for t in dev_lines)
+        assert any("[B] BOT MODE:" in t for t in dev_lines)
+        assert any("[1-7] ADD PACT" in t for t in dev_lines)
+        assert not any("THEME" in t for t in dev_lines)
+
+        # 7. Sumi-e completely BnW
+        t_sumie = get_theme(8)
+        assert t_sumie.sand.body in (0, 5, 7)
+        assert t_sumie.sand.border in (0, 5, 7)
+        assert t_sumie.clear_color in (0, 7)
+        assert t_sumie.greed_clear_color == 0
+        # Kairos palette entries must not contain color 8 (red)
+        for field in ("modal_bg", "dimmer", "border_outer", "border_inner", "header_title", "header_sub",
+                      "timer_bar_bg", "timer_bar_fill", "timer_bar_border", "card_bg", "card_bg_selected",
+                      "card_border", "card_border_selected", "badge_bg", "badge_text", "badge_bg_selected",
+                      "badge_text_selected", "selected_btn_bg", "selected_btn_text", "sin_title",
+                      "sin_title_selected", "level_text", "divider", "pro_label", "pro_text", "con_label",
+                      "con_text", "footer_text", "footer_warn"):
+            val = getattr(KAIROS_ZEN_INK_WASH, field)
+            assert val != 8, f"KAIROS_ZEN_INK_WASH.{field} is {val}, must not be red 8 in BnW mode!"
+
+        # 8. Pastel Sakura leaf-green sand and HUD contrast colors
+        t_sakura = get_theme(9)
+        assert t_sakura.sand.body == 11, "Pastel Sakura sand body must be leaf green (11)"
+        assert t_sakura.sand.border == 3, "Pastel Sakura sand border must be dark leaf green (3)"
+        assert t_sakura.hourglass.sand_a == 11
+        assert t_sakura.hourglass.sand_b == 3
+
+        # In HUD, Sakura is recognized as light theme
+        drawn_calls.clear()
+        app.current_theme_index = 9
+        app.draw_hud()
+        hud_texts = [c[2] for c in drawn_calls]
+        assert any("FAUSTIAN PACTS" in t for t in hud_texts)
+        # Check pact colors in light mode (unselected uses 0 black font, active uses 8 red)
+        for c in drawn_calls:
+            if "1. Pride" in c[2]:
+                assert c[3] == 0, f"Unselected pact font color in Sakura HUD must be 0 (Black), got {c[3]}"
+
+        # 9. Game Over Screen checks
+        drawn_calls.clear()
+        app.state.current_state = GameState.GAMEOVER
+        app.state.death_reason = "Shattered by glass"
+        app.game_over_timer = 90
+        app.bot_mode = False
+        app.draw_game_over_screen()
+
+        # Check 'HOURGLASS SHATTERED' centered at x=130
+        title_calls = [c for c in drawn_calls if c[2] == "HOURGLASS SHATTERED"]
+        assert len(title_calls) == 1
+        assert title_calls[0][0] == 130, f"HOURGLASS SHATTERED must be centered at x=130, got {title_calls[0][0]}"
+
+        # Check 'BY ARIAN PRABOWO' removed from game over
+        go_texts = [c[2] for c in drawn_calls]
+        assert not any("BY ARIAN PRABOWO" in t for t in go_texts), "BY ARIAN PRABOWO must be removed from Game Over screen"
+
+        # Check multi-line prompt
+        assert any("PRESS ANY KEY TO RESTART" in t for t in go_texts)
+        assert any("[X] RETURN TO MENU" in t for t in go_texts)
+        assert not any("PRESS ANY KEY TO RESTART |" in t for t in go_texts)
+
+        # 10. 5-Page Lore Manual word wrap and narrative checks
+        app.state.current_state = GameState.LORE
+        for page in range(5):
+            app.lore_page = page
+            drawn_calls.clear()
+            app.draw_lore_screen()
+            # Verify no line exceeds printable area (at scale=2, max chars is 42)
+            for x, y, s, col, scale in drawn_calls:
+                if scale == 2 and not s.startswith("GRAIN OF DOUBT : LORE"):
+                    assert len(s) <= 42, f"Page {page+1} string '{s}' length {len(s)} exceeds 42 chars!"
+                w = get_text_width_5x7(s, scale)
+                assert x + w <= 576, f"Page {page+1} text '{s}' right edge {x+w} exceeds container width 576!"
+
+            # Bottom arrow navigation must not contain [X]
+            nav_lines = [c[2] for c in drawn_calls if "[A / LEFT]" in c[2] or "[D / RIGHT]" in c[2]]
+            for nl in nav_lines:
+                assert "[X]" not in nl, f"Arrow line '{nl}' must not contain [X]"
+
+        # Page 5 Sakura dedication check
+        app.lore_page = 4
+        drawn_calls.clear()
+        app.draw_lore_screen()
+        p5_texts = [c[2] for c in drawn_calls]
+        assert any("twin sister, girlfriend, and wife" in t for t in p5_texts)
+        assert any("who happen to be the exact same person" in t for t in p5_texts)
+        assert any("falling petals, and leaf-green sand" in t for t in p5_texts)
+
+    finally:
+        main.draw_text_scaled = orig_scaled
+        main.draw_text_centered = orig_centered
+
 
 

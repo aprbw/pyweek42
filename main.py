@@ -282,7 +282,7 @@ def is_dev_environment() -> bool:
 
 
 class GrainOfDoubtApp:
-    VERSION: str = "v1.1.2"
+    VERSION: str = "v1.1.3"
     SCREEN_WIDTH: int = 600
     SCREEN_HEIGHT: int = 800
 
@@ -319,7 +319,7 @@ class GrainOfDoubtApp:
         self.current_theme_index: int = 0
         self.theme_banner_timer: int = 0
         self.lore_page: int = 0
-        self.MAX_LORE_PAGES: int = 4
+        self.MAX_LORE_PAGES: int = 5
 
         # Cosmic void background stars (parallax)
         self.stars: List[List[float]] = []
@@ -428,8 +428,8 @@ class GrainOfDoubtApp:
         if self.dev_mode and pyxel.btnp(pyxel.KEY_V):
             self.video_recorder.toggle(pyxel)
 
-        # Toggle Invulnerability (God Mode) with 'I' key (dev mode only)
-        if self.dev_mode and pyxel.btnp(pyxel.KEY_I):
+        # Toggle Invulnerability (God Mode) with 'G' key (with 'I' fallback, dev mode only)
+        if self.dev_mode and (pyxel.btnp(pyxel.KEY_G) or pyxel.btnp(pyxel.KEY_I)):
             self.state.godmode = not self.state.godmode
 
         # In Dev Mode: Number keys 1 to 7 apply fixed pacts directly (Canonical Order)
@@ -1140,12 +1140,12 @@ class GrainOfDoubtApp:
             return
 
         # Transparency & theme contrast adaptation for floating HUD elements
-        is_light = theme.clear_color in (7, 15, 6, 11) or getattr(theme, "id", 0) in (7, 15)
+        is_light = theme.clear_color in (7, 15, 6, 11, 14) or getattr(theme, "id", 0) in (7, 15)
         kp = theme.get_kairos_palette()
         box_bg = 7 if is_light else 0
         box_border = 0 if is_light else (kp.border_inner if kp.border_inner != 0 else 1)
         text_col = 0 if is_light else 7
-        title_col = 4 if is_light else 6
+        title_col = 0 if is_light else 10
         num_col = 0 if is_light else 10
         flash_time = (pyxel.frame_count // 15) % 2 == 0
 
@@ -1196,7 +1196,6 @@ class GrainOfDoubtApp:
             draw_text_scaled(540, 14, mult_str, 8 if is_light else 9, scale=2)
 
         # 4. Vertical Pacts List in Catholic Canonical Order at Top Right (All 7 always listed)
-        # 4. Vertical Pacts List at Top Right (All 7 always listed)
         pacts_box_w = 205
         pacts_box_h = 140
         pacts_box_x = self.SCREEN_WIDTH - pacts_box_w - 10
@@ -1208,8 +1207,8 @@ class GrainOfDoubtApp:
             k = self.bargains.selection_counts.get(sin, 0)
             row_y = pacts_box_y + 22 + idx * 16
             sin_lbl = sin.name.capitalize()
-            # In dark themes, use vibrant Cyan (12) when unselected so text doesn't blend into dark grid
-            col = (8 if is_light else 10) if k > 0 else (4 if is_light else 12)
+            # High-contrast font colors: Black on white in light themes, White on dark in dark themes
+            col = (8 if is_light else 10) if k > 0 else (0 if is_light else 7)
             # Draw color swatch matching the background of the pact card
             sin_col = SIN_CARD_COLORS.get(sin, 1)
             pyxel.rect(pacts_box_x + 5, row_y + 2, 4, 11, sin_col)
@@ -1640,26 +1639,27 @@ class GrainOfDoubtApp:
         draw_text_centered(144, "COLLECT GOLDEN SAND FOR POINTS", 10, scale=2)
         draw_text_centered(162, "DODGE LETHAL FALLING GLASS SHARDS", 8, scale=2)
 
-        # Controls & 10 Themes box (Clean, elevated positioning without redundant plaque)
-        pyxel.rect(40, 202, 520, 226, 1)
-        pyxel.rectb(40, 202, 520, 226, 5)
+        # Controls & Themes box (Clean, elevated positioning without redundant plaque)
+        pyxel.rect(40, 196, 520, 234, 1)
+        pyxel.rectb(40, 196, 520, 234, 5)
 
-        draw_text_scaled(60, 214, "CONTROLS", 10, scale=2)
-        draw_text_scaled(60, 234, "A / D  or  LEFT / RIGHT ARROWS", 7, scale=2)
-        draw_text_scaled(60, 252, "Steer descent to catch sand & dodge glass", 6, scale=2)
-        if self.is_mobile:
-            draw_text_scaled(60, 270, "TOUCH: Tap left or right button to steer", 6, scale=2)
+        draw_text_scaled(60, 206, "CONTROLS", 10, scale=2)
+        draw_text_scaled(60, 224, "[A] / [D] : KEYBOARD", 7, scale=2)
+        draw_text_scaled(60, 242, "[LEFT] / [RIGHT] ARROWS : KEYBOARD", 7, scale=2)
+        draw_text_scaled(60, 260, "[D-PAD] / [THUMBSTICK] : CONTROLLER", 7, scale=2)
+        draw_text_scaled(60, 278, "[LEFT] / [RIGHT] ON-SCREEN : TOUCH", 7, scale=2)
 
-        # 1 line break before 10 Themes
-        draw_text_scaled(60, 296, "10 THEMES", 10, scale=2)
-        draw_text_scaled(60, 316, "[,] PREV   |   [.] NEXT", 7, scale=2)
+        # 1 line break before Themes
+        draw_text_scaled(60, 302, "SELECT THEMES", 10, scale=2)
+        draw_text_scaled(60, 320, "[,] PREV   |   [.] NEXT", 7, scale=2)
         theme = get_theme(self.current_theme_index)
         act_col = 10 if (self.current_theme_index in (1, 2) or getattr(theme, "is_reader_mode", False)) else 9
-        draw_text_scaled(60, 336, f"ACTIVE [{self.current_theme_index + 1}/10]: {theme.name}", act_col, scale=2)
+        draw_text_scaled(60, 338, f"({self.current_theme_index + 1}/10) {theme.name}", act_col, scale=2)
 
-        # 1 line break before Shortcuts (SHORTCUTS is Yellow 10, matching CONTROLS & 10 THEMES)
-        draw_text_scaled(60, 370, "SHORTCUTS", 10, scale=2)
-        draw_text_scaled(60, 390, "[L] LORE & LEARN TO PLAY   |   [X] QUIT", 7, scale=2)
+        # 1 line break before Shortcuts (1 key per line)
+        draw_text_scaled(60, 362, "SHORTCUTS", 10, scale=2)
+        draw_text_scaled(60, 380, "[L] LORE & LEARN TO PLAY", 7, scale=2)
+        draw_text_scaled(60, 398, "[X] QUIT GAME", 7, scale=2)
 
         # Photosensitivity & Pro Mode suggestion directly above blinking start prompt
         pyxel.rect(40, 438, 520, 72, 0)
@@ -1667,7 +1667,7 @@ class GrainOfDoubtApp:
         # PHOTOSENSITIVITY WARNING is HUGE (scale=2)
         draw_text_centered(448, "PHOTOSENSITIVITY WARNING", 8, scale=2)
         draw_text_centered(472, "Rapid motion and flashing visuals in some themes.", 7, scale=1)
-        draw_text_centered(488, "Switch to PRO MODE (Themes 2 & 3) for calm monochrome blueprint.", 6, scale=1)
+        draw_text_centered(488, "Switch to PRO MODE (Themes 2 & 3) for calm high-contrast clinical view.", 6, scale=1)
 
         # Start prompt
         blink = (pyxel.frame_count // 12) % 2 == 0
@@ -1678,14 +1678,16 @@ class GrainOfDoubtApp:
 
         # Dedicated Dev Mode box at bottom when dev_mode is active
         if self.dev_mode:
-            pyxel.rect(40, 560, 520, 68, 0)
-            pyxel.rectb(40, 560, 520, 68, 11)
-            pyxel.rectb(42, 562, 516, 64, 3)
-            draw_text_scaled(56, 568, f"VERSION: {self.VERSION} [DEV MODE]  (Toggle: ` key)", 11, scale=2)
-            draw_text_scaled(56, 590, "[I] GODMODE  |  [B] BOT  |  [V] REC  |  [1-7] PACTS", 7, scale=2)
+            pyxel.rect(40, 558, 520, 84, 0)
+            pyxel.rectb(40, 558, 520, 84, 11)
+            pyxel.rectb(42, 560, 516, 80, 3)
             god_txt = "ON" if self.state.godmode else "OFF"
             bot_txt = "ON" if self.bot_mode else "OFF"
-            draw_text_scaled(56, 610, f"INVULN: {god_txt}  |  BOT: {bot_txt}  |  REDUCE: [Q-U]", 10, scale=1)
+            rec_txt = f"{self.video_recorder.frames_recorded // 30}s" if self.video_recorder.is_recording else "OFF"
+            draw_text_scaled(56, 566, f"[`] DEV MODE: ON ({self.VERSION})", 11, scale=2)
+            draw_text_scaled(56, 584, f"[G] GOD MODE: {god_txt}   |   [B] BOT MODE: {bot_txt}", 10, scale=2)
+            draw_text_scaled(56, 602, f"[V] VIDEO REC: {rec_txt}   |   [X] RETURN MENU", 7, scale=2)
+            draw_text_scaled(56, 620, "[1-7] ADD PACT (1-7)   |   [Q-U] REDUCE PACT", 9, scale=2)
 
         # Draw the 2 mobile buttons at bottom of title screen (mobile only)
         if self.is_mobile:
@@ -1705,204 +1707,259 @@ class GrainOfDoubtApp:
 
         # Header Title with dynamic Page Number
         draw_text_scaled(box_x + 24, box_y + 16, f"GRAIN OF DOUBT : LORE & LEARN [{self.lore_page + 1}/{self.MAX_LORE_PAGES}]", 10, scale=2)
-        if self.lore_page == 0:
-            draw_text_scaled(box_x + 24, box_y + 40, "PYWEEK 42 (SEP 2026) : THEME 'BORROWED TIME'", 6, scale=2)
-        elif self.lore_page == 1:
-            draw_text_scaled(box_x + 24, box_y + 40, "CHRONOS VS. KAIROS : DUAL-CLOCK ENGINE", 6, scale=2)
-        elif self.lore_page == 2:
-            draw_text_scaled(box_x + 24, box_y + 40, "THE SEVEN FAUSTIAN PACTS & DECAY", 6, scale=2)
-        else:
-            draw_text_scaled(box_x + 24, box_y + 40, "THEMES, PRO MODE & E-READER STEALTH", 6, scale=2)
+        subtitles = [
+            "THE PREMISE & BORROWED TIME",
+            "COSMOLOGY : CHRONOS & KAIROS",
+            "FAUSTIAN PACTS (PART 1: SINS 1-4)",
+            "FAUSTIAN PACTS (PART 2: SINS 5-7)",
+            "THEMES, PRO MODE & DEDICATION",
+        ]
+        draw_text_scaled(box_x + 24, box_y + 40, subtitles[self.lore_page], 6, scale=2)
         pyxel.line(box_x + 16, box_y + 60, box_x + box_w - 16, box_y + 60, 5)
 
         if self.lore_page == 0:
-            # PAGE 1: NARRATIVE PREMISE & HOURGLASS-CEPTION
-            draw_text_scaled(box_x + 24, box_y + 72, "1. THE NARRATIVE PREMISE", 10, scale=2)
-            p1_narrative = [
-                "You steer a fragile hourglass falling down",
-                "the cosmic neck of a colossal shattered",
-                "hourglass. Inside this ruin, your descent",
-                "embodies universal collapse.",
+            # PAGE 1: BORROWED TIME & NARRATIVE PREMISE
+            draw_text_scaled(box_x + 24, box_y + 72, "1. THE MEANING OF 'BORROWED TIME'", 10, scale=2)
+            p1_borrowed = [
+                "To live on 'borrowed time' is to survive",
+                "past natural limits on compounding debt.",
+                "Here, time is not a neutral backdrop;",
+                "it is a resource loaned against doom.",
+                "Every second survived is borrowed debt.",
             ]
-            for idx, line in enumerate(p1_narrative):
+            for idx, line in enumerate(p1_borrowed):
                 draw_text_scaled(box_x + 24, box_y + 96 + idx * 18, line, 7, scale=2)
 
-            pyxel.line(box_x + 16, box_y + 176, box_x + box_w - 16, box_y + 176, 5)
-            draw_text_scaled(box_x + 24, box_y + 188, "2. UNSTOPPABLE DOWNWARD DESCENT", 10, scale=2)
-            p1_descent = [
-                "Like falling sand, time moves only down.",
-                "Descent is absolute and relentless.",
-                "You can only steer laterally across hazards.",
+            pyxel.line(box_x + 16, box_y + 196, box_x + box_w - 16, box_y + 196, 5)
+            draw_text_scaled(box_x + 24, box_y + 206, "2. THE NARRATIVE PREMISE", 10, scale=2)
+            p1_narrative = [
+                "You steer a fragile falling hourglass",
+                "down the neck of a colossal shattered",
+                "cosmic hourglass. In this celestial ruin,",
+                "your fall mirrors cosmic entropy.",
+                "Like falling sand, motion flows only down.",
+                "Descent is absolute and unrelenting.",
             ]
-            for idx, line in enumerate(p1_descent):
-                draw_text_scaled(box_x + 24, box_y + 212 + idx * 18, line, 7, scale=2)
-            draw_text_scaled(box_x + 24, box_y + 270, "* Catch golden sand for points.", 10, scale=2)
-            draw_text_scaled(box_x + 24, box_y + 290, "* Dodge razor glass shards (-1 Heart).", 8, scale=2)
+            for idx, line in enumerate(p1_narrative):
+                draw_text_scaled(box_x + 24, box_y + 230 + idx * 18, line, 7, scale=2)
 
-            pyxel.line(box_x + 16, box_y + 318, box_x + box_w - 16, box_y + 318, 5)
-            draw_text_scaled(box_x + 24, box_y + 330, "3. WHY 'GRAIN OF DOUBT'?", 10, scale=2)
-            p1_title = [
-                "1. Sand grains are physical units of time.",
-                "2. 'A grain of doubt' is fatal hesitation.",
-                "3. In Kairos, choosing a mandatory curse",
-                "   induces agonizing panic.",
-                "   That single grain of doubt shatters",
-                "   your vessel.",
+            pyxel.line(box_x + 16, box_y + 348, box_x + box_w - 16, box_y + 348, 5)
+            draw_text_scaled(box_x + 24, box_y + 358, "3. WHY 'GRAIN OF DOUBT'?", 10, scale=2)
+            p1_doubt = [
+                "1. Sand grains measure passing time only",
+                "   within the context of an hourglass.",
+                "2. 'A grain of doubt' is a small pang of",
+                "   uncertainty or hesitation in crisis.",
+                "3. In fast descent, even a small grain",
+                "   of doubt causes fatal missteps and",
+                "   shatters your fragile glass vessel.",
             ]
-            for idx, line in enumerate(p1_title):
-                col = 6 if idx >= 4 else 7
-                draw_text_scaled(box_x + 24, box_y + 354 + idx * 18, line, col, scale=2)
+            for idx, line in enumerate(p1_doubt):
+                draw_text_scaled(box_x + 24, box_y + 382 + idx * 18, line, 6 if idx >= 4 else 7, scale=2)
 
-            pyxel.line(box_x + 16, box_y + 472, box_x + box_w - 16, box_y + 472, 5)
-            draw_text_scaled(box_x + 24, box_y + 484, "4. COMPETITION CONTEXT", 10, scale=2)
+            pyxel.line(box_x + 16, box_y + 518, box_x + box_w - 16, box_y + 518, 5)
+            draw_text_scaled(box_x + 24, box_y + 528, "4. COMPETITION CONTEXT", 10, scale=2)
             p1_context = [
                 "Built for PyWeek 42 in September 2026.",
                 "Theme: 'Borrowed Time' by Arian Prabowo.",
-                "Engineered in Python with Pyxel retro engine.",
+                "Crafted in Python with Pyxel retro engine.",
             ]
             for idx, line in enumerate(p1_context):
-                col = 9 if idx == 1 else (6 if idx == 2 else 7)
-                draw_text_scaled(box_x + 24, box_y + 508 + idx * 18, line, col, scale=2)
+                draw_text_scaled(box_x + 24, box_y + 552 + idx * 18, line, 9 if idx == 1 else 7, scale=2)
 
         elif self.lore_page == 1:
-            # PAGE 2: CHRONOS VS KAIROS & PREDATORY DEBT
-            draw_text_scaled(box_x + 24, box_y + 72, "1. CHRONOS (THE RELENTLESS FLOW)", 10, scale=2)
-            p2_chronos = [
-                "Chronos is continuous clock time (10.0s).",
-                "Descent kinematics stream uninterrupted.",
-                "Steer laterally across the void to harvest",
-                "sand and evade lethal glass hazards.",
+            # PAGE 2: COSMOLOGY & MECHANICS (LORE FIRST)
+            draw_text_scaled(box_x + 24, box_y + 72, "1. LORE: THE PRICE OF SURVIVAL", 10, scale=2)
+            p2_lore = [
+                "In the void, power is never granted free.",
+                "Living on borrowed time requires debts.",
+                "Every boon demands an immediate pact with",
+                "permanent structural decay.",
+                "You mortgage the future for seconds.",
             ]
-            for idx, line in enumerate(p2_chronos):
+            for idx, line in enumerate(p2_lore):
                 draw_text_scaled(box_x + 24, box_y + 96 + idx * 18, line, 7, scale=2)
 
-            pyxel.line(box_x + 16, box_y + 176, box_x + box_w - 16, box_y + 176, 5)
-            draw_text_scaled(box_x + 24, box_y + 188, "2. KAIROS (THE CIRCUIT BREAKER)", 10, scale=2)
+            pyxel.line(box_x + 16, box_y + 196, box_x + box_w - 16, box_y + 196, 5)
+            draw_text_scaled(box_x + 24, box_y + 206, "2. CHRONOS : THE RELENTLESS STREAM", 10, scale=2)
+            p2_chronos = [
+                "Chronos is continuous clock time (10.0s).",
+                "Descent kinematics flow uninterrupted.",
+                "Steer laterally across hazards to collect",
+                "golden sand grains and evade razor glass.",
+            ]
+            for idx, line in enumerate(p2_chronos):
+                draw_text_scaled(box_x + 24, box_y + 230 + idx * 18, line, 7, scale=2)
+
+            pyxel.line(box_x + 16, box_y + 312, box_x + box_w - 16, box_y + 312, 5)
+            draw_text_scaled(box_x + 24, box_y + 322, "3. KAIROS : THE SACRED CROSSROADS", 10, scale=2)
             p2_kairos = [
-                "Every 10.0 seconds, descent freezes",
-                "in an acute panic circuit breaker.",
-                "You have 10.0 seconds to choose between",
-                "two randomly drawn Faustian pacts.",
-                "Hesitate past 10.0s, and you shatter!",
+                "Every 10.0 seconds, descent freezes in",
+                "an acute panic circuit breaker: Kairos.",
+                "You have 10.0s to choose between two",
+                "Faustian pacts. Hesitate too long, and",
+                "time expires: your hourglass shatters!",
             ]
             for idx, line in enumerate(p2_kairos):
                 col = 8 if idx == 4 else 7
-                draw_text_scaled(box_x + 24, box_y + 212 + idx * 18, line, col, scale=2)
+                draw_text_scaled(box_x + 24, box_y + 346 + idx * 18, line, col, scale=2)
 
-            pyxel.line(box_x + 16, box_y + 312, box_x + box_w - 16, box_y + 312, 5)
-            draw_text_scaled(box_x + 24, box_y + 324, "3. BORROWED TIME AS PREDATORY DEBT", 10, scale=2)
-            p2_debt = [
-                "Power-ups are never free gifts.",
-                "Living on borrowed time means surviving",
-                "strictly on compounding deferrals.",
-                "Every pact pairs an immediate boon (PRO)",
-                "with permanent structural decay (CON).",
-                "Like a predatory loan, you mortgage future",
-                "survival for a brief reprieve.",
+            pyxel.line(box_x + 16, box_y + 448, box_x + box_w - 16, box_y + 448, 5)
+            draw_text_scaled(box_x + 24, box_y + 458, "4. FAUSTIAN PACTS (IN GENERAL)", 10, scale=2)
+            p2_pacts = [
+                "Each pact pairs an immediate boon with",
+                "a permanent hazard. Identical sins",
+                "compound their curses exponentially.",
             ]
-            for idx, line in enumerate(p2_debt):
-                col = 10 if idx == 3 else (8 if idx == 4 else (6 if idx >= 5 else 7))
-                draw_text_scaled(box_x + 24, box_y + 348 + idx * 18, line, col, scale=2)
+            for idx, line in enumerate(p2_pacts):
+                draw_text_scaled(box_x + 24, box_y + 482 + idx * 18, line, 7, scale=2)
 
-            pyxel.line(box_x + 16, box_y + 484, box_x + box_w - 16, box_y + 484, 5)
-            draw_text_scaled(box_x + 24, box_y + 496, "4. KINEMATIC CONTROLS", 10, scale=2)
-            draw_text_scaled(box_x + 24, box_y + 520, "* A/D or ARROWS: Steer lateral motion.", 7, scale=2)
-            draw_text_scaled(box_x + 24, box_y + 540, "* TOUCH: Tap left or right arcade button.", 7, scale=2)
-            draw_text_scaled(box_x + 24, box_y + 560, "* KAIROS: Steer left or right to seal pact.", 9, scale=2)
+            pyxel.line(box_x + 16, box_y + 546, box_x + box_w - 16, box_y + 546, 5)
+            draw_text_scaled(box_x + 24, box_y + 556, "5. KINEMATIC CONTROLS", 10, scale=2)
+            draw_text_scaled(box_x + 24, box_y + 580, "* [A]/[D] or ARROWS : Steer motion.", 7, scale=2)
+            draw_text_scaled(box_x + 24, box_y + 600, "* TOUCH L/R BUTTONS : Steer motion.", 7, scale=2)
+            draw_text_scaled(box_x + 24, box_y + 620, "* KAIROS CROSSROADS : Choose pact.", 9, scale=2)
 
         elif self.lore_page == 2:
-            # PAGE 3: THE SEVEN FAUSTIAN PACTS
-            draw_text_scaled(box_x + 24, box_y + 72, "THE SEVEN FAUSTIAN PACTS", 10, scale=2)
-            pacts_data = [
-                ("1. PRIDE", "+Sand Clusters (Pairs/Triplets)", "-Compound Fall Speed (+25%)", 10),
-                ("2. GREED", "+Score Multiplier (x110% pts)", "-Lethal Borrowed Time Clock", 9),
+            # PAGE 3: FAUSTIAN PACTS (PART 1: SINS 1-4)
+            draw_text_scaled(box_x + 24, box_y + 72, "FAUSTIAN PACTS (PART 1)", 10, scale=2)
+            pacts_p1 = [
+                ("1. PRIDE", "+Sand Clusters (Pairs & Triplets)", "-Compound Fall Speed (+25%)", 10),
+                ("2. GREED", "+Score Multiplier (x110% Points)", "-Lethal Borrowed Time Clock", 9),
                 ("3. LUST", "+Permanent Sand Magnet Pull", "-Permanent Glass Hazard Magnet", 14),
-                ("4. ENVY", "+Tidal Pull of distant sand", "-Vision narrows into darkness", 11),
-                ("5. GLUTTONY", "+Fat Sand Grains (3x Value)", "-Monstrous Enlarged Shards", 4),
-                ("6. WRATH", "+1200px Kinetic Screen Blast", "-10.0s Zero Harvest Score", 8),
-                ("7. SLOTH", "+Hurls Hazards Down (Reprieve)", "-Heavy Steering Wave Drag", 12),
+                ("4. ENVY", "+Tidal Pull of Distant Sand", "-Vignette Darkness Narrows Vision", 11),
             ]
-            for idx, (pact_title, boon, curse, pcol) in enumerate(pacts_data):
-                py = box_y + 96 + idx * 46
-                pyxel.rect(box_x + 24, py + 2, 4, 34, pcol)
-                draw_text_scaled(box_x + 36, py, pact_title, 10, scale=2)
-                draw_text_scaled(box_x + 36, py + 18, f"PRO: {boon}", 7, scale=1)
-                draw_text_scaled(box_x + 36, py + 28, f"CON: {curse}", 8, scale=1)
+            for idx, (pact_title, boon, curse, pcol) in enumerate(pacts_p1):
+                py = box_y + 100 + idx * 70
+                pyxel.rect(box_x + 24, py + 2, 6, 50, pcol)
+                draw_text_scaled(box_x + 38, py, pact_title, 10, scale=2)
+                draw_text_scaled(box_x + 38, py + 18, f"PRO: {boon}", 11, scale=2)
+                draw_text_scaled(box_x + 38, py + 36, f"CON: {curse}", 8, scale=2)
 
-            pyxel.line(box_x + 16, box_y + 424, box_x + box_w - 16, box_y + 424, 5)
-            draw_text_scaled(box_x + 24, box_y + 436, "COMPOUNDING DECAY & INTEREST", 10, scale=2)
-            p3_decay = [
-                "Re-selecting identical sins compounds your ruin:",
-                "Boon(k)  = Boon0  * (0.75)^k (Diminishing)",
-                "Curse(k) = Curse0 * (1.50)^k (Exponential)",
-                "Greed Borrowed Time reduces your survival clock!",
+            pyxel.line(box_x + 16, box_y + 392, box_x + box_w - 16, box_y + 392, 5)
+            draw_text_scaled(box_x + 24, box_y + 404, "NARRATIVE NATURE OF SINS (1-4)", 10, scale=2)
+            p3_notes = [
+                "* PRIDE: You believe you can outrun sand;",
+                "  your descent accelerates relentlessly.",
+                "* GREED: Hunger for immense multipliers",
+                "  triggers lethal Borrowed Time clocks.",
+                "* LUST: Attracts riches magnetically,",
+                "  yet draws glass straight to your heart.",
+                "* ENVY: Pulls distant grains from afar,",
+                "  while creeping darkness blinds you.",
             ]
-            for idx, line in enumerate(p3_decay):
-                col = 10 if idx == 1 else (8 if idx == 2 else (9 if idx == 3 else 7))
-                draw_text_scaled(box_x + 24, box_y + 460 + idx * 18, line, col, scale=2)
+            for idx, line in enumerate(p3_notes):
+                col = 9 if idx in (0, 2, 4, 6) else 7
+                draw_text_scaled(box_x + 24, box_y + 428 + idx * 18, line, col, scale=2)
+
+        elif self.lore_page == 3:
+            # PAGE 4: FAUSTIAN PACTS (PART 2: SINS 5-7) & DECAY
+            draw_text_scaled(box_x + 24, box_y + 72, "FAUSTIAN PACTS (PART 2)", 10, scale=2)
+            pacts_p2 = [
+                ("5. GLUTTONY", "+Fat Sand Grains (3x Value)", "-Monstrous Enlarged Shards", 4),
+                ("6. WRATH", "+2000px Radial Shockwave Blast", "-10.0s Zero Harvest Score Penalty", 8),
+                ("7. SLOTH", "+Hurls Shards Downward Away", "-Heavy Steering Drag & Wave Drag", 12),
+            ]
+            for idx, (pact_title, boon, curse, pcol) in enumerate(pacts_p2):
+                py = box_y + 100 + idx * 70
+                pyxel.rect(box_x + 24, py + 2, 6, 50, pcol)
+                draw_text_scaled(box_x + 38, py, pact_title, 10, scale=2)
+                draw_text_scaled(box_x + 38, py + 18, f"PRO: {boon}", 11, scale=2)
+                draw_text_scaled(box_x + 38, py + 36, f"CON: {curse}", 8, scale=2)
+
+            pyxel.line(box_x + 16, box_y + 322, box_x + box_w - 16, box_y + 322, 5)
+            draw_text_scaled(box_x + 24, box_y + 334, "NARRATIVE NATURE OF SINS (5-7)", 10, scale=2)
+            p4_notes = [
+                "* GLUTTONY: Sand grains swell with value,",
+                "  yet glass hazards swell into monoliths.",
+                "* WRATH: Purges the screen in fury,",
+                "  yet blinds you to all score harvest.",
+                "* SLOTH: Banishes falling threats below,",
+                "  yet mires steering in sluggish drag.",
+            ]
+            for idx, line in enumerate(p4_notes):
+                col = 9 if idx in (0, 2, 4) else 7
+                draw_text_scaled(box_x + 24, box_y + 356 + idx * 18, line, col, scale=2)
+
+            pyxel.line(box_x + 16, box_y + 474, box_x + box_w - 16, box_y + 474, 5)
+            draw_text_scaled(box_x + 24, box_y + 486, "COMPOUNDING DECAY & PREDATORY DEBT", 10, scale=2)
+            p4_decay = [
+                "Re-selecting sins compounds your ruin:",
+                "Boon(k)  = Boon0 * (0.75)^k  (Diminish)",
+                "Curse(k) = Curse0 * (1.5)^k  (Compound)",
+                "Greed Borrowed Time cuts your clock:",
+                "Greed Clock = max(3.0s, 10.0s - 1.5s * k)",
+            ]
+            for idx, line in enumerate(p4_decay):
+                col = 10 if idx == 1 else (8 if idx == 2 else (9 if idx >= 3 else 7))
+                draw_text_scaled(box_x + 24, box_y + 510 + idx * 18, line, col, scale=2)
 
         else:
-            # PAGE 4: THEMES & E-READER STEALTH MODE
+            # PAGE 5: THEMES, PRO MODE & SAKURA DEDICATION
             draw_text_scaled(box_x + 24, box_y + 72, "1. 10 DIVERGENT AESTHETIC THEMES", 10, scale=2)
-            p4_themes = [
-                "Press [,] and [.] anytime to cycle themes.",
-                "10 handcrafted procedural aesthetics:",
-                "Dunes, Pro Mode, E-Reader, Glacial Crevasse,",
-                "Magma Caldera, Terminal Matrix, Sumi-e, Sakura.",
+            p5_themes = [
+                "Press [,] and [.] or [0-9] to select.",
+                "10 handcrafted procedural aesthetics with",
+                "unique physics, audio, and palettes:",
+                "Dune, Pro Light, Pro Dark, Reader Light,",
+                "Reader Dark, Glacial, Caldera, Cyber,",
+                "Sumi-e, and Pastel Sakura.",
             ]
-            for idx, line in enumerate(p4_themes):
+            for idx, line in enumerate(p5_themes):
                 draw_text_scaled(box_x + 24, box_y + 96 + idx * 18, line, 7, scale=2)
 
-            pyxel.line(box_x + 16, box_y + 176, box_x + box_w - 16, box_y + 176, 5)
-            draw_text_scaled(box_x + 24, box_y + 188, "2. PRO MODE (ACCESSIBILITY)", 10, scale=2)
-            p4_pro = [
-                "Themes 2 & 3: High-contrast monochrome blueprint.",
-                "Engineered for zero motion clutter and",
-                "photosensitive comfort with serene telemetry.",
+            pyxel.line(box_x + 16, box_y + 214, box_x + box_w - 16, box_y + 214, 5)
+            draw_text_scaled(box_x + 24, box_y + 224, "2. PRO MODE (ACCESSIBILITY)", 10, scale=2)
+            p5_pro = [
+                "Themes 2 & 3: Clinical high-contrast.",
+                "Zero motion clutter, dual countdown",
+                "borders, and photosensitive comfort.",
+                "(Photosensitive comfort; NOT monochrome.)",
             ]
-            for idx, line in enumerate(p4_pro):
-                draw_text_scaled(box_x + 24, box_y + 212 + idx * 18, line, 7, scale=2)
+            for idx, line in enumerate(p5_pro):
+                col = 9 if idx == 3 else 7
+                draw_text_scaled(box_x + 24, box_y + 248 + idx * 18, line, col, scale=2)
 
-            pyxel.line(box_x + 16, box_y + 276, box_x + box_w - 16, box_y + 276, 5)
-            draw_text_scaled(box_x + 24, box_y + 288, "3. E-READER STEALTH MODE", 10, scale=2)
-            p4_reader = [
-                "Themes 4 & 5: Disguises the game as serious",
-                "classic literature on warm paper or dark OLED.",
-                "",
-                "PURPOSE: Pretend you are reading serious",
-                "literature and not playing a game at work",
-                "or school!",
-                "",
-                "(Inspired by the classic PhD Comics",
-                "emergency panic button!)",
-                "",
-                "All gameplay HUDs are suppressed; score and",
-                "pacts are woven directly into scriptural prose.",
+            pyxel.line(box_x + 16, box_y + 330, box_x + box_w - 16, box_y + 330, 5)
+            draw_text_scaled(box_x + 24, box_y + 340, "3. E-READER STEALTH MODE", 10, scale=2)
+            p5_reader = [
+                "Themes 4 & 5: Classic literature look.",
+                "Warm paper or dark OLED night reading.",
+                "Play undetected at work or school!",
+                "(PhD Comics emergency button tribute!)",
+                "HUD is suppressed; stats woven into text.",
             ]
-            for idx, line in enumerate(p4_reader):
-                if idx in (3, 4, 5):
-                    col = 10
-                elif idx in (7, 8):
-                    col = 9
-                elif idx >= 9:
-                    col = 6
-                else:
-                    col = 7
+            for idx, line in enumerate(p5_reader):
+                col = 10 if idx == 2 else (9 if idx == 3 else 7)
+                draw_text_scaled(box_x + 24, box_y + 364 + idx * 18, line, col, scale=2)
+
+            pyxel.line(box_x + 16, box_y + 466, box_x + box_w - 16, box_y + 466, 5)
+            draw_text_scaled(box_x + 24, box_y + 476, "4. SAKURA DEDICATION", 10, scale=2)
+            p5_sakura = [
+                "Theme 10 (Pastel Sakura) is dedicated",
+                "to my twin sister, girlfriend, and wife--",
+                "who happen to be the exact same person!",
+                "",
+                "Featuring soothing cherry blossoms,",
+                "falling petals, and leaf-green sand.",
+            ]
+            for idx, line in enumerate(p5_sakura):
+                col = 14 if idx in (1, 2) else (10 if idx == 0 else 7)
                 if line:
-                    draw_text_scaled(box_x + 24, box_y + 312 + idx * 18, line, col, scale=2)
+                    draw_text_scaled(box_x + 24, box_y + 500 + idx * 18, line, col, scale=2)
 
-        # Navigation Footer on all pages (No repeated page number at the bottom)
+        # Navigation Footer on all pages (No [X] on the arrow line)
         pyxel.line(box_x + 16, box_y + 704, box_x + box_w - 16, box_y + 704, 5)
-        if self.lore_page == self.MAX_LORE_PAGES - 1:
-            draw_text_centered(box_y + 718, "[A / LEFT] PREV   |   [D / RIGHT] RETURN   |   [X] RETURN", 10, scale=2)
-        elif self.lore_page == 0:
-            draw_text_centered(box_y + 718, "[A / LEFT] PREV   |   [D / RIGHT] NEXT   |   [X] RETURN", 10, scale=2)
+        if self.lore_page == 0:
+            draw_text_centered(box_y + 718, "[D / RIGHT] NEXT", 10, scale=2)
+        elif self.lore_page == self.MAX_LORE_PAGES - 1:
+            draw_text_centered(box_y + 718, "[A / LEFT] PREV   |   [D / RIGHT] RETURN", 10, scale=2)
         else:
-            draw_text_centered(box_y + 718, "[A / LEFT] PREV   |   [D / RIGHT] NEXT   |   [X] RETURN", 10, scale=2)
+            draw_text_centered(box_y + 718, "[A / LEFT] PREV   |   [D / RIGHT] NEXT", 10, scale=2)
 
         blink = (pyxel.frame_count // 12) % 2 == 0
         p_col = 10 if blink else 7
-        draw_text_centered(box_y + 742, "PRESS [X] OR [RIGHT] ON LAST PAGE TO EXIT", p_col, scale=1)
+        draw_text_centered(box_y + 740, "[X] RETURN TO MENU", p_col, scale=2)
 
     def draw_game_over_screen(self):
         # Full-screen ambient dimmer overlay over background gameplay world
@@ -1917,50 +1974,51 @@ class GrainOfDoubtApp:
         pyxel.rectb(40, 60, 520, 680, 8)
         pyxel.rectb(44, 64, 512, 672, 2)
 
-        draw_text_scaled(186, 75, "HOURGLASS SHATTERED", 8, scale=3)
+        draw_text_centered(75, "HOURGLASS SHATTERED", 8, scale=3)
         if self.dev_mode:
-            draw_text_scaled(260, 108, self.VERSION, 6, scale=2)
-        draw_text_scaled(210, 128, "BY ARIAN PRABOWO", 6, scale=2)
+            draw_text_centered(108, self.VERSION, 6, scale=2)
 
         reason = self.state.death_reason or "Consumed by the Void"
-        reason_w = len(reason) * 12 - 2
-        reason_x = max(50, (self.SCREEN_WIDTH - reason_w) // 2)
-        draw_text_scaled(reason_x, 150, reason, 7, scale=2)
+        draw_text_centered(136, reason, 7, scale=2)
 
         # Inner stats container: SOLID Midnight Navy with Slate border (no checkered noise)
-        pyxel.rect(60, 175, 480, 420, 1)
-        pyxel.rectb(60, 175, 480, 420, 5)
+        pyxel.rect(60, 168, 480, 424, 1)
+        pyxel.rectb(60, 168, 480, 424, 5)
 
         time_survived = self.state.total_frames / 30.0
-        draw_text_scaled(80, 190, f"TIME SURVIVED : {time_survived:6.1f} SECONDS", 10, scale=2)
+        draw_text_scaled(80, 184, f"TIME SURVIVED : {time_survived:6.1f} SECONDS", 10, scale=2)
         score_fmt = f"{self.state.score:,}".replace(",", " ")
         sand_fmt = f"{self.state.total_sand_collected:,}".replace(",", " ")
         shards_fmt = f"{self.state.total_shards_dodged:,}".replace(",", " ")
         pacts_fmt = f"{len(self.bargains.history):,}".replace(",", " ")
-        draw_text_scaled(80, 218, f"FINAL SCORE   : {score_fmt}", 10, scale=2)
-        draw_text_scaled(80, 246, f"SAND REAPED   : {sand_fmt}", 9, scale=2)
-        draw_text_scaled(80, 274, f"SHARDS EVADED : {shards_fmt}", 6, scale=2)
-        draw_text_scaled(80, 302, f"PACTS SEALED  : {pacts_fmt}", 8, scale=2)
+        draw_text_scaled(80, 212, f"FINAL SCORE   : {score_fmt}", 10, scale=2)
+        draw_text_scaled(80, 240, f"SAND REAPED   : {sand_fmt}", 9, scale=2)
+        draw_text_scaled(80, 268, f"SHARDS EVADED : {shards_fmt}", 6, scale=2)
+        draw_text_scaled(80, 296, f"PACTS SEALED  : {pacts_fmt}", 8, scale=2)
 
         # Draw all 7 canonical sins vertically without 'k=' or 'canonical order'
-        draw_text_scaled(80, 332, "PACTS SEALED SUMMARY:", 9, scale=2)
+        draw_text_scaled(80, 326, "PACTS SEALED SUMMARY:", 9, scale=2)
         for idx, sin in enumerate(CANONICAL_SINS):
             k = self.bargains.selection_counts.get(sin, 0)
             col = 10 if k > 0 else 5
-            row_y = 356 + idx * 20
+            row_y = 350 + idx * 20
             draw_text_scaled(100, row_y, f"{idx+1}. {sin.name.upper():<9} : {k}", col, scale=2)
 
         # Debounce prompt, Bot restart indicator & Return to Menu shortcut
         if self.game_over_timer < 60:
             rem = (60 - self.game_over_timer + 29) // 30
-            draw_text_scaled(120, 620, f"MOURN THY LOSS ({rem}s)... | [X] MENU", 8, scale=2)
+            draw_text_centered(615, f"MOURN THY LOSS ({rem}s)...", 8, scale=2)
+            draw_text_centered(640, "[X] RETURN TO MENU", 6, scale=2)
         elif self.bot_mode:
             rem_bot = (180 - self.auto_restart_timer + 29) // 30
-            draw_text_scaled(80, 620, f"BOT RESTART IN {rem_bot}s | [SPACE] NOW | [X] MENU", 10, scale=2)
+            draw_text_centered(610, f"BOT RESTART IN {rem_bot}s", 10, scale=2)
+            draw_text_centered(632, "[SPACE] RESTART NOW", 7, scale=2)
+            draw_text_centered(654, "[X] RETURN TO MENU", 6, scale=2)
         else:
             blink = (pyxel.frame_count // 10) % 2 == 0
             if blink:
-                draw_text_scaled(70, 620, "PRESS ANY KEY TO RESTART | [X] MENU", 7, scale=2)
+                draw_text_centered(615, "PRESS ANY KEY TO RESTART", 7, scale=2)
+            draw_text_centered(640, "[X] RETURN TO MENU", 6, scale=2)
 
         if self.dev_mode:
             draw_text_scaled(self.SCREEN_WIDTH - 120, self.SCREEN_HEIGHT - 20, f"[DEV] {self.VERSION}", 11, scale=2)
@@ -2032,17 +2090,16 @@ class GrainOfDoubtApp:
 
         bot_str = "ON" if self.bot_mode else "OFF"
         rec_str = "ON" if self.video_recorder.is_recording else "OFF"
-        inv_str = "ACTIVE (IMMORTAL)" if self.state.godmode else "OFF"
-        theme = get_theme(self.current_theme_index)
+        inv_str = "ON" if self.state.godmode else "OFF"
 
         # Line 1: Header + Version + Shortcut for Invulnerability
-        draw_text_scaled(box_x + 12, box_y + 8, f"[DEV MODE] (` close) {self.VERSION} | SHORTCUT: [I] INVULNERABILITY: {inv_str}", 11, scale=2)
+        draw_text_scaled(box_x + 12, box_y + 8, f"[`] DEV MODE: ON ({self.VERSION})   |   [G] GOD MODE: {inv_str}", 11, scale=2)
 
-        # Line 2: Active Theme and Hotkeys
-        draw_text_scaled(box_x + 12, box_y + 36, f"[0-9] SELECT  [,] PREV  [.] NEXT | THEME [{self.current_theme_index + 1}/{len(ALL_THEMES)}]: {theme.name}", 10, scale=2)
+        # Line 2: Bot mode and Video Recording
+        draw_text_scaled(box_x + 12, box_y + 36, f"[B] BOT MODE: {bot_str}   |   [V] VIDEO REC: {rec_str}", 10, scale=2)
 
-        # Line 3: Other shortcuts and Faustian Bargains controls
-        draw_text_scaled(box_x + 12, box_y + 64, f"[B] BOT:{bot_str}  [V] REC:{rec_str}  [X] MENU  |  PACTS: 1-7:ADD  Q-U:REDUCE", 7, scale=2)
+        # Line 3: Faustian Bargains controls & Menu shortcut
+        draw_text_scaled(box_x + 12, box_y + 64, "[1-7] ADD PACTS   |   [Q-U] REDUCE PACTS   |   [X] MENU", 7, scale=2)
 
         # Line 4: Player and Camera telemetry
         px = self.entities.player.x

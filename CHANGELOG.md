@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.1.3] - 2026-09-25
+### Changed
+- **Home Screen Presentation & Controls Layout**:
+  - Formatted all keys consistently in square brackets `[...]`.
+  - Split controls across dedicated lines to clearly present all hardware and mobile touch options (`[A] / [D] : KEYBOARD`, `[LEFT] / [RIGHT] ARROWS : KEYBOARD`, `[D-PAD] / [THUMBSTICK] : CONTROLLER`, `[LEFT] / [RIGHT] ON-SCREEN : TOUCH`).
+  - Simplified Themes section header to `SELECT THEMES` (removed "10" and removed "ACTIVE"), formatting count as normal parentheses `(X/10) <NAME>`.
+  - Arranged shortcuts strictly one key per line (`[L] LORE & LEARN TO PLAY` and `[X] QUIT GAME`).
+  - Updated Photosensitivity Warning to clarify that Pro Mode is a high-contrast clinical view (not monochrome).
+- **Themes Polish**:
+  - **Sumi-e (Theme 8)**: Made completely Black & White (BnW) by replacing the red seal stamp (`color 8`) with black (`color 0`), eliminating color 8 from the Kairos palette, and ensuring sand and hourglass rendering use pure monochrome grays and blacks.
+  - **Pastel Sakura (Theme 9)**: Updated falling sand to leaf green (`body=11, border=3`) to evoke cherry blossom leaves drifting alongside pink petals.
+  - **HUD Faustian Pacts Contrast**: Enhanced `is_light` theme detection to support Pastel Sakura, Sumi-e, and light modes with pure black text (`0`) on white boxes, and crisp white text (`7`) on dark themes, ensuring effortless readability across all 10 themes.
+- **End Game / Game Over Screen Overhaul**:
+  - Centered `"HOURGLASS SHATTERED"` title mathematically at $x=130$ ($(600 - 339) // 2 = 130$).
+  - Removed `"BY ARIAN PRABOWO"` from the game over screen.
+  - Split bottom prompts into multiple centered lines for clean readability (`PRESS ANY KEY TO RESTART` / `[X] RETURN TO MENU` / bot countdown).
+- **Lore & Learn Screen Overhaul (5 Pages)**:
+  - Expanded manual to 5 balanced pages (`MAX_LORE_PAGES = 5`) with strict word wrap ($\le 41$ chars per line):
+    - **Page 1**: Interprets Borrowed Time first before grains of doubt; sand grains serve as time units only within an hourglass; defines grain of doubt as natural hesitation.
+    - **Page 2**: Explains Lore and Predatory Debt before mechanics; details Chronos (10s continuous flow) and Kairos (10s crossroads); summarizes kinematic controls.
+    - **Page 3 (Pacts Part 1)**: Pride, Greed, Lust, Envy with large `scale=2` PRO/CON typography, color swatches, and narrative meaning.
+    - **Page 4 (Pacts Part 2)**: Gluttony, Wrath, Sloth with large `scale=2` PRO/CON typography, color swatches, and compounding decay formulas.
+    - **Page 5**: 10 Themes, Pro Mode clinical telemetry, E-Reader Stealth Mode (*PhD Comics emergency button tribute*), and loving Sakura dedication (*"lovingly dedicated to my twin sister, girlfriend, and wife—who happen to be the exact same person!"*).
+  - Bottom navigation: Removed `[X]` from the arrow line, separating into `[A / LEFT] PREV | [D / RIGHT] NEXT` and a prominent `[X] RETURN TO MENU` prompt.
+- **Developer Mode Refinements**:
+  - Mapped God Mode toggle to `[G]` key (`pyxel.KEY_G`, with `[I]` fallback).
+  - Standardized all dev mode lines across title screen and in-game overlay to `[key] NAME: STATS` format.
+  - Removed redundant theme cycling line from dev mode boxes (already accessible on main menu).
+- **Packaging**:
+  - Updated `build.sh` to package `grain-of-doubt-1.1.3.zip`.
+
 ## [v1.1.2] - 2026-09-24
 ### Changed
 - **Homepage Polish & Visual Hierarchy**:

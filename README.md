@@ -1,7 +1,7 @@
 # Grain of Doubt
 
 > **By Arian Prabowo**  
-> **Version:** v1.1.2  
+> **Version:** v1.1.3  
 > **PyWeek 42 Entry ("Borrowed Time")** — September 2026  
 > An endless retro downhill falling-hourglass arcade runner built with the **Pyxel** retro game engine.  
 > **Target Resolution:** 600 × 800 pixels (3:4 Portrait Aspect Ratio, Infinite Horizontal Arena).  
@@ -48,8 +48,8 @@ You can freely switch between **10 completely unique, maximally divergent aesthe
 5. **Glacial Crevasse**: Deep sub-zero glacial chasm with sheer vertical meltwater streams, horizontal firn ice strata, and shimmering crystalline frost motes.
 6. **Magma Caldera**: Volcanic caldera, basalt crags, obsidian riverbed, and bubbling liquid lava flumes with glowing embers.
 7. **Retro Terminal Matrix**: Phosphor green cathode-ray tube monitor with falling hexadecimal digital glyph rain and scanline texture.
-8. **Zen Ink Wash (Sumi-e)**: Traditional Japanese washi parchment, black ink calligraphy brush strokes, and red cinnabar seal.
-9. **Pastel Sakura**: Cute, girly pastel pink aesthetic with cherry blossom petals drifting with organic sinusoidal sway, soft peach clouds, and twinkling fairy stars.
+8. **Zen Ink Wash (Sumi-e)**: Traditional Japanese washi parchment and black ink calligraphy brush strokes. Completely Black & White (BnW) aesthetic with black seal stamp and monochrome Kairos palette.
+9. **Pastel Sakura**: Cute, girly pastel pink aesthetic with cherry blossom petals drifting with organic sinusoidal sway, soft peach clouds, leaf-green sand, and twinkling fairy stars. Lovingly dedicated to my twin sister, girlfriend, and wife—who happen to be the exact same person!
 
 Each theme dynamically transforms the procedural background terrain as well as the complete color palettes of the player's hourglass, sand grains, and glass shards to ensure aesthetic harmony and sharp contrast!
 
@@ -59,21 +59,22 @@ Each theme dynamically transforms the procedural background terrain as well as t
 
 | Control | Action | Mechanic |
 | :--- | :--- | :--- |
-| `A` / `D` or `Left` / `Right` | Lateral Steering | Steer hourglass horizontally (viscous damping coefficient: 0.82) |
-| Touch `< LEFT` / `RIGHT >` | Mobile Touch Steering | High-contrast on-screen buttons (visible on mobile only) or bottom screen tap |
-| `Left` / `Right` or Tap Card | Select Faustian Bargain | Steer left or right during Kairos to choose between the 2 bargain cards within 10.0s (1.0s safety lockout; requires fresh press after release) |
-| `L` / `H` | Lore & Learn to Play Codex | Open 3-page interactive codex (Narrative, Dual-Clock Engine, Seven Covenants). Navigate with `A`/`D` or arrows; press `Right` on last page or `X` to return |
-| `Space` / `Enter` or Tap Screen | Start / Restart | Start game or restart after a 2.0s post-mortem lockout (debounced) |
-| `X` | Return to Menu / Quit | In gameplay or Lore screen: return to Title Menu. On Title Menu: quit game (no-op in browser) |
-| `0` - `9` | Direct Theme Select | Jump instantly to any of the 10 curated themes (0:Dunes, 1:Pro Light, 2:Pro Dark, 3:E-Reader Light, 4:E-Reader Dark, 5:Glacial, 6:Caldera, 7:Terminal, 8:Sumi-e, 9:Pastel Sakura) |
-| `,` (Comma) | Previous Theme | Cycle backwards through all 10 curated themes (works on Title Screen and in-game) |
-| `.` (Period) | Next Theme | Cycle forward through all 10 curated themes (works on Title Screen and in-game) |
-| `~` / `` ` `` (Backtick) | Toggle Dev Mode | On-screen debug HUD, live telemetry, and shortcut cheats |
-| `I` (in Dev Mode) | Toggle God Mode | Invulnerability toggle (immune to glass shards and void collision) |
-| `B` (in Dev Mode) | Toggle GOFAI Bot | Autonomous kinematic AI playtesting agent (human-like 2.0s deliberation delay, 80% speed handicap) |
-| `V` (in Dev Mode) | Toggle MP4 Recording | Lossless FFmpeg background canvas video recorder |
-| `1` - `7` (in Dev Mode) | Add Faustian Pact | Instant-apply sin pact level (1:Pride, 2:Greed, 3:Lust, 4:Envy, 5:Gluttony, 6:Wrath, 7:Sloth) |
-| `Q`, `W`, `E`, `R`, `T`, `Y`, `U` (in Dev Mode) | Reduce Faustian Pact | Decrement corresponding sin pact level (Q:Pride, W:Greed, E:Lust, R:Envy, T:Gluttony, Y:Wrath, U:Sloth) |
+| `[A]` / `[D]` or `[Left]` / `[Right]` | Keyboard Steering | Steer hourglass horizontally (viscous damping coefficient: 0.82) |
+| `[D-Pad]` / `[Thumbstick]` | Gamepad Steering | Steer hourglass horizontally via controller |
+| Touch `[< LEFT]` / `[RIGHT >]` | Mobile Touch Steering | High-contrast on-screen buttons (visible on mobile only) or bottom screen tap |
+| `[Left]` / `[Right]` or Tap Card | Select Faustian Bargain | Steer left or right during Kairos to choose between the 2 bargain cards within 10.0s (1.0s safety lockout; requires fresh press after release) |
+| `[L]` / `[H]` | Lore & Learn to Play Manual | Open 5-page interactive manual (Premise, Cosmology, Pacts Part 1, Pacts Part 2, Themes & Dedication). Navigate with `[A]`/`[D]` or arrows; press `[X]` to return |
+| `[Space]` / `[Enter]` or Tap Screen | Start / Restart | Start game or restart after a 2.0s post-mortem lockout (debounced) |
+| `[X]` | Return to Menu / Quit | In gameplay or Lore screen: return to Title Menu. On Title Menu: quit game (no-op in browser) |
+| `[0]` - `[9]` | Direct Theme Select | Jump instantly to any of the 10 curated themes (0:Dunes, 1:Pro Light, 2:Pro Dark, 3:E-Reader Light, 4:E-Reader Dark, 5:Glacial, 6:Caldera, 7:Terminal, 8:Sumi-e, 9:Pastel Sakura) |
+| `[,]` (Comma) | Previous Theme | Cycle backwards through all 10 curated themes (works on Title Screen and in-game) |
+| `[.]` (Period) | Next Theme | Cycle forward through all 10 curated themes (works on Title Screen and in-game) |
+| `[~]` / `[` `]` (Backtick) | Toggle Dev Mode | On-screen debug HUD, live telemetry, and shortcut cheats (`[key] NAME: STATS` format) |
+| `[G]` / `[I]` (in Dev Mode) | Toggle God Mode | Invulnerability toggle (immune to glass shards and void collision) |
+| `[B]` (in Dev Mode) | Toggle GOFAI Bot | Autonomous kinematic AI playtesting agent (human-like 2.0s deliberation delay, 80% speed handicap) |
+| `[V]` (in Dev Mode) | Toggle MP4 Recording | Lossless FFmpeg background canvas video recorder |
+| `[1]` - `[7]` (in Dev Mode) | Add Faustian Pact | Instant-apply sin pact level (1:Pride, 2:Greed, 3:Lust, 4:Envy, 5:Gluttony, 6:Wrath, 7:Sloth) |
+| `[Q]`, `[W]`, `[E]`, `[R]`, `[T]`, `[Y]`, `[U]` (in Dev Mode) | Reduce Faustian Pact | Decrement corresponding sin pact level (Q:Pride, W:Greed, E:Lust, R:Envy, T:Gluttony, Y:Wrath, U:Sloth) |
 
 ---
 
