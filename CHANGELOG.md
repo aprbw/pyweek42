@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.1.8] - 2026-09-25
+### Added & Changed
+- **Sakura Theme Dark Green Sand**:
+  - Upgraded Pastel Sakura theme (Theme 9) sand body and border to rich dark green (`Color 3`), with glints in vibrant leaf green (`Color 11`).
+  - Hourglass sand interior rendered in dark green (`Color 3`) for complete chromatic harmony with falling grains.
+- **Controls & Shortcut Simplification**:
+  - Removed `[Space]` and `[Enter]` shortcuts from Title screen, Kairos instant seal, and Game Over restart to eliminate stutter and accidental inputs (game auto-confirms and auto-restarts).
+  - Restricted Lore & Learn shortcut strictly to `[L]` (removed `[H]`).
+  - Restricted God Mode toggle strictly to `[G]` (removed `[I]`).
+  - Removed all obsolete references to `[0-9]` theme shortcuts across Lore Page 5, theme banner, and documentation.
+- **Pro Mode Accessibility & Telemetry Upgrades**:
+  - Upgraded Lust attraction circle dots in flight-director display from faint single pixels to prominent 2x2 solid blocks rendered in vibrant Gold (`Color 10`) in Dark Mode and Deep Crimson (`Color 8`) in Light Mode.
+  - Added double borders to floating HUD containers when in Pro Mode.
+  - Widened Chronos countdown side bars from 6px to 10px with double borders.
+  - Eliminated flashing/blinking on the Chronos side countdown bar near expiry (`prog > 0.85`), rendering a steady high-contrast warning to protect photosensitive players.
+  - Suppressed time container blinking in Pro Mode.
+- **Main Menu Layout Refinement**:
+  - Expanded the Controls & Themes container height to 286px, providing 22px of clean bottom padding below `[X] QUIT GAME`.
+  - Re-anchored the Photosensitivity Warning box (`y=484, h=50`) and Start Game prompt (`y=544, h=40`) with balanced spacing.
+- **Sloth Mechanics & Documentation Alignment**:
+  - Verified and documented that Sloth Lazy Reprieve covers an expansive 3200px total width (1600px left and 1600px right of player), hurling hazards downward while sand grains align directly below the player hourglass.
+
 ## [v1.1.7] - 2026-09-25
 ### Added & Changed
 - **UI Kairos Card Consistency**:

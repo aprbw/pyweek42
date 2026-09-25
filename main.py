@@ -282,7 +282,7 @@ def is_dev_environment() -> bool:
 
 
 class GrainOfDoubtApp:
-    VERSION: str = "v1.1.7"
+    VERSION: str = "v1.1.8"
     SCREEN_WIDTH: int = 600
     SCREEN_HEIGHT: int = 800
 
@@ -477,8 +477,8 @@ class GrainOfDoubtApp:
         if self.dev_mode and pyxel.btnp(pyxel.KEY_V):
             self.video_recorder.toggle(pyxel)
 
-        # Toggle Invulnerability (God Mode) with 'G' key (with 'I' fallback, dev mode only)
-        if self.dev_mode and (pyxel.btnp(pyxel.KEY_G) or pyxel.btnp(pyxel.KEY_I)):
+        # Toggle Invulnerability (God Mode) with 'G' key (dev mode only)
+        if self.dev_mode and pyxel.btnp(pyxel.KEY_G):
             self.state.godmode = not self.state.godmode
 
         # In Dev Mode: Number keys 1 to 7 apply fixed pacts directly (Canonical Order)
@@ -540,37 +540,36 @@ class GrainOfDoubtApp:
             # Check touch/mouse clicks on interactive UI buttons
             if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
                 mx, my = pyxel.mouse_x, pyxel.mouse_y
-                # 1. Prev Theme button [x=60..290, y=318..366]
-                if 60 <= mx <= 290 and 318 <= my <= 366:
+                # 1. Prev Theme button [x=60..290, y=322..370]
+                if 60 <= mx <= 290 and 322 <= my <= 370:
                     self.current_theme_index = (self.current_theme_index - 1) % len(ALL_THEMES)
                     self.theme_banner_timer = 45
                     return
-                # 2. Next Theme button [x=310..540, y=318..366]
-                elif 310 <= mx <= 540 and 318 <= my <= 366:
+                # 2. Next Theme button [x=310..540, y=322..370]
+                elif 310 <= mx <= 540 and 322 <= my <= 370:
                     self.current_theme_index = (self.current_theme_index + 1) % len(ALL_THEMES)
                     self.theme_banner_timer = 45
                     return
-                # 3. Lore & Learn button [x=60..540, y=388..438]
-                elif 60 <= mx <= 540 and 388 <= my <= 438:
+                # 3. Lore & Learn button [x=60..540, y=398..446]
+                elif 60 <= mx <= 540 and 398 <= my <= 446:
                     self.state.current_state = GameState.LORE
                     self.lore_page = 0
                     return
-                # 4. Anywhere else (e.g. blinking start button [x=50..550, y=520..558] or general click) starts game
+                # 4. Anywhere else (e.g. start button [x=50..550, y=546..586] or general tap) starts game
                 else:
                     self.start_new_game()
                     return
 
-            # Check if player pressed 'L' or 'H' for Lore & How to Play
-            if pyxel.btnp(pyxel.KEY_L) or pyxel.btnp(pyxel.KEY_H):
+            # Check if player pressed 'L' for Lore & How to Play (only [L], no [H])
+            if pyxel.btnp(pyxel.KEY_L):
                 self.state.current_state = GameState.LORE
                 self.lore_page = 0
                 return
 
-            # Start game with any lateral key or space/enter
+            # Start game with lateral keys only (no space, no enter)
             if (self.bot_mode or
                 pyxel.btnp(pyxel.KEY_LEFT) or pyxel.btnp(pyxel.KEY_RIGHT) or
-                pyxel.btnp(pyxel.KEY_A) or pyxel.btnp(pyxel.KEY_D) or
-                pyxel.btnp(pyxel.KEY_SPACE) or pyxel.btnp(pyxel.KEY_RETURN)):
+                pyxel.btnp(pyxel.KEY_A) or pyxel.btnp(pyxel.KEY_D)):
                 self.start_new_game()
 
         elif self.state.current_state == GameState.LORE:
@@ -686,11 +685,6 @@ class GrainOfDoubtApp:
                         self.selected_card_index = 1
                         instant_seal = True
 
-                    # Space/Enter also confirms immediately
-                    if pyxel.btnp(pyxel.KEY_SPACE) or pyxel.btnp(pyxel.KEY_RETURN):
-                        if self.selected_card_index < 0:
-                            self.selected_card_index = 0
-                        instant_seal = True
 
             # Advance Kairos timer
             self.state.update_timers()
@@ -746,7 +740,7 @@ class GrainOfDoubtApp:
                 elif self.game_over_timer >= 60:
                     if (pyxel.btnp(pyxel.KEY_LEFT) or pyxel.btnp(pyxel.KEY_RIGHT) or
                         pyxel.btnp(pyxel.KEY_A) or pyxel.btnp(pyxel.KEY_D) or
-                        pyxel.btnp(pyxel.KEY_R) or pyxel.btnp(pyxel.KEY_SPACE) or pyxel.btnp(pyxel.KEY_RETURN) or
+                        pyxel.btnp(pyxel.KEY_R) or
                         pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT)):
                         self.auto_restart_timer = 0
                         self.start_new_game()
@@ -755,7 +749,7 @@ class GrainOfDoubtApp:
                 if self.game_over_timer >= 60:
                     if (pyxel.btnp(pyxel.KEY_LEFT) or pyxel.btnp(pyxel.KEY_RIGHT) or
                         pyxel.btnp(pyxel.KEY_A) or pyxel.btnp(pyxel.KEY_D) or
-                        pyxel.btnp(pyxel.KEY_R) or pyxel.btnp(pyxel.KEY_SPACE) or pyxel.btnp(pyxel.KEY_RETURN) or
+                        pyxel.btnp(pyxel.KEY_R) or
                         pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT)):
                         self.start_new_game()
 
@@ -1093,10 +1087,11 @@ class GrainOfDoubtApp:
         # Center reference point
         pyxel.pset(int(round(px)), int(round(py)), col_main)
 
-        # 2. Dotted Lust Range Circle
+        # 2. Dotted Lust Range Circle (Rendered as 2x2 solid blocks with high-contrast color for visibility)
         lust_r = getattr(self.state, "lust_attract_radius", 0.0)
         if lust_r > 0:
             num_dots = max(16, int(lust_r * 0.40))
+            col_lust = 10 if is_dark else 8  # Vibrant Gold in Dark Mode, Deep Crimson in Light Mode
             for d_idx in range(num_dots):
                 if d_idx % 2 == 0:
                     continue
@@ -1104,7 +1099,7 @@ class GrainOfDoubtApp:
                 dx = int(round(px + math.cos(angle) * lust_r))
                 dy = int(round(py + math.sin(angle) * lust_r))
                 if 0 <= dy < self.SCREEN_HEIGHT:
-                    pyxel.pset(dx, dy, col_accent)
+                    pyxel.rect(dx - 1, dy - 1, 2, 2, col_lust)
 
         # 3. Flight Cross (Position indicates lateral speed, Rotation indicates acceleration)
         max_shift = 22.0
@@ -1311,13 +1306,14 @@ class GrainOfDoubtApp:
 
         # Transparency & theme contrast adaptation for floating HUD elements
         is_light = theme.clear_color in (7, 15, 6, 11, 14) or getattr(theme, "id", 0) in (7, 15)
+        is_pro = theme.name.startswith("PRO MODE")
         kp = theme.get_kairos_palette()
         box_bg = 7 if is_light else 0
         box_border = 0 if is_light else (kp.border_inner if kp.border_inner != 0 else 1)
         text_col = 0 if is_light else 7
         title_col = 0 if is_light else 10
         num_col = 0 if is_light else 10
-        flash_time = (pyxel.frame_count // 15) % 2 == 0
+        flash_time = (pyxel.frame_count // 15) % 2 == 0 and not is_pro
 
         def draw_hud_box(bx: int, by: int, bw: int, bh: int):
             if hasattr(pyxel, "dither"):
@@ -1326,9 +1322,11 @@ class GrainOfDoubtApp:
             if hasattr(pyxel, "dither"):
                 pyxel.dither(1.0)
             pyxel.rectb(bx, by, bw, bh, box_border)
+            if is_pro:
+                pyxel.rectb(bx + 1, by + 1, bw - 2, bh - 2, box_border)
 
         # 1. Hearts container (Top Left) - translucent theme-aware container
-        draw_hud_box(10, 8, 172, 30)
+        draw_hud_box(10, 8, 174, 32)
 
         for i in range(5):
             hx = 16 + i * 32
@@ -1344,30 +1342,30 @@ class GrainOfDoubtApp:
             else:
                 pyxel.rectb(hx, hy + 4, 28, 16, 4 if is_light else 5)
 
-        # 2. Elapsed Time container (Top Center) - [x=225, w=150]
-        draw_hud_box(225, 8, 150, 30)
+        # 2. Elapsed Time container (Top Center) - [x=220, w=160]
+        draw_hud_box(220, 8, 160, 32)
 
         elapsed_sec = self.state.total_frames / 30.0
         time_str = f"TIME: {elapsed_sec:04.1f} s"
         t_col = (8 if is_light else 10) if flash_time else text_col
         time_w = len(time_str) * 12 - 2
-        draw_text_scaled(225 + (150 - time_w) // 2, 14, time_str, t_col, scale=2)
+        draw_text_scaled(220 + (160 - time_w) // 2, 15, time_str, t_col, scale=2)
 
         # 3. Score container (Top Right) - [x=390, w=200, no overlap with Time box]
-        draw_hud_box(390, 8, 200, 30)
+        draw_hud_box(390, 8, 200, 32)
 
         score_fmt = f"{self.state.score:,}".replace(",", " ")
         score_str = f"SCORE: {score_fmt}"
-        draw_text_scaled(398, 14, score_str, num_col, scale=2)
+        draw_text_scaled(398, 15, score_str, num_col, scale=2)
 
         # Multiplier (inside score container at right)
         if self.state.score_multiplier > 1.05:
             mult_str = f"x{self.state.score_multiplier:.1f}"
-            draw_text_scaled(540, 14, mult_str, 8 if is_light else 9, scale=2)
+            draw_text_scaled(540, 15, mult_str, 8 if is_light else 9, scale=2)
 
         # 4. Vertical Pacts List in Catholic Canonical Order at Top Right (All 7 always listed)
         pacts_box_w = 205
-        pacts_box_h = 140
+        pacts_box_h = 142
         pacts_box_x = self.SCREEN_WIDTH - pacts_box_w - 10
         pacts_box_y = 44
         draw_hud_box(pacts_box_x, pacts_box_y, pacts_box_w, pacts_box_h)
@@ -1381,7 +1379,7 @@ class GrainOfDoubtApp:
             col = (8 if is_light else 10) if k > 0 else (0 if is_light else 7)
             # Draw color swatch matching the background of the pact card
             sin_col = SIN_CARD_COLORS.get(sin, 1)
-            pyxel.rect(pacts_box_x + 5, row_y + 2, 4, 11, sin_col)
+            pyxel.rect(pacts_box_x + 5, row_y + 2, 5, 11, sin_col)
             draw_text_scaled(pacts_box_x + 14, row_y, f"{idx+1}. {sin_lbl}", col, scale=2)
             k_str = str(k)
             k_w = get_text_width_5x7(k_str, scale=2)
@@ -1429,38 +1427,43 @@ class GrainOfDoubtApp:
             return
 
         prog = min(1.0, max(0.0, self.state.chronos_timer / float(self.state.CHRONOS_FRAMES)))
-        bar_w = 6
+        bar_w = 10
         fill_h = int(self.SCREEN_HEIGHT * prog)
 
         is_dark = (theme.clear_color == 0)
 
         # Track colors (background track)
         track_bg = 1 if is_dark else 6     # Navy in dark, soft grey in light
-        track_border = 5 if is_dark else 5 # Slate grey boundary line
+        border_col = 5 if is_dark else 0   # Slate grey in dark, black in light
+        inner_border_col = 7 if is_dark else 5
 
-        # Bar fill color
+        # Bar fill color: steady color, DO NOT blink near the end
         if prog > 0.85:
-            # Imminent Kairos urgency: flashing crimson red / amber
-            fill_col = 8 if (pyxel.frame_count // 3) % 2 == 0 else 9
+            # Imminent Kairos urgency: steady high-contrast warning (Crimson red)
+            fill_col = 8
         elif is_dark:
             fill_col = 10  # High-vis safety yellow in Pro Dark
         else:
             fill_col = 0   # Pitch-black obsidian in Pro Light
 
-        # 1. Left border progress bar (x = 0..bar_w)
+        # 1. Left border progress bar (x = 0..bar_w-1)
         pyxel.rect(0, 0, bar_w, self.SCREEN_HEIGHT, track_bg)
-        pyxel.line(bar_w, 0, bar_w, self.SCREEN_HEIGHT, track_border)
         if fill_h > 0:
             pyxel.rect(0, 0, bar_w, fill_h, fill_col)
-            pyxel.line(0, fill_h, bar_w, fill_h, 7 if is_dark else 0)
+            pyxel.line(0, fill_h, bar_w - 1, fill_h, 7 if is_dark else 0)
+        # Double borders along right edge of left bar
+        pyxel.line(bar_w - 1, 0, bar_w - 1, self.SCREEN_HEIGHT, border_col)
+        pyxel.line(bar_w, 0, bar_w, self.SCREEN_HEIGHT, inner_border_col)
 
         # 2. Right border progress bar (x = (SCREEN_WIDTH - bar_w)..SCREEN_WIDTH)
         rx = self.SCREEN_WIDTH - bar_w
         pyxel.rect(rx, 0, bar_w, self.SCREEN_HEIGHT, track_bg)
-        pyxel.line(rx - 1, 0, rx - 1, self.SCREEN_HEIGHT, track_border)
         if fill_h > 0:
             pyxel.rect(rx, 0, bar_w, fill_h, fill_col)
-            pyxel.line(rx, fill_h, self.SCREEN_WIDTH, fill_h, 7 if is_dark else 0)
+            pyxel.line(rx, fill_h, self.SCREEN_WIDTH - 1, fill_h, 7 if is_dark else 0)
+        # Double borders along left edge of right bar
+        pyxel.line(rx, 0, rx, self.SCREEN_HEIGHT, border_col)
+        pyxel.line(rx - 1, 0, rx - 1, self.SCREEN_HEIGHT, inner_border_col)
 
     def draw_kairos_modal(self):
         """Draw 2-column Kairos modal navigated strictly via Left/Right arrows or A/D."""
@@ -1810,61 +1813,62 @@ class GrainOfDoubtApp:
         draw_text_centered(162, "DODGE LETHAL FALLING GLASS SHARDS", 8, scale=2)
 
         # Controls & Themes box (Clean, elevated positioning without redundant plaque)
-        box_y = 192
-        box_h = 262
+        box_y = 188
+        box_h = 286
         pyxel.rect(40, box_y, 520, box_h, 1)
         pyxel.rectb(40, box_y, 520, box_h, 5)
 
         draw_text_scaled(60, box_y + 8, "CONTROLS", 10, scale=2)
         draw_text_scaled(60, box_y + 26, "KEYBOARD: [A] / [D]", 7, scale=2)
         draw_text_scaled(60, box_y + 44, "KEYBOARD: [LEFT] / [RIGHT] ARROWS", 7, scale=2)
-        draw_text_scaled(60, box_y + 60, "TOUCH: [LEFT] / [RIGHT] ON-SCREEN", 7, scale=2)
+        draw_text_scaled(60, box_y + 62, "TOUCH: [LEFT] / [RIGHT] ON-SCREEN", 7, scale=2)
 
         # Line break before Themes (at least 1 full line gap: 36px)
         theme = get_theme(self.current_theme_index)
         act_col = 10 if (self.current_theme_index in (1, 2) or getattr(theme, "is_reader_mode", False)) else 9
-        draw_text_scaled(60, box_y + 96, "SELECT THEMES", 10, scale=2)
-        draw_text_scaled(60, box_y + 114, f"({self.current_theme_index + 1}/10) {theme.name}", act_col, scale=2)
+        draw_text_scaled(60, box_y + 98, "SELECT THEMES", 10, scale=2)
+        draw_text_scaled(60, box_y + 116, f"({self.current_theme_index + 1}/10) {theme.name}", act_col, scale=2)
 
         # Big Prev & Next Theme Touch Buttons (2 lines in height: h=38)
-        btn_prev_x, btn_prev_y, btn_prev_w, btn_prev_h = 60, box_y + 132, 230, 38
+        btn_prev_x, btn_prev_y, btn_prev_w, btn_prev_h = 60, box_y + 134, 230, 38
         pyxel.rect(btn_prev_x, btn_prev_y, btn_prev_w, btn_prev_h, 0)
         pyxel.rectb(btn_prev_x, btn_prev_y, btn_prev_w, btn_prev_h, 10)
         draw_text_scaled(btn_prev_x + 22, btn_prev_y + 11, "< [,] PREV THEME", 7, scale=2)
 
-        btn_next_x, btn_next_y, btn_next_w, btn_next_h = 310, box_y + 132, 230, 38
+        btn_next_x, btn_next_y, btn_next_w, btn_next_h = 310, box_y + 134, 230, 38
         pyxel.rect(btn_next_x, btn_next_y, btn_next_w, btn_next_h, 0)
         pyxel.rectb(btn_next_x, btn_next_y, btn_next_w, btn_next_h, 10)
         draw_text_scaled(btn_next_x + 22, btn_next_y + 11, "NEXT THEME [.] >", 7, scale=2)
 
-        # 1 full line of space before SHORTCUTS (gap = 26px)
-        draw_text_scaled(60, box_y + 186, "SHORTCUTS", 10, scale=2)
+        # 1 full line of space before SHORTCUTS (gap = 72px from y_theme_name, >= 36px)
+        draw_text_scaled(60, box_y + 188, "SHORTCUTS", 10, scale=2)
 
         # Big Lore & Learn Touch Button (2 lines in height: h=38)
-        btn_lore_x, btn_lore_y, btn_lore_w, btn_lore_h = 60, box_y + 204, 480, 38
+        btn_lore_x, btn_lore_y, btn_lore_w, btn_lore_h = 60, box_y + 206, 480, 38
         pyxel.rect(btn_lore_x, btn_lore_y, btn_lore_w, btn_lore_h, 0)
         pyxel.rectb(btn_lore_x, btn_lore_y, btn_lore_w, btn_lore_h, 10)
         draw_text_scaled(btn_lore_x + 86, btn_lore_y + 11, "[L] LORE & LEARN TO PLAY", 10, scale=2)
 
-        draw_text_scaled(60, box_y + 248, "[X] QUIT GAME", 7, scale=2)
+        # Space below [X] QUIT GAME is 22px (ends at 452, box ends at 474)
+        draw_text_scaled(60, box_y + 250, "[X] QUIT GAME", 7, scale=2)
 
-        # Photosensitivity & Pro Mode suggestion directly above blinking start prompt
-        pyxel.rect(40, 460, 520, 56, 0)
-        pyxel.rectb(40, 460, 520, 56, 8)
-        draw_text_centered(466, "PHOTOSENSITIVITY WARNING", 8, scale=2)
-        draw_text_centered(484, "Rapid motion and flashing visuals in some themes.", 7, scale=1)
-        draw_text_centered(498, "Switch to PRO MODE (Themes 2 & 3) for calm high-contrast clinical view.", 6, scale=1)
+        # Photosensitivity & Pro Mode suggestion directly above start prompt
+        pyxel.rect(40, 484, 520, 50, 0)
+        pyxel.rectb(40, 484, 520, 50, 8)
+        draw_text_centered(490, "PHOTOSENSITIVITY WARNING", 8, scale=2)
+        draw_text_centered(508, "Rapid motion and flashing visuals in some themes.", 7, scale=1)
+        draw_text_centered(520, "Switch to PRO MODE (Themes 2 & 3) for calm high-contrast clinical view.", 6, scale=1)
 
-        # Start prompt: "PRESS ARROWS OR HERE TO START" (at least 2 lines in height: h=40)
+        # Start prompt: "PRESS ARROWS OR HERE TO START" (h=40)
         blink = (pyxel.frame_count // 12) % 2 == 0
         if blink:
-            pyxel.rect(50, 524, 500, 40, 0)
-            pyxel.rectb(50, 524, 500, 40, 10)
-            draw_text_centered(536, "PRESS ARROWS OR HERE TO START", 10, scale=2)
+            pyxel.rect(50, 544, 500, 40, 0)
+            pyxel.rectb(50, 544, 500, 40, 10)
+            draw_text_centered(556, "PRESS ARROWS OR HERE TO START", 10, scale=2)
 
         # Dedicated Dev Mode box at bottom when dev_mode is active
         if self.dev_mode:
-            self.draw_dev_box(box_y=556, translucent=False)
+            self.draw_dev_box(box_y=588, translucent=False)
 
         # Draw the 2 mobile buttons at bottom of title screen (mobile only)
         if self.is_mobile:
@@ -2121,7 +2125,7 @@ class GrainOfDoubtApp:
             # PAGE 5: THEMES, PRO MODE & SAKURA DEDICATION
             draw_text_scaled(box_x + 24, box_y + 72, "1. 10 DIVERGENT AESTHETIC THEMES", 10, scale=2)
             p5_themes = [
-                "Press [,] and [.] or [0-9] to select.",
+                "Press [,] and [.] to cycle themes.",
                 "10 handcrafted procedural aesthetics with",
                 "unique physics, audio, and palettes:",
                 "Dune, Pro Light, Pro Dark, Reader Light,",
@@ -2296,7 +2300,7 @@ class GrainOfDoubtApp:
         pyxel.rectb(box_x + 1, box_y + 1, box_w - 2, box_h - 2, 9)
 
         name_str = f"THEME [{self.current_theme_index + 1}/{len(ALL_THEMES)}]: {theme.name}"
-        sub_str = "[0-9] SELECT    [,] PREV THEME    [.] NEXT THEME"
+        sub_str = "[,] PREV THEME        [.] NEXT THEME"
         draw_text_scaled(box_x + 16, box_y + 8, name_str, 10, scale=2)
         draw_text_scaled(box_x + 16, box_y + 28, sub_str, 7, scale=1)
 

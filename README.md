@@ -1,7 +1,7 @@
 # Grain of Doubt
 
 > **By Arian Prabowo**  
-> **Version:** v1.1.7  
+> **Version:** v1.1.8  
 > **PyWeek 42 Entry ("Borrowed Time")** — September 2026  
 > An endless retro downhill falling-hourglass arcade runner built with the **Pyxel** retro game engine.  
 > **Target Resolution:** 600 × 800 pixels (3:4 Portrait Aspect Ratio, Infinite Horizontal Arena).  
@@ -44,14 +44,13 @@ Steer left or right to avoid falling glass shards while collecting glistening go
 | `KEYBOARD: [LEFT] / [RIGHT] ARROWS` | Keyboard Steering | Steer hourglass horizontally |
 | `TOUCH: [< LEFT]` / `[RIGHT >]` | Mobile Touch Steering | High-contrast on-screen buttons (visible on mobile only) or bottom screen tap |
 | `[Left]` / `[Right]` or Tap Card | Select Faustian Bargain | Steer left or right during Kairos to choose between the 2 bargain cards within 10.0s (1.0s safety lockout; requires fresh press after release) |
-| `[L]` / `[H]` | Lore & Learn to Play Manual | Open 5-page interactive manual (Premise, Cosmology, Pacts Part 1, Pacts Part 2, Themes & Dedication). Navigate with `[A]`/`[D]` or arrows; press `[X]` to return |
-| `[Space]` / `[Enter]` or Tap Screen | Start / Restart | Start game or restart after a 2.0s post-mortem lockout (debounced) |
+| `[L]` | Lore & Learn to Play Manual | Open 5-page interactive manual (Premise, Cosmology, Pacts Part 1, Pacts Part 2, Themes & Dedication). Navigate with `[A]`/`[D]` or arrows; press `[X]` to return |
+| Tap Screen or `[A]` / `[D]` / Arrows | Start / Restart | Start game from title or restart game over screen after a 2.0s post-mortem lockout (debounced) |
 | `[X]` | Return to Menu / Quit | In gameplay or Lore screen: return to Title Menu. On Title Menu: quit game (no-op in browser) |
-| `[0]` - `[9]` | Direct Theme Select | Jump instantly to any of the 10 curated themes (0:Dunes, 1:Pro Light, 2:Pro Dark, 3:E-Reader Light, 4:E-Reader Dark, 5:Glacial, 6:Caldera, 7:Terminal, 8:Sumi-e, 9:Pastel Sakura) |
 | `[,]` (Comma) | Previous Theme | Cycle backwards through all 10 curated themes (works on Title Screen and in-game) |
 | `[.]` (Period) | Next Theme | Cycle forward through all 10 curated themes (works on Title Screen and in-game) |
 | `[~]` / `[` `]` (Backtick) | Toggle Dev Mode | Theme-adaptive debug HUD matching top-right pacts board, live telemetry metrics, and combined pact shortcuts (`[1-7] ADD PACTS   |   [Q-U] REDUCE PACTS`) |
-| `[G]` / `[I]` (in Dev Mode) | Toggle God Mode | Invulnerability toggle (immune to glass shards and void collision) |
+| `[G]` (in Dev Mode) | Toggle God Mode | Invulnerability toggle (immune to glass shards and void collision) |
 | `[B]` (in Dev Mode) | Toggle GOFAI Bot | Autonomous kinematic AI playtesting agent (human-like 2.0s deliberation delay, 80% speed handicap) |
 | `[V]` (in Dev Mode) | Toggle MP4 Recording | Lossless FFmpeg background canvas video recorder |
 | `[1]` - `[7]` (in Dev Mode) | Add Faustian Pact | Instant-apply sin pact level (1:Pride, 2:Greed, 3:Lust, 4:Envy, 5:Gluttony, 6:Wrath, 7:Sloth) |
@@ -88,14 +87,14 @@ Every 10.0 seconds (300 frames), normal time flow stops and **Kairos** strikes. 
    * *Boon:* **Shard Shockwave Blast (1600px)** — Detonates an instant kinetic explosion centered on the player: glass shards within a **1600-pixel radius** are blasted outward with a smooth multi-frame acceleration impulse away from the hourglass. Zero visual particle clutter.
    * *Curse:* **Sand Grain Blast Wave (3200px)** — The shockwave blast also violently hurls all golden sand grains within an immense **3200-pixel radius** far away from the hourglass (pushed noticeably and strictly further than glass shards due to low sand inertia and higher impulse velocity), scattering your reaped grains into the deep void. There is no zero-score yield penalty; this massive loss and dispersal of sand IS the curse!
 7. **Sloth:**
-   * *Boon:* **Lazy Reprieve (1600px, ~2s Safe)** — Sloth means lazy; lazy means doing nothing! All glass shards within a 1600px area of effect (left, right, and down) are hurled downward toward the bottom horizon over a multi-frame burst. For ~2.0 seconds (60 frames), the descent space below you is completely cleared of hazards, allowing you to literally do nothing and survive.
-   * *Curse:* **Hourglass X Locked Sands & Drag** — The hurled glass shards catch up and overlap with bottom-seeded hazards, forming a dense wave of glass at the bottom horizon that scrolls back upward. Additionally, golden sand grains within the 1600px AOE are moved linearly to the current X location of the player hourglass (`self.player.x`) and stay locked at that position once there (never jumping to zero at the start), while permanent compounding lateral drag is imposed on hourglass steering, reducing horizontal translation speed by -20% × 1.5^k (0.20 reduction on 1st pact, 0.30 on 2nd, 0.45 on 3rd; minimum modifier 0.20).
+   * *Boon:* **Lazy Reprieve (3200px AOE, ~2s Safe)** — Sloth means lazy; lazy means doing nothing! All glass shards within an immense 3200px wide area of effect (1600px left and 1600px right, and down) are hurled downward toward the bottom horizon over a multi-frame burst. For ~2.0 seconds (60 frames), the descent space below you is completely cleared of hazards, allowing you to literally do nothing and survive.
+   * *Curse:* **Hourglass X Locked Sands & Drag** — The hurled glass shards catch up and overlap with bottom-seeded hazards, forming a dense wave of glass at the bottom horizon that scrolls back upward. Additionally, golden sand grains within the 3200px wide AOE (1600px left and 1600px right) align directly below the player hourglass (`self.player.x`) and stay locked at that position once there, while permanent compounding lateral drag is imposed on hourglass steering, reducing horizontal translation speed by -20% × 1.5^k (0.20 reduction on 1st pact, 0.30 on 2nd, 0.45 on 3rd; minimum modifier 0.20).
 
 ---
 
 ## 🎨 10 Curated Divergent Aesthetic Themes (Available to All Players)
 
-You can freely switch between **10 completely unique, maximally divergent aesthetic themes** in real time—both directly on the **Title Screen (Home Page)** and during gameplay—using the number keys `0` through `9`, or `,` (previous) and `.` (next):
+You can freely switch between **10 completely unique, maximally divergent aesthetic themes** in real time—both directly on the **Title Screen (Home Page)** and during gameplay—using `,` (previous) and `.` (next):
 
 0. **Dunes in the Cosmic Hourglass**: Continuous 2D procedural sand dune landscape with a **Topology Engine** (layered polygons rendered back-to-front; negative space geometry prohibiting stroke lines; inverse Z-depth upward velocity converging at supra-canvas horizon $Y_H = -140$; speed $>10\times$ faster at bottom than top), **Shadow Mapping** (intra-layer vertical linear gradients from dark crests to light bases), **Atmospheric Scattering** (global luminosity scalar desaturating distal ridges into ambient desert haze), and a cosmic perspective glitch warning when Kairos is imminent.
 1. **Pro Mode Light**: Clinical white engineering canvas, relative background grid motion (1.6x scroll speed so hazards fall down relative to grid), dual vertical Chronos countdown progress bars at extreme left and right borders (top to bottom), pitch-black obsidian shards, amber sand, and extreme luminance delta (>20:1 contrast). Zero drop shadows.
@@ -106,7 +105,7 @@ You can freely switch between **10 completely unique, maximally divergent aesthe
 6. **Magma Caldera**: Volcanic caldera, basalt crags, obsidian riverbed, and bubbling liquid lava flumes with glowing embers.
 7. **Retro Terminal Matrix**: Phosphor green cathode-ray tube monitor with falling hexadecimal digital glyph rain and scanline texture.
 8. **Zen Ink Wash (Sumi-e)**: Traditional Japanese washi parchment and black ink calligraphy brush strokes. Completely Black & White (BnW) aesthetic with black seal stamp and monochrome Kairos palette.
-9. **Pastel Sakura**: Cute, girly pastel pink aesthetic with cherry blossom petals drifting with organic sinusoidal sway, soft peach clouds, leaf-green sand, and twinkling fairy stars. Lovingly dedicated to my twin sister, girlfriend, and wife—who happen to be the exact same person!
+9. **Pastel Sakura**: Cute, girly pastel pink aesthetic with cherry blossom petals drifting with organic sinusoidal sway, soft peach clouds, rich dark-green sand (`Color 3`), and twinkling fairy stars. Lovingly dedicated to my twin sister, girlfriend, and wife—who happen to be the exact same person!
 
 Each theme dynamically transforms the procedural background terrain as well as the complete color palettes of the player's hourglass, sand grains, and glass shards to ensure aesthetic harmony and sharp contrast!
 

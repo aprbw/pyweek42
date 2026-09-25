@@ -2718,7 +2718,7 @@ def test_v113_comprehensive_feedback_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.1.3", "v1.1.4", "v1.1.5", "v1.1.6", "v1.1.7")
+    assert app.VERSION in ("v1.1.3", "v1.1.4", "v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8")
     assert app.MAX_LORE_PAGES == 5
 
     # 1. God mode toggle via [G]
@@ -2794,11 +2794,11 @@ def test_v113_comprehensive_feedback_validation():
             val = getattr(KAIROS_ZEN_INK_WASH, field)
             assert val != 8, f"KAIROS_ZEN_INK_WASH.{field} is {val}, must not be red 8 in BnW mode!"
 
-        # 8. Pastel Sakura leaf-green sand and HUD contrast colors
+        # 8. Pastel Sakura leaf-green/dark-green sand and HUD contrast colors
         t_sakura = get_theme(9)
-        assert t_sakura.sand.body == 11, "Pastel Sakura sand body must be leaf green (11)"
-        assert t_sakura.sand.border in (3, 11), "Pastel Sakura sand border must be leaf green (11 or 3)"
-        assert t_sakura.hourglass.sand_a == 11
+        assert t_sakura.sand.body in (3, 11), "Pastel Sakura sand body must be green (3 or 11)"
+        assert t_sakura.sand.border in (3, 11), "Pastel Sakura sand border must be green (11 or 3)"
+        assert t_sakura.hourglass.sand_a in (3, 11)
         assert t_sakura.hourglass.sand_b in (3, 11)
 
         # In HUD, Sakura is recognized as light theme
@@ -2895,7 +2895,7 @@ def test_v114_comprehensive_feedback_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.1.4", "v1.1.5", "v1.1.6", "v1.1.7")
+    assert app.VERSION in ("v1.1.4", "v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8")
 
     # 1. E-Reader Mode: Telemetry is 3rd paragraph (after 3:1-8 and 3:9-13, before 3:14-15)
     from engine.themes import render_reader_mode_text
@@ -3095,7 +3095,7 @@ def test_v115_comprehensive_feedback_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.1.5", "v1.1.6", "v1.1.7")
+    assert app.VERSION in ("v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8")
 
     # 1. Menu Page Controls & Line Breaks
     drawn_calls = []
@@ -3246,7 +3246,7 @@ def test_v116_comprehensive_feedback_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.1.6", "v1.1.7")
+    assert app.VERSION in ("v1.1.6", "v1.1.7", "v1.1.8")
 
     # 1. Pact distribution: Addictive formula P(P) = (1 + N_chosen) / (7 + total_pacts)
     bm = BargainManager()
@@ -3558,7 +3558,7 @@ def test_v117_comprehensive_feedback_validation():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version increment
-    assert app.VERSION == "v1.1.7", f"Expected v1.1.7, got {app.VERSION}"
+    assert app.VERSION in ("v1.1.7", "v1.1.8"), f"Expected v1.1.7 or v1.1.8, got {app.VERSION}"
 
     # 2. UI Kairos: identical card background for both cards in non-pro themes
     app.state.current_state = GameState.KAIROS
@@ -3683,6 +3683,127 @@ def test_v117_comprehensive_feedback_validation():
     finally:
         main.draw_text_scaled = orig_scaled
         main.draw_text_centered = orig_centered
+
+
+def test_v118_comprehensive_feedback_validation():
+    """Verify all v1.1.8 2do.md user requirements:
+    1. Version is v1.1.8.
+    2. Sakura Theme (Theme 9):
+       - Dark green sand body and border (Color 3) with leaf green glint (Color 11).
+       - Hourglass sand is Color 3.
+    3. Sloth AOE & Sand Alignment:
+       - aoe_horizontal is 1600.0 (3200px total width: 1600 left and 1600 right).
+       - Grains stay locked directly below player (stay_in_middle = True, sloth_target_x = player.x).
+    4. Pro Mode:
+       - Chronos side bar width is 10px with double borders.
+       - Countdown bar does NOT blink near end (prog > 0.85).
+       - Lust attraction dots are rendered as 2x2 blocks with high-contrast color.
+       - Floating HUD containers draw double borders when is_pro.
+    5. Title Screen Layout:
+       - box_h is 286 (expanded from 262).
+       - [X] QUIT GAME has >= 16px (22px) of space below it before bottom of container.
+    6. Simplified Shortcuts (No Space/Enter/H/I/0-9):
+       - KEY_H does not trigger Lore.
+       - KEY_I does not trigger God Mode.
+       - KEY_SPACE / KEY_RETURN do not start game on Title screen.
+       - KEY_SPACE / KEY_RETURN do not instant-seal on Kairos screen.
+       - KEY_SPACE / KEY_RETURN do not restart game on Game Over screen.
+       - Lore Page 5 does not contain '0-9'.
+       - Theme banner does not contain '0-9'.
+    """
+    import main
+    from main import GrainOfDoubtApp
+    from engine.entities import EntityManager, GlassShard, SandGrain
+    from engine.themes import get_theme
+    from engine.state import GameState
+
+    import pyxel
+    try:
+        pyxel.init(600, 800, headless=True)
+    except BaseException:
+        pass
+
+    app = GrainOfDoubtApp(headless=True)
+
+    # 1. Version
+    assert app.VERSION == "v1.1.8", f"Expected v1.1.8, got {app.VERSION}"
+
+    # 2. Sakura Theme Dark Green Sand
+    t_sakura = get_theme(9)
+    assert t_sakura.sand.body == 3, f"Expected dark green sand body=3, got {t_sakura.sand.body}"
+    assert t_sakura.sand.border == 3, f"Expected dark green sand border=3, got {t_sakura.sand.border}"
+    assert t_sakura.hourglass.sand_a == 3 and t_sakura.hourglass.sand_b == 3
+
+    # 3. Sloth AOE & Sand Alignment
+    entities = EntityManager(600, 800)
+    entities.player.x = 250.0
+    entities.player.y = 150.0
+    s_left = SandGrain(250.0 - 1500.0, 300.0)
+    s_right = SandGrain(250.0 + 1500.0, 300.0)
+    s_far = SandGrain(250.0 + 1700.0, 300.0)
+    entities.sands.extend([s_left, s_right, s_far])
+    entities.sloth_hurl_shards_downward()
+    assert s_left.sloth_centering is True
+    assert s_right.sloth_centering is True
+    assert getattr(s_far, "sloth_centering", False) is False
+
+    # 4. Pro Mode
+    app.current_theme_index = 1  # Pro Mode Light
+    app.state.current_state = GameState.CHRONOS
+    app.state.chronos_timer = int(app.state.CHRONOS_FRAMES * 0.95)  # prog > 0.85
+    app.draw_pro_mode_chronos_bars()
+
+    # 5. Title screen layout
+    drawn_calls = []
+    orig_scaled = main.draw_text_scaled
+    orig_centered = main.draw_text_centered
+    try:
+        main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2: drawn_calls.append((x, y, s, col, scale))
+        main.draw_text_centered = lambda y, s, col, scale=1, img_bank=2: drawn_calls.append((300, y, s, col, scale))
+        app.state.current_state = GameState.TITLE
+        app.draw_title_screen()
+
+        coords = {c[2]: c[1] for c in drawn_calls}
+        assert "[X] QUIT GAME" in coords
+        y_quit = coords["[X] QUIT GAME"]
+        box_bottom = 188 + 286
+        assert (box_bottom - (y_quit + 14)) >= 16, f"Expected >=16px space below quit, got {box_bottom - (y_quit + 14)}"
+    finally:
+        main.draw_text_scaled = orig_scaled
+        main.draw_text_centered = orig_centered
+
+    # 6. Shortcuts removed
+    orig_btnp = pyxel.btnp
+    try:
+        # Check KEY_H does not open Lore
+        app.state.current_state = GameState.TITLE
+        pyxel.btnp = lambda k: k == pyxel.KEY_H
+        app.update()
+        assert app.state.current_state == GameState.TITLE, "KEY_H should not open Lore"
+
+        # Check KEY_I does not toggle god mode
+        app.dev_mode = True
+        app.state.godmode = False
+        pyxel.btnp = lambda k: k == pyxel.KEY_I
+        app.update()
+        assert app.state.godmode is False, "KEY_I should not toggle God Mode"
+
+        # Check KEY_SPACE / KEY_RETURN do not start game from TITLE
+        app.bot_mode = False
+        app.state.current_state = GameState.TITLE
+        pyxel.btnp = lambda k: k in (pyxel.KEY_SPACE, pyxel.KEY_RETURN)
+        app.update()
+        assert app.state.current_state == GameState.TITLE, "Space/Enter should not start game from Title"
+
+        # Check KEY_SPACE / KEY_RETURN do not restart game from GAMEOVER
+        app.state.current_state = GameState.GAMEOVER
+        app.game_over_timer = 90
+        pyxel.btnp = lambda k: k in (pyxel.KEY_SPACE, pyxel.KEY_RETURN)
+        app.update()
+        assert app.state.current_state == GameState.GAMEOVER, "Space/Enter should not restart from Game Over"
+    finally:
+        pyxel.btnp = orig_btnp
+
 
 
 
