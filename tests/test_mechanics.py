@@ -238,7 +238,7 @@ def test_wrath_explosion_and_zero_yield():
     entities = EntityManager(600, 800)
     entities.player.x = 300.0
     entities.player.y = 200.0
-    # Spawn shards and sand within 1200px
+    # Spawn shards and sand within 1600px
     s1 = GlassShard(300, 400)
     s2 = GlassShard(400, 300)
     sand1 = SandGrain(300, 350)
@@ -268,12 +268,13 @@ def test_wrath_explosion_and_zero_yield():
     assert math.hypot(s1.vx, s1.vy) >= 30.0
     assert math.hypot(s2.vx, s2.vy) >= 30.0
     assert math.hypot(sand1.vx, sand1.vy) >= 30.0
-    assert state.wrath_zero_yield_timer == 300
+    # In v1.1.4: No zero-yield score penalty (wrath_zero_yield_timer is 0); the con is the blast on the grains!
+    assert state.wrath_zero_yield_timer == 0
 
-    # In zero yield, collecting sand adds 0 points
+    # Collecting sand adds points normally
     init_score = state.score
     state.add_score(100)
-    assert state.score == init_score
+    assert state.score == init_score + 100
 
 
 def test_sloth_speed_modifiers():
@@ -305,7 +306,7 @@ def test_sloth_speed_modifiers():
     # Apply Sloth bargain
     summary = bargains.apply_bargain(SinType.SLOTH, state, entities)
     assert "Lazy Reprieve" in summary["boon"]
-    assert "3 hazards hurled" in summary["boon"]
+    assert "3 shards hurled" in summary["boon"]
 
     # Shard above player unaffected
     assert s_above.y == 150
@@ -613,7 +614,7 @@ def test_dev_mode_fixed_pacts_and_title_screen_shortcut():
         # Key 6 applies WRATH
         pyxel.btnp = lambda k: (k == pyxel.KEY_6)
         app.update()
-        assert app.state.wrath_zero_yield_timer > 0
+        assert app.state.wrath_zero_yield_timer == 0  # No zero-yield con in v1.1.4!
         assert app.selected_feedback["sin"] == "Wrath"
     finally:
         pyxel.btnp = orig_btnp
@@ -888,10 +889,12 @@ def test_dev_mode_qwertyu_pact_reduction():
     assert state.gluttony_level == 0
 
     # 6. WRATH (Y)
-    bargains.apply_bargain(SinType.WRATH, state, entities)
-    assert state.wrath_zero_yield_timer == 300
+    w_sum = bargains.apply_bargain(SinType.WRATH, state, entities)
+    assert w_sum["sin"] == "Wrath"
+    assert state.wrath_zero_yield_timer == 0
     # Reduce Wrath
-    bargains.reduce_bargain(SinType.WRATH, state, entities)
+    w_red = bargains.reduce_bargain(SinType.WRATH, state, entities)
+    assert w_red["sin"] == "Wrath"
     assert state.wrath_zero_yield_timer == 0
 
     # 7. SLOTH (U)
@@ -971,17 +974,19 @@ def test_lust_permanent_attraction_both():
 
 
 def test_wrath_non_compounding():
-    """Verify Wrath does not compound or extend past 10.0s (300 frames) on multiple uses."""
+    """Verify Wrath con is grain blast, with zero-yield timer remaining 0."""
     state = StateManager()
     state.start_game()
     bargains = BargainManager()
 
-    bargains.apply_bargain(SinType.WRATH, state)
-    assert state.wrath_zero_yield_timer == 300
+    w1 = bargains.apply_bargain(SinType.WRATH, state)
+    assert state.wrath_zero_yield_timer == 0
+    assert w1["sin"] == "Wrath"
 
-    # Apply Wrath second time: remains flat 300 (does not compound to 600 or 1.5x)
-    bargains.apply_bargain(SinType.WRATH, state)
-    assert state.wrath_zero_yield_timer == 300
+    # Apply Wrath second time: remains 0 (no zero yield penalty)
+    w2 = bargains.apply_bargain(SinType.WRATH, state)
+    assert state.wrath_zero_yield_timer == 0
+    assert w2["sin"] == "Wrath"
 
 
 def test_dev_mode_title_screen_version_display():
@@ -1420,22 +1425,22 @@ def test_glass_shards_randomized_velocity_and_non_right_triangle_geometry():
 
 
 def test_wrath_explosion_blasts_both_sand_and_shards_away():
-    """Verify Wrath explosion blasts both sand and shards within 1200px away with huge acceleration."""
+    """Verify Wrath explosion blasts shards within 1600px and sand within 3200px."""
     entities = EntityManager(600, 800)
     entities.player.x = 300.0
     entities.player.y = 200.0
 
-    # Inside 1200px radius
-    near_shard = GlassShard(300.0, 500.0)  # dist = 300px
-    near_sand = SandGrain(500.0, 200.0)   # dist = 200px
-    # Outside 1200px radius
-    far_shard = GlassShard(300.0, 1600.0) # dist = 1400px
-    far_sand = SandGrain(2000.0, 200.0)   # dist = 1700px
+    # Inside radii: shard at 500px (<1600px), sand at 2000px (<3200px)
+    near_shard = GlassShard(300.0, 700.0)  # dist = 500px
+    near_sand = SandGrain(2300.0, 200.0)  # dist = 2000px
+    # Outside radii: shard at 2000px (>1600px), sand at 3600px (>3200px)
+    far_shard = GlassShard(300.0, 2200.0) # dist = 2000px
+    far_sand = SandGrain(4000.0, 200.0)   # dist = 3700px
 
     entities.shards.extend([near_shard, far_shard])
     entities.sands.extend([near_sand, far_sand])
 
-    shards_hit, sands_hit = entities.wrath_explosion(explosion_radius=1200.0, impulse_strength=46.0)
+    shards_hit, sands_hit = entities.wrath_explosion(shard_radius=1600.0, grain_radius=3200.0, impulse_strength=46.0)
     assert shards_hit == 1
     assert sands_hit == 1
 
@@ -1523,7 +1528,7 @@ def test_sloth_and_wrath_multi_frame_acceleration_curve():
 
     # Initial kick is moderate (< 20.0 px/frame) and y was NOT teleported
     assert sloth_shard.y == orig_y
-    assert 12.0 <= sloth_shard.vy <= 20.0
+    assert 18.0 <= sloth_shard.vy <= 30.0
     assert sloth_shard.burst_timer == 10
 
     # Advances through frames and builds downward velocity
@@ -2235,16 +2240,16 @@ def test_reader_mode_telemetry_second_paragraph():
     # Detail how many of each pact have been made
     assert "one of Pride" in rendered_corpus or "two of Pride" in rendered_corpus
 
-    # 3rd paragraph: "What profit hath he that worketh"
+    # 2nd paragraph: "What profit hath he that worketh"
     assert "What profit hath he that worketh" in rendered_corpus
 
-    # Verify paragraph ordering: "season" occurs before "elapsed", and "elapsed" occurs before "profit"
+    # Verify paragraph ordering: "season" (1st) < "profit" (2nd) < "elapsed" (3rd)
     idx_season = rendered_corpus.find("season")
-    idx_elapsed = rendered_corpus.find("elapsed")
     idx_profit = rendered_corpus.find("profit")
+    idx_elapsed = rendered_corpus.find("elapsed")
 
-    assert idx_season < idx_elapsed, "First paragraph (season) must come before telemetry paragraph (elapsed)"
-    assert idx_elapsed < idx_profit, "Telemetry paragraph (elapsed) must come before third paragraph (profit)"
+    assert idx_season < idx_profit, "First paragraph (season) must come before second paragraph (profit)"
+    assert idx_profit < idx_elapsed, "Second paragraph (profit) must come before telemetry paragraph (elapsed)"
 
 
 def test_font5x7_ascii_glyphs_and_w_width():
@@ -2681,31 +2686,28 @@ def test_v112_wrath_2k_radius_and_sloth_horizontal_grain_pull():
     assert s_sloth.burst_ay == 6.0
     assert s_sloth.burst_ax == 0.0
 
-    # Grains: X-axis acceleration ONLY towards player, Y-axis unaffected!
-    assert g_left.vx > 0, "Sand on left must accelerate rightward (+X) toward player"
-    assert g_left.burst_ax > 0
-    assert g_left.burst_ay == 0.0, "Sand Y-axis acceleration must be zero (X-axis only!)"
+    # Grains: Linear centering towards x=300 (middle), Y-axis unaffected!
+    assert g_left.x > 100.0, "Sand on left must move linearly rightward towards middle (300)"
+    assert g_left.sloth_centering is True
+    assert g_left.y == 500.0, "Sand Y-axis must be unaffected"
 
-    assert g_right.vx < 0, "Sand on right must accelerate leftward (-X) toward player"
-    assert g_right.burst_ax < 0
-    assert g_right.burst_ay == 0.0, "Sand Y-axis acceleration must be zero (X-axis only!)"
+    assert g_right.x < 600.0, "Sand on right must move linearly leftward towards middle (300)"
+    assert g_right.sloth_centering is True
+    assert g_right.y == 500.0, "Sand Y-axis must be unaffected"
+
+    # Once sand reaches middle (300), it stays locked in middle
+    g_mid = SandGrain(305.0, 500.0)
+    entities.sands.append(g_mid)
+    entities.sloth_hurl_shards_downward(radius=2000.0)
+    assert g_mid.x == 300.0
+    assert g_mid.stay_in_middle is True
+    # Subsequent updates keep it locked at x=300.0
+    g_mid.update(scroll_speed=2.0, player_x=300.0, player_y=200.0)
+    assert g_mid.x == 300.0
 
 
 def test_v113_comprehensive_feedback_validation():
-    """Verify all v1.1.3 2do.md user requirements:
-    1. God mode toggle via [G] key in dev mode.
-    2. Title screen controls formatted with square brackets on 4 lines.
-    3. Select Themes header without '10' and without 'ACTIVE', with normal parentheses '(?/10)'.
-    4. Shortcuts 1 key per line.
-    5. Photosensitivity does not claim monochrome.
-    6. Dev mode box format: [key] NAME: STATS on all lines without theme.
-    7. Sumi-e completely BnW (no color 8 in seal or kairos palette).
-    8. Pastel Sakura leaf-green sand (body 11, border 3) and high-contrast HUD font colors.
-    9. Game over screen: 'HOURGLASS SHATTERED' centered at x=130, no 'BY ARIAN PRABOWO', multi-line prompts.
-    10. 5-Page Lore manual: borrowed time explained first on page 1, lore before mechanics on page 2,
-        scale=2 PRO/CON on pages 3 and 4, Sakura dedication to twin sister/girlfriend/wife on page 5,
-        no [X] on navigation arrow line, strict word wrap (all lines <= 41 chars at scale=2).
-    """
+    """Verify all v1.1.3 2do.md user requirements."""
     import pyxel
     import main
     from main import GrainOfDoubtApp, get_text_width_5x7
@@ -2713,7 +2715,7 @@ def test_v113_comprehensive_feedback_validation():
     from engine.state import GameState
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION == "v1.1.3"
+    assert app.VERSION == "v1.1.4"
     assert app.MAX_LORE_PAGES == 5
 
     # 1. God mode toggle via [G]
@@ -2858,6 +2860,195 @@ def test_v113_comprehensive_feedback_validation():
     finally:
         main.draw_text_scaled = orig_scaled
         main.draw_text_centered = orig_centered
+
+
+def test_v114_comprehensive_feedback_validation():
+    """Verify all v1.1.4 2do.md user requirements:
+    1. E-Reader Mode: Telemetry moved to 3rd paragraph (between Ecc 3:9-13 and Ecc 3:14-15),
+       formatted with start_y=24, line_h=19, para_gap=10 so all 3 paragraphs fit on screen.
+    2. Lore Page 1: Competition context 1st; PyWeek 42 (September 2026); theme: Borrowed Time;
+       'by www.arianprabowo.com' on its own line; sand grains explanation without 'only'.
+    3. Lore Pages 3 & 4 / Scriptures: Exact paraphrases for Envy, Wrath, and Sloth:
+       - Envy: 'you want everything you see, so you don't deserve to see as much'
+       - Wrath: 'you use great force to push all dangers away, but you also push all the good things away too'
+       - Sloth: 'you push all dangers to a later time, so you don't have to do anything now'
+    4. Dev Mode Bottom Box: Dedicated box at bottom strictly enforcing 1 key per line
+       in '[key] NAME: STATS' format across all 7 lines (h=148, w=560).
+    5. Wrath: Blast radius: shards = 1600px, grains = 3200px. No zero-yield score penalty (timer == 0).
+    6. Sloth: AOE = 1600px (L, R, Down), time ~2s (60 frames), shards pushed down,
+       sands move linearly to middle (x=300) and stay in middle once there (stay_in_middle = True).
+    """
+    import main
+    from main import GrainOfDoubtApp, KJV_SIN_PARAGRAPHS
+    from engine.entities import EntityManager, GlassShard, SandGrain
+    from engine.bargains import BargainManager, SinType
+    from engine.state import GameState
+
+    app = GrainOfDoubtApp(headless=True)
+    assert app.VERSION == "v1.1.4"
+
+    # 1. E-Reader Mode: Telemetry is 3rd paragraph (after 3:1-8 and 3:9-13, before 3:14-15)
+    from engine.themes import render_reader_mode_text
+
+    class MockPyxel:
+        def __init__(self):
+            self.texts = []
+            self.images = {2: self}
+            self.lines = []
+        def text(self, x, y, s, col):
+            self.texts.append((x, y, s))
+        def line(self, x1, y1, x2, y2, col):
+            self.lines.append((x1, y1, x2, y2, col))
+        def blt(self, *args, **kwargs):
+            pass
+
+    mock = MockPyxel()
+    telemetry = {
+        "hearts": 5,
+        "max_hearts": 5,
+        "score": 10,
+        "time_elapsed": 5.0,
+        "pacts": ["Wrath"],
+        "pact_count": 1,
+    }
+    render_reader_mode_text(
+        mock,
+        cam_x=0,
+        prog=0.0,
+        dist=0,
+        screen_w=600,
+        screen_h=800,
+        is_greed=False,
+        col_ink=0,
+        col_rule=5,
+        telemetry=telemetry,
+    )
+    all_rendered = " ".join(t[2] for t in mock.texts)
+    idx_season = all_rendered.find("season")
+    idx_profit = all_rendered.find("profit")
+    idx_elapsed = all_rendered.find("elapsed")
+    assert idx_season < idx_profit < idx_elapsed, "Telemetry must be the 3rd paragraph (after season and profit)!"
+    max_y = max(t[1] for t in mock.texts)
+    assert max_y < 800, f"Rendered text bottom {max_y} exceeds 800px screen!"
+
+    # 2. Lore Page 1: Competition context 1st, author on own line, no 'only' in grains text
+    orig_scaled = main.draw_text_scaled
+    orig_centered = main.draw_text_centered
+    drawn_calls = []
+    try:
+        main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2: drawn_calls.append((x, y, s, col, scale))
+        main.draw_text_centered = lambda y, s, col, scale=1, img_bank=2: drawn_calls.append((300, y, s, col, scale))
+
+        app.state.current_state = GameState.LORE
+        app.lore_page = 0
+        app.draw_lore_screen()
+
+        p1_texts = [c[2] for c in drawn_calls]
+
+        # Competition context first
+        idx_pw = next(i for i, t in enumerate(p1_texts) if "PyWeek 42 (September 2026)" in t)
+        idx_theme = next(i for i, t in enumerate(p1_texts) if "The theme is: Borrowed Time" in t)
+        idx_by = next(i for i, t in enumerate(p1_texts) if t == "by www.arianprabowo.com")
+        idx_borrowed = next(i for i, t in enumerate(p1_texts) if "2. THE MEANING OF 'BORROWED TIME'" in t)
+
+        assert idx_pw < idx_theme < idx_by < idx_borrowed, "Competition context must precede premise description!"
+        assert any(t == "by www.arianprabowo.com" for t in p1_texts), "Author must be on its own line"
+
+        # Sand grains text without 'only'
+        grain_lines = [t for t in p1_texts if "Sand grains measure" in t or "hourglass" in t]
+        assert len(grain_lines) > 0
+        assert not any("only" in t.lower() for t in grain_lines), "Sand grain text must not say 'only'"
+
+        # 3. Lore Pages 3 & 4 / Scriptures exact paraphrases
+        assert "thou shalt not deserve to see so much" in KJV_SIN_PARAGRAPHS[SinType.ENVY].lower()
+        assert "thou shalt push all the good things away too" in KJV_SIN_PARAGRAPHS[SinType.WRATH].lower()
+        assert "thou shalt push all dangers to a later time that thou mayest do nothing now" in KJV_SIN_PARAGRAPHS[SinType.SLOTH].lower()
+
+        # Check pages 3 & 4 contain exact paraphrases
+        app.lore_page = 2
+        drawn_calls.clear()
+        app.draw_lore_screen()
+        p3_texts = " ".join(c[2] for c in drawn_calls)
+        assert "You want everything you see, so" in p3_texts
+        assert "you don't deserve to see as much" in p3_texts
+
+        app.lore_page = 3
+        drawn_calls.clear()
+        app.draw_lore_screen()
+        p4_texts = " ".join(c[2] for c in drawn_calls)
+        assert "You use great force to push all" in p4_texts
+        assert "dangers away, but you also push all the" in p4_texts
+        assert "good things away too" in p4_texts
+        assert "You push all dangers to a later" in p4_texts
+        assert "time, so you don't have to do anything" in p4_texts
+        assert "now" in p4_texts
+
+        # 4. Dev Mode Bottom Box: 1 key per line, format [key] NAME: STATS
+        drawn_calls.clear()
+        app.draw_dev_box(box_y=600)
+        box_texts = [c[2] for c in drawn_calls]
+        assert len(box_texts) == 7
+        assert box_texts[0].startswith("[`] DEV MODE: ON (v1.1.4)")
+        assert box_texts[1].startswith("[G] GOD MODE:")
+        assert box_texts[2].startswith("[B] BOT MODE:")
+        assert box_texts[3].startswith("[V] VIDEO REC:")
+        assert box_texts[4].startswith("[1-7] ADD PACTS:")
+        assert box_texts[5].startswith("[Q-U] REDUCE PACTS:")
+        assert box_texts[6].startswith("[X] RETURN: TITLE MENU")
+
+    finally:
+        main.draw_text_scaled = orig_scaled
+        main.draw_text_centered = orig_centered
+
+    # 5. Wrath mechanics: 1600px shards, 3200px grains, zero-yield is 0
+    entities = EntityManager(600, 800)
+    entities.player.x = 300.0
+    entities.player.y = 200.0
+    s_1500 = GlassShard(300.0, 1700.0)  # dy = 1500 (inside 1600)
+    s_2000 = GlassShard(300.0, 2200.0)  # dy = 2000 (outside 1600)
+    g_3000 = SandGrain(300.0, 3200.0)   # dy = 3000 (inside 3200)
+    g_3500 = SandGrain(300.0, 3700.0)   # dy = 3500 (outside 3200)
+    entities.shards.extend([s_1500, s_2000])
+    entities.sands.extend([g_3000, g_3500])
+
+    shards_hit, sands_hit = entities.wrath_explosion()
+    assert shards_hit == 1, f"Expected 1 shard hit at 1500px (<1600px), got {shards_hit}"
+    assert sands_hit == 1, f"Expected 1 sand hit at 3000px (<3200px), got {sands_hit}"
+
+    # Wrath pact application: no zero yield
+    app.state.wrath_zero_yield_timer = 99
+    bargains = BargainManager()
+    bargains.apply_bargain(SinType.WRATH, app.state, entities)
+    assert app.state.wrath_zero_yield_timer == 0, "Wrath MUST NOT have a zero-yield score penalty!"
+
+    # 6. Sloth mechanics: AOE 1600px, shards pushed down, sands linearly centered to 300 and locked
+    entities.reset()
+    entities.player.x = 300.0
+    entities.player.y = 200.0
+    s_sloth_inside = GlassShard(300.0, 1000.0)  # dy = 800 (inside 1600 down)
+    s_sloth_outside = GlassShard(300.0, 1900.0) # dy = 1700 (outside 1600 down)
+    g_left = SandGrain(100.0, 500.0)
+    g_right = SandGrain(500.0, 500.0)
+    entities.shards.extend([s_sloth_inside, s_sloth_outside])
+    entities.sands.extend([g_left, g_right])
+
+    thrown, centered = entities.sloth_hurl_shards_downward()
+    assert thrown == 1
+    assert centered == 2
+    assert s_sloth_inside.vy >= 24.0
+    assert g_left.x > 100.0
+    assert g_right.x < 500.0
+
+    # Sand reaches 300 and stays in the middle
+    g_mid = SandGrain(308.0, 500.0)
+    entities.sands.append(g_mid)
+    entities.sloth_hurl_shards_downward()
+    assert g_mid.x == 300.0
+    assert g_mid.stay_in_middle is True
+    # Update keeps x at 300.0
+    g_mid.update(scroll_speed=2.0, player_x=300.0, player_y=200.0)
+    assert g_mid.x == 300.0
+
 
 
 

@@ -1,7 +1,7 @@
 # Grain of Doubt
 
 > **By Arian Prabowo**  
-> **Version:** v1.1.3  
+> **Version:** v1.1.4  
 > **PyWeek 42 Entry ("Borrowed Time")** — September 2026  
 > An endless retro downhill falling-hourglass arcade runner built with the **Pyxel** retro game engine.  
 > **Target Resolution:** 600 × 800 pixels (3:4 Portrait Aspect Ratio, Infinite Horizontal Arena).  
@@ -33,25 +33,6 @@ Steer left or right to avoid falling glass shards while collecting glistening go
 ### Deep World Simulation & Hazard Catch-up (10 Seconds Down)
 * To support downward push mechanics (such as **Sloth's Lazy Reprieve** downward throw and **Wrath's Explosion** blast), the active entity simulation domain extends several screens downward ($y \le 6000.0$ pixels, approximately 10–12 seconds of scroll time).
 * Entities blasted or hurled far downward are not prematurely culled; they remain fully simulated with second-order Newtonian physics, deceleration, and viscous damping. As time marches forward, these pushed hazards inevitably scroll back upward into player territory—ensuring that every survival choice carries lasting gameplay consequences.
-
----
-
-## 🎨 10 Curated Divergent Aesthetic Themes (Available to All Players)
-
-You can freely switch between **10 completely unique, maximally divergent aesthetic themes** in real time—both directly on the **Title Screen (Home Page)** and during gameplay—using the number keys `0` through `9`, or `,` (previous) and `.` (next):
-
-0. **Dunes in the Cosmic Hourglass**: Continuous 2D procedural sand dune landscape with a **Topology Engine** (layered polygons rendered back-to-front; negative space geometry prohibiting stroke lines; inverse Z-depth upward velocity converging at supra-canvas horizon $Y_H = -140$; speed $>10\times$ faster at bottom than top), **Shadow Mapping** (intra-layer vertical linear gradients from dark crests to light bases), **Atmospheric Scattering** (global luminosity scalar desaturating distal ridges into ambient desert haze), and a cosmic perspective glitch warning when Kairos is imminent.
-1. **Pro Mode Light**: Clinical white engineering canvas, relative background grid motion (1.6x scroll speed so hazards fall down relative to grid), dual vertical Chronos countdown progress bars at extreme left and right borders (top to bottom), pitch-black obsidian shards, amber sand, and extreme luminance delta (>20:1 contrast). Zero drop shadows.
-2. **Pro Mode Dark**: Pure pitch-black canvas, relative background grid motion (1.6x scroll speed so hazards fall down relative to grid), dual vertical Chronos countdown progress bars at extreme left and right borders (top to bottom), solid opaque HUD panels, and vibrant Cyan (`Color 12`) unselected pact list (WCAG AAA). Zero drop shadows.
-3. **E-Reader Light**: Warm cream parchment digital e-reader displaying genuine **Ecclesiastes 3:1-22 (King James Version)** in double-sized font (`scale=2`, $8 \times 12$ px characters) formatted as continuous, justified un-indented prose. Floating arcade HUD panels are 100% suppressed; gameplay telemetry is seamlessly disguised as an authentic scripture paragraph between verses 8 and 9 without modern brackets or parentheses. Shards render at **30% alpha** and sand/hourglass at **60% alpha** as subtle translucent watermarks.
-4. **E-Reader Dark**: Midnight slate companion to E-Reader Light. Double-sized Ecclesiastes 3 KJV text, disguised KJV scripture telemetry paragraph, 100% suppressed floating HUD, and 30%/60% alpha translucent gameplay elements.
-5. **Glacial Crevasse**: Deep sub-zero glacial chasm with sheer vertical meltwater streams, horizontal firn ice strata, and shimmering crystalline frost motes.
-6. **Magma Caldera**: Volcanic caldera, basalt crags, obsidian riverbed, and bubbling liquid lava flumes with glowing embers.
-7. **Retro Terminal Matrix**: Phosphor green cathode-ray tube monitor with falling hexadecimal digital glyph rain and scanline texture.
-8. **Zen Ink Wash (Sumi-e)**: Traditional Japanese washi parchment and black ink calligraphy brush strokes. Completely Black & White (BnW) aesthetic with black seal stamp and monochrome Kairos palette.
-9. **Pastel Sakura**: Cute, girly pastel pink aesthetic with cherry blossom petals drifting with organic sinusoidal sway, soft peach clouds, leaf-green sand, and twinkling fairy stars. Lovingly dedicated to my twin sister, girlfriend, and wife—who happen to be the exact same person!
-
-Each theme dynamically transforms the procedural background terrain as well as the complete color palettes of the player's hourglass, sand grains, and glass shards to ensure aesthetic harmony and sharp contrast!
 
 ---
 
@@ -104,11 +85,30 @@ Every 10.0 seconds (300 frames), normal time flow stops and **Kairos** strikes. 
    * *Boon:* **Fat Sand Grains** — $\sim 3\times$ larger radius/length-wise ($10\times$ area), awarding $3\times$ score ($3$ points per grain).
    * *Curse:* **Fat Glass Shards** — $\sim 2.8\times$ linear dimensions ($10\times$ area), creating massive, menacing hazard obstacles.
 6. **Wrath:**
-   * *Boon:* **Wrath Blast** — Detonates an instant kinetic explosion centered on the player: all entities (both golden sand grains and glass shards) within a **1200-pixel radius** are blasted outward with a smooth multi-frame acceleration impulse away from the hourglass. Zero visual particle clutter.
-   * *Curse:* Zero yield: all sand grains collected yield 0 points for 10.0 seconds (300 frames).
+   * *Boon:* **Shard Shockwave Blast (1600px)** — Detonates an instant kinetic explosion centered on the player: glass shards within a **1600-pixel radius** are blasted outward with a smooth multi-frame acceleration impulse away from the hourglass. Zero visual particle clutter.
+   * *Curse:* **Sand Grain Blast Wave (3200px)** — The shockwave blast also violently hurls all golden sand grains within an immense **3200-pixel radius** far away from the hourglass, scattering your reaped grains into the deep void. There is no zero-score yield penalty; this massive loss and dispersal of sand IS the curse!
 7. **Sloth:**
-   * *Boon:* **Lazy Reprieve** — Sloth means lazy; lazy means doing nothing! All glass shards below the player within 3 screens wide are hurled downward toward the bottom horizon over a multi-frame burst. For ~2.0 to 2.5 seconds, the descent space below you is completely cleared of hazards, allowing you to literally do nothing and survive.
-   * *Curse:* The hurled glass shards catch up and overlap with bottom-seeded hazards, forming a doubly dangerous wave of glass at the bottom horizon that scrolls back upward. Additionally, imposes permanent compounding lateral drag on hourglass steering, reducing horizontal translation speed by -20% × 1.5^k (0.20 reduction on 1st pact, 0.30 on 2nd, 0.45 on 3rd; minimum modifier 0.20).
+   * *Boon:* **Lazy Reprieve (1600px, ~2s Safe)** — Sloth means lazy; lazy means doing nothing! All glass shards within a 1600px area of effect (left, right, and down) are hurled downward toward the bottom horizon over a multi-frame burst. For ~2.0 seconds (60 frames), the descent space below you is completely cleared of hazards, allowing you to literally do nothing and survive.
+   * *Curse:* **Center Locked Sands & Drag** — The hurled glass shards catch up and overlap with bottom-seeded hazards, forming a dense wave of glass at the bottom horizon that scrolls back upward. Additionally, golden sand grains within the 1600px AOE are moved linearly to the center ($x=300$) and stay locked in the middle once there, while permanent compounding lateral drag is imposed on hourglass steering, reducing horizontal translation speed by -20% × 1.5^k (0.20 reduction on 1st pact, 0.30 on 2nd, 0.45 on 3rd; minimum modifier 0.20).
+
+---
+
+## 🎨 10 Curated Divergent Aesthetic Themes (Available to All Players)
+
+You can freely switch between **10 completely unique, maximally divergent aesthetic themes** in real time—both directly on the **Title Screen (Home Page)** and during gameplay—using the number keys `0` through `9`, or `,` (previous) and `.` (next):
+
+0. **Dunes in the Cosmic Hourglass**: Continuous 2D procedural sand dune landscape with a **Topology Engine** (layered polygons rendered back-to-front; negative space geometry prohibiting stroke lines; inverse Z-depth upward velocity converging at supra-canvas horizon $Y_H = -140$; speed $>10\times$ faster at bottom than top), **Shadow Mapping** (intra-layer vertical linear gradients from dark crests to light bases), **Atmospheric Scattering** (global luminosity scalar desaturating distal ridges into ambient desert haze), and a cosmic perspective glitch warning when Kairos is imminent.
+1. **Pro Mode Light**: Clinical white engineering canvas, relative background grid motion (1.6x scroll speed so hazards fall down relative to grid), dual vertical Chronos countdown progress bars at extreme left and right borders (top to bottom), pitch-black obsidian shards, amber sand, and extreme luminance delta (>20:1 contrast). Zero drop shadows.
+2. **Pro Mode Dark**: Pure pitch-black canvas, relative background grid motion (1.6x scroll speed so hazards fall down relative to grid), dual vertical Chronos countdown progress bars at extreme left and right borders (top to bottom), solid opaque HUD panels, and vibrant Cyan (`Color 12`) unselected pact list (WCAG AAA). Zero drop shadows.
+3. **E-Reader Light**: Warm cream parchment digital e-reader displaying genuine **Ecclesiastes 3:1-22 (King James Version)** in double-sized font (`scale=2`, $8 \times 12$ px characters) formatted as continuous, justified un-indented prose. Floating arcade HUD panels are 100% suppressed; gameplay telemetry is seamlessly disguised as an authentic scripture paragraph between verses 13 and 14 without modern brackets or parentheses. Shards render at **30% alpha** and sand/hourglass at **60% alpha** as subtle translucent watermarks.
+4. **E-Reader Dark**: Midnight slate companion to E-Reader Light. Double-sized Ecclesiastes 3 KJV text, disguised KJV scripture telemetry paragraph, 100% suppressed floating HUD, and 30%/60% alpha translucent gameplay elements.
+5. **Glacial Crevasse**: Deep sub-zero glacial chasm with sheer vertical meltwater streams, horizontal firn ice strata, and shimmering crystalline frost motes.
+6. **Magma Caldera**: Volcanic caldera, basalt crags, obsidian riverbed, and bubbling liquid lava flumes with glowing embers.
+7. **Retro Terminal Matrix**: Phosphor green cathode-ray tube monitor with falling hexadecimal digital glyph rain and scanline texture.
+8. **Zen Ink Wash (Sumi-e)**: Traditional Japanese washi parchment and black ink calligraphy brush strokes. Completely Black & White (BnW) aesthetic with black seal stamp and monochrome Kairos palette.
+9. **Pastel Sakura**: Cute, girly pastel pink aesthetic with cherry blossom petals drifting with organic sinusoidal sway, soft peach clouds, leaf-green sand, and twinkling fairy stars. Lovingly dedicated to my twin sister, girlfriend, and wife—who happen to be the exact same person!
+
+Each theme dynamically transforms the procedural background terrain as well as the complete color palettes of the player's hourglass, sand grains, and glass shards to ensure aesthetic harmony and sharp contrast!
 
 ---
 

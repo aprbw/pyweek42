@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.1.4] - 2026-09-25
+### Changed
+- **E-Reader Mode Telemetry Alignment**:
+  - Moved gameplay telemetry to the 3rd scriptural paragraph (between Ecclesiastes 3:9-13 and 3:14-15).
+  - Formatted with `start_y=24`, `line_h=19`, `para_gap=10` so all 3 initial paragraphs fit comfortably on-screen at scroll `prog=0.0`.
+- **Lore & Learn Page 1 Refinements**:
+  - Competition context featured 1st: Built for PyWeek 42 (September 2026), Theme: Borrowed Time.
+  - Placed `"by www.arianprabowo.com"` on its own dedicated line.
+  - Refined sand grains description by removing `"only"`.
+- **Lore & Scriptures Sin Paraphrases (Pages 3 & 4)**:
+  - Envy: *"you want everything you see, so you don't deserve to see as much"*
+  - Wrath: *"you use great force to push all dangers away, but you also push all the good things away too"*
+  - Sloth: *"you push all dangers to a later time, so you don't have to do anything now"*
+- **Developer Mode Bottom Box Dedicated Lines**:
+  - Strictly enforced 1 key per line across all 7 lines in `[key] NAME: STATS` format without pipe character cramming.
+  - Standardized box geometry ($h=148$, $w=560$) across both Title Screen and in-game translucent debug overlay.
+- **Wrath Mechanics Overhaul**:
+  - Rebalanced blast radius: Glass shards = 1600px; Sand grains = 3200px.
+  - Eliminated zero-yield score penalty completely (`wrath_zero_yield_timer == 0`). The massive 3200px blast scattering all golden sand grains into the deep void serves as the con.
+- **Sloth Mechanics Overhaul**:
+  - Rebalanced area of effect to 1600px (Left, Right, Down) providing ~2.0s of hazard-free safe descent.
+  - Shards within AOE are hurled downward; sand grains within AOE move linearly toward horizontal center ($x=300$) and remain locked in the middle once centered (`stay_in_middle = True`).
+- **Documentation & Packaging**:
+  - `README.md`: Reordered sections so the 10 Themes list appears after Controls and Seven Deadly Faustian Bargains. Updated Wrath and Sloth pact descriptions. Bumped version to `v1.1.4`.
+  - `build.sh`: Updated distribution zip target to `grain-of-doubt-1.1.4.zip`.
+
 ## [v1.1.3] - 2026-09-25
 ### Changed
 - **Home Screen Presentation & Controls Layout**:

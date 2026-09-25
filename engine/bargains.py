@@ -119,19 +119,19 @@ BARGAIN_REGISTRY: Dict[SinType, BargainDefinition] = {
         sin=SinType.WRATH,
         name="Wrath",
         latin_name="Ira",
-        boon_name="Wrath Blast (1200px)",
-        curse_name="Zero Yield Period",
-        boon_base=1200.0,  # radius in pixels
-        curse_base=300.0,  # 10.0 seconds (frames)
-        boon_unit="px blast radius",
-        curse_unit="frames",
+        boon_name="Shard Shockwave (1600px)",
+        curse_name="Sand Grain Blast (3200px)",
+        boon_base=1600.0,  # radius in pixels
+        curse_base=3200.0,  # radius in pixels
+        boon_unit="px blast",
+        curse_unit="px blast",
     ),
     SinType.SLOTH: BargainDefinition(
         sin=SinType.SLOTH,
         name="Sloth",
         latin_name="Acedia",
-        boon_name="Lazy Reprieve",
-        curse_name="Lateral Drag",
+        boon_name="Lazy Reprieve (1600px, 2s)",
+        curse_name="Center Locked Sands & Drag",
         boon_base=2.0,
         curse_base=0.20,
         boon_unit="s safe",
@@ -238,34 +238,36 @@ class BargainManager:
             }
 
         elif sin == SinType.WRATH:
-            # Wrath is an explosion! Everything (both sand and glass shards) within 2000px
-            # is given an instant HUGE acceleration away from the player
+            # Wrath is an explosion!
+            # Blast radius: Shards = 1600px; Sand grains = 3200px.
+            # No zero yield con! Con is the blast on the grains.
             shards_hit = 0
             sands_hit = 0
             if entities_manager:
-                shards_hit, sands_hit = entities_manager.wrath_explosion(explosion_radius=2000.0, impulse_strength=46.0)
+                shards_hit, sands_hit = entities_manager.wrath_explosion(shard_radius=1600.0, grain_radius=3200.0, impulse_strength=46.0)
             state.trigger_shake(duration=20, intensity=12.0)
-            state.wrath_zero_yield_timer = 300
+            state.wrath_zero_yield_timer = 0  # No zero-yield con; blast on grains IS the con!
             summary = {
                 "sin": defn.name,
-                "boon": f"Wrath Blast: {shards_hit} shards & {sands_hit} sands detonated (2000px)",
-                "curse": "Zero Yield: 10.0s (0 pts/sand)",
+                "boon": f"Wrath Blast: {shards_hit} shards blasted (1600px)",
+                "curse": f"Grain Blast: {sands_hit} sands hurled away (3200px)",
             }
 
         elif sin == SinType.SLOTH:
-            # Boon: Sloth means lazy; lazy means doing nothing!
-            # Throws all shards below player down (2000px radius) and pulls grains horizontally on X-axis
+            # Sloth: Area of effect 1600px (L, R, Down), ~2 seconds
+            # Shards pushed down; sands pushed linearly to middle (x=300) and stay there
             thrown_count = 0
-            sands_pulled = 0
+            sands_centered = 0
             if entities_manager:
-                thrown_count, sands_pulled = entities_manager.sloth_hurl_shards_downward(radius=2000.0)
+                thrown_count, sands_centered = entities_manager.sloth_hurl_shards_downward(aoe_horizontal=1600.0, aoe_down=1600.0)
+            state.sloth_active_timer = 60  # ~2 seconds at 30 FPS
             # Curse: Aggressive lateral drag: 0.20 * 1.5^k reduction, min 0.20
             drag_reduction = 0.20 * (1.5 ** k)
             state.sloth_player_speed_mod = max(0.20, state.sloth_player_speed_mod - drag_reduction)
             summary = {
                 "sin": defn.name,
-                "boon": f"Lazy Reprieve: {thrown_count} hazards hurled & {sands_pulled} sands pulled X-axis",
-                "curse": f"Lateral Drag: -{drag_reduction * 100:.1f}% steering (mod={state.sloth_player_speed_mod:.2f})",
+                "boon": f"Lazy Reprieve: {thrown_count} shards hurled down (~2s safe)",
+                "curse": f"Sand Locked to Center & -{drag_reduction * 100:.1f}% drag (mod={state.sloth_player_speed_mod:.2f})",
             }
 
         self.selection_counts[sin] += 1
@@ -356,7 +358,7 @@ class BargainManager:
             summary = {
                 "sin": defn.name,
                 "boon": "Wrath Reset",
-                "curse": "Zero Yield Ended",
+                "curse": "Curse Cleared",
             }
 
         elif sin == SinType.SLOTH:
@@ -366,6 +368,7 @@ class BargainManager:
             state.sloth_player_speed_mod = max(0.20, speed_mod)
             if new_k == 0:
                 state.sloth_freeze_timer = 0
+                state.sloth_active_timer = 0
             summary = {
                 "sin": defn.name,
                 "boon": f"Sloth Level: {new_k}",

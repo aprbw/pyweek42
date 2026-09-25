@@ -183,9 +183,9 @@ KJV_SIN_PARAGRAPHS: dict[SinType, str] = {
         "glass be drawn likewise to pierce thy fragile walls."
     ),
     SinType.ENVY: (
-        "A great tidal pull shall rise up for a moment, gathering every distant "
-        "grain into thy bosom; howbeit, the shadow of darkness shall draw near, "
-        "and thy sight shall be narrowed into the valley of gloom."
+        "Thou desirest everything thine eyes behold; howbeit, thou shalt "
+        "not deserve to see so much, and creeping shadow shall narrow "
+        "thy vision into darkness."
     ),
     SinType.GLUTTONY: (
         "Thou shalt feast upon great and fat grains yielding threefold measure "
@@ -193,14 +193,14 @@ KJV_SIN_PARAGRAPHS: dict[SinType, str] = {
         "and heavy, that thy path be choked with peril."
     ),
     SinType.WRATH: (
-        "In thine anger a mighty detonation shall burst forth, driving far away "
-        "both shard and sand in a great tempest; yet in the quiet that followeth, "
-        "all thy labor shall yield zero harvest for a time."
+        "In thine anger thou shalt use great force to drive all dangers far away; "
+        "howbeit, thou shalt push all the good things away too, and scatter "
+        "thy golden sands into the distant void."
     ),
     SinType.SLOTH: (
-        "Thou shalt cast down thy burdens into the deep, and the perils of this "
-        "hour shall be hurled beneath thee; yet a spirit of heaviness shall drag "
-        "upon thy steering, that thou canst scarce turn aside."
+        "Thou shalt push all dangers to a later time that thou mayest do nothing "
+        "now; yet shalt thou be bound to the center, and sluggish drag shall "
+        "mire thy steering."
     ),
 }
 
@@ -282,7 +282,7 @@ def is_dev_environment() -> bool:
 
 
 class GrainOfDoubtApp:
-    VERSION: str = "v1.1.3"
+    VERSION: str = "v1.1.4"
     SCREEN_WIDTH: int = 600
     SCREEN_HEIGHT: int = 800
 
@@ -1529,7 +1529,7 @@ class GrainOfDoubtApp:
                     draw_text_scaled(cx + 16, col_y + 168, "x110% per sand", kp.pro_label, scale=1)
                 elif sin == SinType.SLOTH:
                     draw_text_scaled(cx + 16, col_y + 144, "Lazy Reprieve", kp.pro_text, scale=2)
-                    draw_text_scaled(cx + 16, col_y + 168, "Drop Hazards / Pull Sand", kp.pro_label, scale=1)
+                    draw_text_scaled(cx + 16, col_y + 168, "Hurls Shards Down (~2s)", kp.pro_label, scale=1)
                 elif sin == SinType.LUST:
                     draw_text_scaled(cx + 16, col_y + 144, "Sand Magnet", kp.pro_text, scale=2)
                     draw_text_scaled(cx + 16, col_y + 168, f"{100 + k * 50}px (Permanent)", kp.pro_label, scale=1)
@@ -1539,8 +1539,8 @@ class GrainOfDoubtApp:
                     draw_text_scaled(cx + 16, col_y + 144, "Fat Grains", kp.pro_text, scale=2)
                     draw_text_scaled(cx + 16, col_y + 168, f"3x Pts, {next_fat:.1f}% Fat (10x)", kp.pro_label, scale=1)
                 elif sin == SinType.WRATH:
-                    draw_text_scaled(cx + 16, col_y + 144, "Wrath Explosion", kp.pro_text, scale=2)
-                    draw_text_scaled(cx + 16, col_y + 168, "Blast 2000px Radius", kp.pro_label, scale=1)
+                    draw_text_scaled(cx + 16, col_y + 144, "Shard Blast", kp.pro_text, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 168, "Blast 1600px Radius", kp.pro_label, scale=1)
                 else:
                     draw_text_scaled(cx + 16, col_y + 144, f"+{defn.boon_name}", kp.pro_text, scale=2)
                     draw_text_scaled(cx + 16, col_y + 168, f"{defn.boon_base} {defn.boon_unit}", kp.pro_label, scale=1)
@@ -1565,8 +1565,8 @@ class GrainOfDoubtApp:
                     draw_text_scaled(cx + 16, col_y + 258, f"{outer_preview}/{inner_preview} px", kp.con_label, scale=1)
                 elif sin == SinType.SLOTH:
                     drag = 0.20 * (1.5 ** k) * 100
-                    draw_text_scaled(cx + 16, col_y + 234, "Lateral Drag", kp.con_text, scale=2)
-                    draw_text_scaled(cx + 16, col_y + 258, f"-{drag:.0f}% Steering (Wave)", kp.con_label, scale=1)
+                    draw_text_scaled(cx + 16, col_y + 234, "Center Lock", kp.con_text, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 258, f"Sands to Mid, -{drag:.0f}% Drag", kp.con_label, scale=1)
                 elif sin == SinType.LUST:
                     draw_text_scaled(cx + 16, col_y + 234, "Hazard Magnet", kp.con_text, scale=2)
                     draw_text_scaled(cx + 16, col_y + 258, f"{100 + k * 50}px (Permanent)", kp.con_label, scale=1)
@@ -1576,8 +1576,8 @@ class GrainOfDoubtApp:
                     draw_text_scaled(cx + 16, col_y + 234, "Fat Glass Shards", kp.con_text, scale=2)
                     draw_text_scaled(cx + 16, col_y + 258, f"{next_fat:.1f}% Fat (10x Area)", kp.con_label, scale=1)
                 elif sin == SinType.WRATH:
-                    draw_text_scaled(cx + 16, col_y + 234, "Zero Yield", kp.con_text, scale=2)
-                    draw_text_scaled(cx + 16, col_y + 258, "10.0s Zero Harvest Yield", kp.con_label, scale=1)
+                    draw_text_scaled(cx + 16, col_y + 234, "Grain Blast Wave", kp.con_text, scale=2)
+                    draw_text_scaled(cx + 16, col_y + 258, "Hurls Sand 3200px Away", kp.con_label, scale=1)
                 else:
                     draw_text_scaled(cx + 16, col_y + 234, f"-{defn.curse_name}", kp.con_text, scale=2)
                     draw_text_scaled(cx + 16, col_y + 258, f"{defn.curse_base} {defn.curse_unit}", kp.con_label, scale=1)
@@ -1678,16 +1678,7 @@ class GrainOfDoubtApp:
 
         # Dedicated Dev Mode box at bottom when dev_mode is active
         if self.dev_mode:
-            pyxel.rect(40, 558, 520, 84, 0)
-            pyxel.rectb(40, 558, 520, 84, 11)
-            pyxel.rectb(42, 560, 516, 80, 3)
-            god_txt = "ON" if self.state.godmode else "OFF"
-            bot_txt = "ON" if self.bot_mode else "OFF"
-            rec_txt = f"{self.video_recorder.frames_recorded // 30}s" if self.video_recorder.is_recording else "OFF"
-            draw_text_scaled(56, 566, f"[`] DEV MODE: ON ({self.VERSION})", 11, scale=2)
-            draw_text_scaled(56, 584, f"[G] GOD MODE: {god_txt}   |   [B] BOT MODE: {bot_txt}", 10, scale=2)
-            draw_text_scaled(56, 602, f"[V] VIDEO REC: {rec_txt}   |   [X] RETURN MENU", 7, scale=2)
-            draw_text_scaled(56, 620, "[1-7] ADD PACT (1-7)   |   [Q-U] REDUCE PACT", 9, scale=2)
+            self.draw_dev_box(box_y=556, translucent=False)
 
         # Draw the 2 mobile buttons at bottom of title screen (mobile only)
         if self.is_mobile:
@@ -1718,8 +1709,20 @@ class GrainOfDoubtApp:
         pyxel.line(box_x + 16, box_y + 60, box_x + box_w - 16, box_y + 60, 5)
 
         if self.lore_page == 0:
-            # PAGE 1: BORROWED TIME & NARRATIVE PREMISE
-            draw_text_scaled(box_x + 24, box_y + 72, "1. THE MEANING OF 'BORROWED TIME'", 10, scale=2)
+            # PAGE 1: COMPETITION CONTEXT & NARRATIVE PREMISE
+            draw_text_scaled(box_x + 24, box_y + 72, "1. COMPETITION CONTEXT", 10, scale=2)
+            p1_context = [
+                "Built for PyWeek 42 (September 2026).",
+                "The theme is: Borrowed Time.",
+                "by www.arianprabowo.com",
+                "Crafted in Python with Pyxel retro engine.",
+            ]
+            for idx, line in enumerate(p1_context):
+                col = 9 if idx == 1 else (10 if idx == 2 else 7)
+                draw_text_scaled(box_x + 24, box_y + 96 + idx * 18, line, col, scale=2)
+
+            pyxel.line(box_x + 16, box_y + 178, box_x + box_w - 16, box_y + 178, 5)
+            draw_text_scaled(box_x + 24, box_y + 188, "2. THE MEANING OF 'BORROWED TIME'", 10, scale=2)
             p1_borrowed = [
                 "To live on 'borrowed time' is to survive",
                 "past natural limits on compounding debt.",
@@ -1728,10 +1731,10 @@ class GrainOfDoubtApp:
                 "Every second survived is borrowed debt.",
             ]
             for idx, line in enumerate(p1_borrowed):
-                draw_text_scaled(box_x + 24, box_y + 96 + idx * 18, line, 7, scale=2)
+                draw_text_scaled(box_x + 24, box_y + 212 + idx * 18, line, 7, scale=2)
 
-            pyxel.line(box_x + 16, box_y + 196, box_x + box_w - 16, box_y + 196, 5)
-            draw_text_scaled(box_x + 24, box_y + 206, "2. THE NARRATIVE PREMISE", 10, scale=2)
+            pyxel.line(box_x + 16, box_y + 312, box_x + box_w - 16, box_y + 312, 5)
+            draw_text_scaled(box_x + 24, box_y + 322, "3. THE NARRATIVE PREMISE", 10, scale=2)
             p1_narrative = [
                 "You steer a fragile falling hourglass",
                 "down the neck of a colossal shattered",
@@ -1741,13 +1744,13 @@ class GrainOfDoubtApp:
                 "Descent is absolute and unrelenting.",
             ]
             for idx, line in enumerate(p1_narrative):
-                draw_text_scaled(box_x + 24, box_y + 230 + idx * 18, line, 7, scale=2)
+                draw_text_scaled(box_x + 24, box_y + 346 + idx * 18, line, 7, scale=2)
 
-            pyxel.line(box_x + 16, box_y + 348, box_x + box_w - 16, box_y + 348, 5)
-            draw_text_scaled(box_x + 24, box_y + 358, "3. WHY 'GRAIN OF DOUBT'?", 10, scale=2)
+            pyxel.line(box_x + 16, box_y + 464, box_x + box_w - 16, box_y + 464, 5)
+            draw_text_scaled(box_x + 24, box_y + 474, "4. WHY 'GRAIN OF DOUBT'?", 10, scale=2)
             p1_doubt = [
-                "1. Sand grains measure passing time only",
-                "   within the context of an hourglass.",
+                "1. Sand grains measure passing time in an",
+                "   hourglass.",
                 "2. 'A grain of doubt' is a small pang of",
                 "   uncertainty or hesitation in crisis.",
                 "3. In fast descent, even a small grain",
@@ -1755,17 +1758,7 @@ class GrainOfDoubtApp:
                 "   shatters your fragile glass vessel.",
             ]
             for idx, line in enumerate(p1_doubt):
-                draw_text_scaled(box_x + 24, box_y + 382 + idx * 18, line, 6 if idx >= 4 else 7, scale=2)
-
-            pyxel.line(box_x + 16, box_y + 518, box_x + box_w - 16, box_y + 518, 5)
-            draw_text_scaled(box_x + 24, box_y + 528, "4. COMPETITION CONTEXT", 10, scale=2)
-            p1_context = [
-                "Built for PyWeek 42 in September 2026.",
-                "Theme: 'Borrowed Time' by Arian Prabowo.",
-                "Crafted in Python with Pyxel retro engine.",
-            ]
-            for idx, line in enumerate(p1_context):
-                draw_text_scaled(box_x + 24, box_y + 552 + idx * 18, line, 9 if idx == 1 else 7, scale=2)
+                draw_text_scaled(box_x + 24, box_y + 498 + idx * 18, line, 6 if idx >= 4 else 7, scale=2)
 
         elif self.lore_page == 1:
             # PAGE 2: COSMOLOGY & MECHANICS (LORE FIRST)
@@ -1845,8 +1838,8 @@ class GrainOfDoubtApp:
                 "  triggers lethal Borrowed Time clocks.",
                 "* LUST: Attracts riches magnetically,",
                 "  yet draws glass straight to your heart.",
-                "* ENVY: Pulls distant grains from afar,",
-                "  while creeping darkness blinds you.",
+                "* ENVY: You want everything you see, so",
+                "  you don't deserve to see as much.",
             ]
             for idx, line in enumerate(p3_notes):
                 col = 9 if idx in (0, 2, 4, 6) else 7
@@ -1857,8 +1850,8 @@ class GrainOfDoubtApp:
             draw_text_scaled(box_x + 24, box_y + 72, "FAUSTIAN PACTS (PART 2)", 10, scale=2)
             pacts_p2 = [
                 ("5. GLUTTONY", "+Fat Sand Grains (3x Value)", "-Monstrous Enlarged Shards", 4),
-                ("6. WRATH", "+2000px Radial Shockwave Blast", "-10.0s Zero Harvest Score Penalty", 8),
-                ("7. SLOTH", "+Hurls Shards Downward Away", "-Heavy Steering Drag & Wave Drag", 12),
+                ("6. WRATH", "+1600px Shard Shockwave Blast", "-3200px Blast Hurls Away All Sand", 8),
+                ("7. SLOTH", "+Hurls Shards Downward (~2s Safe)", "-Locks Sand to Middle & Drag", 12),
             ]
             for idx, (pact_title, boon, curse, pcol) in enumerate(pacts_p2):
                 py = box_y + 100 + idx * 70
@@ -1872,17 +1865,19 @@ class GrainOfDoubtApp:
             p4_notes = [
                 "* GLUTTONY: Sand grains swell with value,",
                 "  yet glass hazards swell into monoliths.",
-                "* WRATH: Purges the screen in fury,",
-                "  yet blinds you to all score harvest.",
-                "* SLOTH: Banishes falling threats below,",
-                "  yet mires steering in sluggish drag.",
+                "* WRATH: You use great force to push all",
+                "  dangers away, but you also push all the",
+                "  good things away too.",
+                "* SLOTH: You push all dangers to a later",
+                "  time, so you don't have to do anything",
+                "  now.",
             ]
             for idx, line in enumerate(p4_notes):
-                col = 9 if idx in (0, 2, 4) else 7
+                col = 9 if idx in (0, 2, 5) else 7
                 draw_text_scaled(box_x + 24, box_y + 356 + idx * 18, line, col, scale=2)
 
-            pyxel.line(box_x + 16, box_y + 474, box_x + box_w - 16, box_y + 474, 5)
-            draw_text_scaled(box_x + 24, box_y + 486, "COMPOUNDING DECAY & PREDATORY DEBT", 10, scale=2)
+            pyxel.line(box_x + 16, box_y + 508, box_x + box_w - 16, box_y + 508, 5)
+            draw_text_scaled(box_x + 24, box_y + 518, "COMPOUNDING DECAY & PREDATORY DEBT", 10, scale=2)
             p4_decay = [
                 "Re-selecting sins compounds your ruin:",
                 "Boon(k)  = Boon0 * (0.75)^k  (Diminish)",
@@ -1892,7 +1887,7 @@ class GrainOfDoubtApp:
             ]
             for idx, line in enumerate(p4_decay):
                 col = 10 if idx == 1 else (8 if idx == 2 else (9 if idx >= 3 else 7))
-                draw_text_scaled(box_x + 24, box_y + 510 + idx * 18, line, col, scale=2)
+                draw_text_scaled(box_x + 24, box_y + 542 + idx * 18, line, col, scale=2)
 
         else:
             # PAGE 5: THEMES, PRO MODE & SAKURA DEDICATION
@@ -2072,15 +2067,13 @@ class GrainOfDoubtApp:
         draw_text_scaled(box_x + 16, box_y + 8, name_str, 10, scale=2)
         draw_text_scaled(box_x + 16, box_y + 28, sub_str, 7, scale=1)
 
-    def draw_dev_overlay(self):
-        """Render developer debug overlay at bottom of screen with translucent background."""
-        box_x = 10
-        box_w = 580
-        box_h = 188
-        box_y = self.SCREEN_HEIGHT - box_h - 10  # 602..790
+    def draw_dev_box(self, box_y: int, translucent: bool = False):
+        """Render dedicated Dev Mode box adhering strictly to 1 key per line in `[key] NAME: STATS` format."""
+        box_x = 20
+        box_w = 560
+        box_h = 148
 
-        # Translucent dark panel with mint neon border
-        if hasattr(pyxel, "dither"):
+        if translucent and hasattr(pyxel, "dither"):
             pyxel.dither(0.70)
         pyxel.rect(box_x, box_y, box_w, box_h, 0)
         if hasattr(pyxel, "dither"):
@@ -2088,37 +2081,27 @@ class GrainOfDoubtApp:
         pyxel.rectb(box_x, box_y, box_w, box_h, 11)
         pyxel.rectb(box_x + 1, box_y + 1, box_w - 2, box_h - 2, 3)
 
-        bot_str = "ON" if self.bot_mode else "OFF"
-        rec_str = "ON" if self.video_recorder.is_recording else "OFF"
-        inv_str = "ON" if self.state.godmode else "OFF"
+        god_txt = "ON" if self.state.godmode else "OFF"
+        bot_txt = "ON" if self.bot_mode else "OFF"
+        rec_txt = f"{self.video_recorder.frames_recorded // 30}s" if self.video_recorder.is_recording else "OFF"
 
-        # Line 1: Header + Version + Shortcut for Invulnerability
-        draw_text_scaled(box_x + 12, box_y + 8, f"[`] DEV MODE: ON ({self.VERSION})   |   [G] GOD MODE: {inv_str}", 11, scale=2)
+        lines = [
+            (f"[`] DEV MODE: ON ({self.VERSION})", 11),
+            (f"[G] GOD MODE: {god_txt}", 10),
+            (f"[B] BOT MODE: {bot_txt}", 10),
+            (f"[V] VIDEO REC: {rec_txt}", 7),
+            ("[1-7] ADD PACTS: 1:PRI 2:GRE 3:LUS 4:ENV 5:GLU 6:WRA 7:SLO", 9),
+            ("[Q-U] REDUCE PACTS: Q:PRI W:GRE E:LUS R:ENV T:GLU Y:WRA U:SLO", 9),
+            ("[X] RETURN: TITLE MENU", 8),
+        ]
 
-        # Line 2: Bot mode and Video Recording
-        draw_text_scaled(box_x + 12, box_y + 36, f"[B] BOT MODE: {bot_str}   |   [V] VIDEO REC: {rec_str}", 10, scale=2)
+        for idx, (line_text, col) in enumerate(lines):
+            draw_text_scaled(box_x + 14, box_y + 10 + idx * 18, line_text, col, scale=2)
 
-        # Line 3: Faustian Bargains controls & Menu shortcut
-        draw_text_scaled(box_x + 12, box_y + 64, "[1-7] ADD PACTS   |   [Q-U] REDUCE PACTS   |   [X] MENU", 7, scale=2)
-
-        # Line 4: Player and Camera telemetry
-        px = self.entities.player.x
-        vx = self.entities.player.vx
-        spd = self.state.scroll_speed
-        sp_m = self.state.speed_multiplier
-        draw_text_scaled(box_x + 12, box_y + 92, f"PLAYER: X={px:.0f} VX={vx:.2f} | SPD:{spd:.1f} (x{sp_m:.2f})", 7, scale=2)
-
-        # Line 5: Entities and Spawning telemetry
-        spawn_m = self.state.spawn_rate_multiplier
-        n_sands = len(self.entities.sands)
-        n_shards = len(self.entities.shards)
-        draw_text_scaled(box_x + 12, box_y + 120, f"SPAWN: x{spawn_m:.2f} | SANDS:{n_sands} SHARDS:{n_shards} | VIG:{self.state.vignette_radius:.0f}/{self.state.vignette_inner_radius:.0f}px", 9, scale=2)
-
-        # Line 6: State and Timer telemetry
-        elapsed = self.state.total_frames / 30.0
-        st_name = self.state.current_state.name
-        greed_str = f"{self.state.greed_timer / 30.0:4.1f}s (LETHAL)" if self.state.greed_active else "OFF"
-        draw_text_scaled(box_x + 12, box_y + 148, f"STATE:{st_name} | GREED:{greed_str} | TIME:{elapsed:4.1f}s | PRIDE:{self.state.pride_level}", 6, scale=2)
+    def draw_dev_overlay(self):
+        """Render developer debug overlay at bottom of screen with translucent background."""
+        box_y = self.SCREEN_HEIGHT - 148 - 10
+        self.draw_dev_box(box_y=box_y, translucent=True)
 
 
 def main():

@@ -60,8 +60,9 @@ class StateManager:
         self.wrath_wipe_timer: int = 0
         self.wrath_zero_yield_timer: int = 0
 
-        # Sloth hazard freeze timer (8s recovery) & player speed modifier
+        # Sloth active timer (~2s = 60 frames) & player speed modifier
         self.sloth_freeze_timer: int = 0
+        self.sloth_active_timer: int = 0
         self.sloth_player_speed_mod: float = 1.0
 
         # Envy & Lust modifiers
@@ -207,9 +208,11 @@ class StateManager:
         if self.envy_mega_lust_timer > 0:
             self.envy_mega_lust_timer -= 1
 
-        # Sloth hazard freeze timer
+        # Sloth hazard freeze timer and active timer
         if self.sloth_freeze_timer > 0:
             self.sloth_freeze_timer -= 1
+        if self.sloth_active_timer > 0:
+            self.sloth_active_timer -= 1
 
         # Total lifetime frames
         self.total_frames += 1

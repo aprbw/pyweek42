@@ -803,7 +803,7 @@ def render_reader_mode_text(
             "and no faustian covenant hath yet been made."
         )
 
-    # Full text divided into scriptural paragraphs with telemetry placed as the 2nd paragraph (between 1st and 2nd para of Ecc 3)
+    # Full text divided into scriptural paragraphs with telemetry placed as the 3rd paragraph
     scripture_paras = [
         (
             "To every thing there is a season, and a time to every purpose under the heaven: "
@@ -816,7 +816,6 @@ def render_reader_mode_text(
             "A time to rend, and a time to sew; a time to keep silence, and a time to speak; "
             "A time to love, and a time to hate; a time of war, and a time of peace."
         ),
-        telemetry_para,
         (
             "What profit hath he that worketh in that wherein he laboureth? "
             "I have seen the travail, which God hath given to the sons of men to be exercised in it. "
@@ -825,6 +824,7 @@ def render_reader_mode_text(
             "I know that there is no good in them, but for a man to rejoice, and to do good in his life. "
             "And also that every man should eat and drink, and enjoy the good of all his labour, it is the gift of God."
         ),
+        telemetry_para,
         (
             "I know that, whatsoever God doeth, it shall be for ever: nothing can be put to it, "
             "nor any thing taken from it: and God doeth it, that men should fear before him. "
@@ -847,8 +847,8 @@ def render_reader_mode_text(
     ]
 
     wrapped_lines = []
-    line_h = 22
-    para_gap = 14
+    line_h = 19
+    para_gap = 10
     char_w = 12  # 5x7 typography at scale=2: 6px stride * 2 = 12px
 
     for para in scripture_paras:
@@ -875,10 +875,10 @@ def render_reader_mode_text(
         line_y_offsets.append(total_doc_h)
         total_doc_h += line_h + (para_gap if is_para_end else 0)
 
-    # Scroll: At prog=0.0: first line at y=40; At prog=1.0: last line reaches bottom of screen (screen_h - 50)
-    start_y = 40
+    # Scroll: At prog=0.0: first line at y=24; At prog=1.0: last line reaches bottom of screen (screen_h - 40)
+    start_y = 24
     last_line_offset = line_y_offsets[-1] if line_y_offsets else 0
-    max_scroll = max(0, start_y + last_line_offset - (screen_h - 55))
+    max_scroll = max(0, start_y + last_line_offset - (screen_h - 45))
     scroll_y = int(min(1.0, max(0.0, prog)) * max_scroll)
 
     for (words, is_para_end), y_off in zip(wrapped_lines, line_y_offsets):
