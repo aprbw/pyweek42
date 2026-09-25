@@ -192,20 +192,32 @@ def bg_sand_dunes_landscape(pyxel, cam_x: int, prog: float, dist: int, screen_w:
         # Flatten waves as warning intensifies towards straight equal-spaced horizontal lines
         amp = 90.0 * (s ** 1.30) * (1.0 - warn_ratio * 0.85)
 
-        k1 = 0.006 + 0.010 * (1.0 - s)
-        k2 = 0.015 + 0.018 * (1.0 - s)
-        k3 = 0.032 + 0.025 * (1.0 - s)
+        # Procedural pseudo-random hash derived from layer index d for organic, non-repeating dune waves
+        h1 = (math.sin(d * 12.9898 + 78.233) * 43758.5453) % 1.0
+        h2 = (math.sin(d * 93.9898 + 67.345) * 24634.6345) % 1.0
+        h3 = (math.sin(d * 45.1234 + 19.876) * 31415.9265) % 1.0
+        h4 = (math.sin(d * 71.5678 + 33.221) * 52718.2818) % 1.0
 
-        phi1 = (d * 2.39996 + 0.4) % (2 * math.pi)
-        phi2 = (d * 4.12345 + 1.1) % (2 * math.pi)
-        phi3 = (d * 1.71828) % (2 * math.pi)
+        # Randomized wave frequencies and phase offsets
+        k1 = (0.005 + 0.004 * h1) + (0.008 + 0.004 * h2) * (1.0 - s)
+        k2 = (0.012 + 0.008 * h3) + (0.015 + 0.006 * h4) * (1.0 - s)
+        k3 = (0.026 + 0.012 * h2) + (0.020 + 0.010 * h1) * (1.0 - s)
+
+        phi1 = (d * 2.39996 + h1 * 6.28) % (2 * math.pi)
+        phi2 = (d * 4.12345 + h2 * 6.28) % (2 * math.pi)
+        phi3 = (d * 1.71828 + h3 * 6.28) % (2 * math.pi)
+
+        # Randomized harmonic weights and amplitude modulation
+        w2_wt = 0.24 + 0.26 * h4
+        w3_wt = 0.10 + 0.12 * h1
+        amp_mod = 0.85 + 0.30 * h3
 
         y_curve = {}
         for xw in x_samples:
             w1 = math.sin(k1 * xw + phi1)
-            w2 = math.sin(k2 * xw + phi2) * 0.38
-            w3 = math.cos(k3 * xw + phi3) * 0.14
-            y_curve[xw] = int(y_base - amp * (w1 + w2 + w3))
+            w2 = math.sin(k2 * xw + phi2) * w2_wt
+            w3 = math.cos(k3 * xw + phi3) * w3_wt
+            y_curve[xw] = int(y_base - (amp * amp_mod) * (w1 + w2 + w3))
 
         curve_profiles.append((y_base, s, d, y_curve))
 
@@ -1318,15 +1330,17 @@ def bg_pastel_sakura(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, s
         pyxel.line(cam_x + 30, wy, cam_x + screen_w - 30, wy - 24, col_wisp)
 
 
+# Kairos Palette for Theme 9 (Pastel Sakura):
+# Uses purple (2) and brown (4) of sakura tree soil/branches instead of hard-to-read pink (14)
 KAIROS_PASTEL_SAKURA = KairosPalette(
-    modal_bg=14, dimmer=2, border_outer=7, border_inner=15,
+    modal_bg=4, dimmer=2, border_outer=10, border_inner=2,
     header_title=7, header_sub=10,
     timer_bar_bg=2, timer_bar_fill=10, timer_bar_border=7,
-    card_bg=2, card_bg_selected=14, card_border=15, card_border_selected=7,
-    badge_bg=15, badge_text=2, badge_bg_selected=7, badge_text_selected=14,
-    selected_btn_bg=7, selected_btn_text=14,
-    sin_title=7, sin_title_selected=10, level_text=10, divider=15,
-    pro_label=10, pro_text=7, con_label=8, con_text=15,
+    card_bg=2, card_bg_selected=4, card_border=10, card_border_selected=7,
+    badge_bg=4, badge_text=10, badge_bg_selected=2, badge_text_selected=7,
+    selected_btn_bg=10, selected_btn_text=0,
+    sin_title=7, sin_title_selected=10, level_text=10, divider=10,
+    pro_label=11, pro_text=7, con_label=8, con_text=10,
     footer_text=7, footer_warn=10,
 )
 
@@ -1452,9 +1466,9 @@ ALL_THEMES: List[Theme] = [
         name="PASTEL SAKURA",
         clear_color=14,
         greed_clear_color=2,
-        sand=SandPalette(body=11, border=3, glint=7, shadow=3, fat_body=11, fat_border=3, fat_glint=7),
+        sand=SandPalette(body=11, border=11, glint=7, shadow=4, fat_body=11, fat_border=11, fat_glint=7),
         shard=ShardPalette(facet=8, border=7, glint=15, shadow=2, fat_facet=8, fat_border=7),
-        hourglass=HourglassPalette(caps=7, cap_hl=15, cap_rivet=11, glass_walls=7, waist_neck=14, sand_a=11, sand_b=3, shadow=2),
+        hourglass=HourglassPalette(caps=7, cap_hl=15, cap_rivet=11, glass_walls=7, waist_neck=14, sand_a=11, sand_b=11, shadow=2),
         render_bg=bg_pastel_sakura,
         kairos=KAIROS_PASTEL_SAKURA,
     ),

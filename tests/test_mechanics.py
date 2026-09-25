@@ -2423,7 +2423,7 @@ def test_v111_title_screen_layout_and_elements():
         assert any("PHOTOSENSITIVITY WARNING" in t for t in drawn_texts)
         assert any("Switch to PRO MODE" in t for t in drawn_texts)
         assert not any("monochrome blueprint" in t for t in drawn_texts)
-        assert any("PRESS ARROWS OR TOUCH BUTTONS TO START" in t for t in drawn_texts)
+        assert any(("PRESS ARROWS OR HERE TO START" in t) or ("PRESS ARROWS OR TOUCH BUTTONS TO START" in t) for t in drawn_texts)
 
         # Dev mode dedicated box test
         app.dev_mode = True
@@ -2715,7 +2715,7 @@ def test_v113_comprehensive_feedback_validation():
     from engine.state import GameState
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION == "v1.1.5"
+    assert app.VERSION in ("v1.1.3", "v1.1.4", "v1.1.5", "v1.1.6")
     assert app.MAX_LORE_PAGES == 5
 
     # 1. God mode toggle via [G]
@@ -2794,9 +2794,9 @@ def test_v113_comprehensive_feedback_validation():
         # 8. Pastel Sakura leaf-green sand and HUD contrast colors
         t_sakura = get_theme(9)
         assert t_sakura.sand.body == 11, "Pastel Sakura sand body must be leaf green (11)"
-        assert t_sakura.sand.border == 3, "Pastel Sakura sand border must be dark leaf green (3)"
+        assert t_sakura.sand.border in (3, 11), "Pastel Sakura sand border must be leaf green (11 or 3)"
         assert t_sakura.hourglass.sand_a == 11
-        assert t_sakura.hourglass.sand_b == 3
+        assert t_sakura.hourglass.sand_b in (3, 11)
 
         # In HUD, Sakura is recognized as light theme
         drawn_calls.clear()
@@ -2886,7 +2886,7 @@ def test_v114_comprehensive_feedback_validation():
     from engine.state import GameState
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.1.4", "v1.1.5")
+    assert app.VERSION in ("v1.1.4", "v1.1.5", "v1.1.6")
 
     # 1. E-Reader Mode: Telemetry is 3rd paragraph (after 3:1-8 and 3:9-13, before 3:14-15)
     from engine.themes import render_reader_mode_text
@@ -2997,7 +2997,7 @@ def test_v114_comprehensive_feedback_validation():
         assert any("PLAYER:" in t for t in box_texts)
         assert any("SPAWN:" in t for t in box_texts)
         assert any("STATE:" in t for t in box_texts)
-        assert any("GREED:" in t for t in box_texts)
+        assert any(("GREED:" in t) or ("WRATH ERR:" in t) for t in box_texts)
 
     finally:
         main.draw_text_scaled = orig_scaled
@@ -3081,7 +3081,7 @@ def test_v115_comprehensive_feedback_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION == "v1.1.5"
+    assert app.VERSION in ("v1.1.5", "v1.1.6")
 
     # 1. Menu Page Controls & Line Breaks
     drawn_calls = []
@@ -3134,7 +3134,7 @@ def test_v115_comprehensive_feedback_validation():
         assert any("PLAYER:" in t and "SCROLL SPD:" in t for t in metric_texts)
         assert any("SPAWN:" in t and "SANDS:" in t for t in metric_texts)
         assert any("STATE:" in t and "CHRONOS:" in t for t in metric_texts)
-        assert any("GREED:" in t and "PRIDE:" in t for t in metric_texts)
+        assert any(("GREED:" in t and "PRIDE:" in t) or ("WRATH ERR:" in t) for t in metric_texts)
 
         # Background color matches theme (Light theme = 7, Dark theme = 0)
         # Test light theme (theme 8: Sumi-e or theme 2: Manuscript)
@@ -3196,6 +3196,304 @@ def test_v115_comprehensive_feedback_validation():
     g_fresh.sloth_centering = True
     g_fresh.update(scroll_speed=2.0, player_x=475.0, player_y=200.0)
     assert g_fresh.x > 250.0 and g_fresh.x <= 475.0, f"Fresh sand must step towards player.x=475.0, never 0.0! Got {g_fresh.x}"
+
+
+def test_v116_comprehensive_feedback_validation():
+    """Verify all v1.1.6 2do.md user requirements:
+    1. Version is v1.1.6.
+    2. Pact Distribution (Sins are addictive):
+       - P(Pact) = (1 + N_chosen) / (7 + total_pacts).
+       - Sampling without replacement in draw_options(2).
+    3. Durations:
+       - Sloth duration is 5.0 seconds (150 frames).
+       - Wrath duration is 3.0 seconds (90 frames).
+    4. Wrath (Control error / Inverted controls):
+       - +5% chance per Wrath pact when pressing a button, it will do the opposite.
+       - Capped at 50%.
+       - Latching of inverted stroke until release.
+    5. Sloth (Getting all you ever wanted now):
+       - All points arranged neatly below you (x=player.x, spaced downward).
+       - All shards pushed down for the 5s duration.
+       - Delayed danger does not disappear; accumulates deep below and returns with vengeance.
+    6. Dev UI bottom box:
+       - Removed: greed, pride level, score.
+       - Retains metrics and adds Wrath error % & timers.
+    """
+    import main
+    from main import GrainOfDoubtApp
+    from engine.entities import EntityManager, GlassShard, SandGrain
+    from engine.bargains import BargainManager, SinType
+    from engine.state import GameState, StateManager
+
+    app = GrainOfDoubtApp(headless=True)
+    assert app.VERSION == "v1.1.6"
+
+    # 1. Pact distribution: Addictive formula P(P) = (1 + N_chosen) / (7 + total_pacts)
+    bm = BargainManager()
+    # Baseline: 0 pacts chosen, each has prob 1/7
+    for s in SinType:
+        assert abs(bm.get_pact_probability(s) - 1.0 / 7.0) < 1e-6
+
+    # Select Wrath 3 times, Pride 1 time
+    bm.selection_counts[SinType.WRATH] = 3
+    bm.selection_counts[SinType.PRIDE] = 1
+    # total_pacts = 4, denominator = 7 + 4 = 11
+    assert abs(bm.get_pact_probability(SinType.WRATH) - (4.0 / 11.0)) < 1e-6
+    assert abs(bm.get_pact_probability(SinType.PRIDE) - (2.0 / 11.0)) < 1e-6
+    assert abs(bm.get_pact_probability(SinType.SLOTH) - (1.0 / 11.0)) < 1e-6
+
+    total_prob = sum(bm.get_pact_probability(s) for s in SinType)
+    assert abs(total_prob - 1.0) < 1e-6
+
+    # draw_options returns distinct options
+    options = bm.draw_options(2)
+    assert len(options) == 2
+    assert options[0][0] != options[1][0]
+
+    # 2. Durations: Sloth 5.0s (150 frames) & Wrath 3.0s (90 frames)
+    state = StateManager()
+    state.start_game()
+    entities = EntityManager(600, 800)
+
+    bm.apply_bargain(SinType.SLOTH, state, entities)
+    assert state.sloth_active_timer == 150, f"Expected 150 frames (5.0s), got {state.sloth_active_timer}"
+
+    bm.apply_bargain(SinType.WRATH, state, entities)
+    assert state.wrath_wipe_timer == 90, f"Expected 90 frames (3.0s), got {state.wrath_wipe_timer}"
+
+    # 3. Wrath: Permanently add +5% error to control, capped at 50%
+    assert state.wrath_level == 1
+    assert state.wrath_error_chance == 0.05
+
+    # Stacking Wrath up to cap
+    for _ in range(9):
+        bm.apply_bargain(SinType.WRATH, state, entities)
+    assert state.wrath_level == 10
+    assert state.wrath_error_chance == 0.50
+
+    # Exceeding cap stays at 50%
+    bm.apply_bargain(SinType.WRATH, state, entities)
+    assert state.wrath_level == 11
+    assert state.wrath_error_chance == 0.50
+
+    # Reduce bargain reduces level and recalculates error chance
+    bm.reduce_bargain(SinType.WRATH, state, entities)
+    assert state.wrath_level == 10
+    assert state.wrath_error_chance == 0.50
+
+    for _ in range(10):
+        bm.reduce_bargain(SinType.WRATH, state, entities)
+    assert state.wrath_level == 0
+    assert state.wrath_error_chance == 0.0
+
+    # Test control inversion logic in App
+    app.state.wrath_error_chance = 1.0  # 100% error simulated
+    # Left press inverts to Right
+    eff_l, eff_r = app.apply_control_inversion(raw_left=True, raw_right=False)
+    assert eff_l is False and eff_r is True, "Left press must invert to Right!"
+    # Holding stroke keeps Right
+    eff_l2, eff_r2 = app.apply_control_inversion(raw_left=True, raw_right=False)
+    assert eff_l2 is False and eff_r2 is True, "Holding Left must continue steering Right!"
+    # Releasing resets stroke
+    app.apply_control_inversion(raw_left=False, raw_right=False)
+
+    # Right press inverts to Left
+    eff_l3, eff_r3 = app.apply_control_inversion(raw_left=False, raw_right=True)
+    assert eff_l3 is True and eff_r3 is False, "Right press must invert to Left!"
+    app.apply_control_inversion(raw_left=False, raw_right=False)
+
+    # 4. Sloth: Points arranged neatly below you, shards pushed down and return with vengeance
+    entities.reset()
+    entities.player.x = 350.0
+    entities.player.y = 200.0
+
+    # Add sands scattered horizontally
+    s_left = SandGrain(100.0, 300.0)
+    s_right = SandGrain(500.0, 400.0)
+    s_mid = SandGrain(350.0, 500.0)
+    entities.sands.extend([s_left, s_right, s_mid])
+
+    # Add shards
+    sh1 = GlassShard(350.0, 300.0)
+    entities.shards.append(sh1)
+
+    entities.sloth_hurl_shards_downward(aoe_horizontal=1600.0, aoe_down=1600.0)
+
+    # All sands aligned directly below player.x (350.0)
+    for s in [s_left, s_right, s_mid]:
+        assert s.x == 350.0, f"Expected sand aligned at player.x=350, got {s.x}"
+        assert s.stay_in_middle is True
+
+    # Shards hurled down with vengeance
+    assert sh1.vy >= 24.0
+    assert getattr(sh1, "sloth_vengeance", False) is True
+    # Vengeance shards accumulated deep below (y >= 2200)
+    assert len(entities.shards) >= 2
+    deep_shards = [sh for sh in entities.shards if sh.y >= 2200.0]
+    assert len(deep_shards) >= 1
+    assert deep_shards[0].sloth_vengeance is True
+
+    # 5. Dev UI bottom box: Removed greed, pride level, score
+    drawn_calls = []
+    orig_scaled = main.draw_text_scaled
+    try:
+        main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2: drawn_calls.append((x, y, s, col, scale))
+        app.draw_dev_box(box_y=600, translucent=True)
+        metric_items = [c for c in drawn_calls if c[4] == 1]
+        metric_texts = [m[2] for m in metric_items]
+
+        # Verify greed, pride level, score are REMOVED
+        assert not any("GREED:" in t for t in metric_texts)
+        assert not any("PRIDE: LVL" in t for t in metric_texts)
+        assert not any("SCORE:" in t for t in metric_texts)
+
+        # Verify Wrath error chance and timers are present
+        assert any("WRATH ERR:" in t for t in metric_texts)
+        assert any("SLOTH:" in t for t in metric_texts)
+        assert any("WRATH WIPE:" in t for t in metric_texts)
+    finally:
+        main.draw_text_scaled = orig_scaled
+
+    # 6. UI Kairos: Centered "KAIROS TIME", scale=3, no circuit breaker / borrow your time, pact titles scale=4, Gluttony bent card
+    from main import get_text_width_5x7
+    from engine.bargains import BARGAIN_REGISTRY
+    from engine.themes import get_theme
+    app.state.current_state = GameState.KAIROS
+    app.current_theme_index = 0
+    app.active_options = [
+        (SinType.GLUTTONY, BARGAIN_REGISTRY[SinType.GLUTTONY], 0),
+        (SinType.PRIDE, BARGAIN_REGISTRY[SinType.PRIDE], 0),
+    ]
+    drawn_calls.clear()
+    orig_scaled = main.draw_text_scaled
+    orig_centered = main.draw_text_centered
+    try:
+        main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2: drawn_calls.append((x, y, s, col, scale))
+        main.draw_text_centered = lambda y, s, col, scale=1, img_bank=2: drawn_calls.append(((600 - get_text_width_5x7(s, scale)) // 2, y, s, col, scale))
+        app.draw_kairos_modal()
+
+        texts = [c[2] for c in drawn_calls]
+        assert "KAIROS TIME" in texts
+        assert not any("CIRCUIT BREAKER" in t for t in texts)
+        assert not any("BORROW YOUR TIME" in t for t in texts)
+
+        # Header "KAIROS TIME" has scale=3 and is centered around x=300
+        header_call = [c for c in drawn_calls if c[2] == "KAIROS TIME"][0]
+        assert header_call[4] == 3
+        assert abs(header_call[0] + get_text_width_5x7("KAIROS TIME", scale=3) // 2 - 300) <= 2
+
+        # Titles for GLUTTONY and PRIDE both have scale=4
+        glut_call = [c for c in drawn_calls if c[2] == "GLUTTONY"][0]
+        pride_call = [c for c in drawn_calls if c[2] == "PRIDE"][0]
+        assert glut_call[4] == 4
+        assert pride_call[4] == 4
+
+        # 7. Theme Pastel Sakura colors
+        t_sakura = get_theme(9)
+        assert t_sakura.sand.body == 11
+        assert t_sakura.sand.border == 11
+        assert t_sakura.hourglass.sand_a == 11
+        assert t_sakura.hourglass.sand_b == 11
+        assert t_sakura.sand.body != 3 and t_sakura.sand.border != 3
+        # Kairos palette uses soil/branch brown (4) and purple (2)
+        assert t_sakura.kairos.modal_bg == 4
+        assert t_sakura.kairos.dimmer == 2
+        assert t_sakura.kairos.card_bg == 2
+        assert t_sakura.kairos.card_bg_selected == 4
+
+        # 8. E-Reader Mode UI Kairos paragraph uses scale=2
+        drawn_calls.clear()
+        app.current_theme_index = 4  # Reader Dark
+        app.draw_kairos_modal()
+        # In reader mode, KJV paragraphs are drawn via draw_justified_paragraph using scale=2
+        reader_texts = [c for c in drawn_calls if c[4] == 2]
+        assert len(reader_texts) > 5
+
+        # 9. Theme Dunes in Cosmic Hourglass horizontal waves randomization
+        import math
+        h_vals = [(math.sin(d * 12.9898 + 78.233) * 43758.5453) % 1.0 for d in range(10)]
+        assert len(set(h_vals)) == 10  # All unique!
+
+        # 10. Menu Screen touch buttons & start prompt
+        drawn_calls.clear()
+        app.state.current_state = GameState.TITLE
+        app.draw_title_screen()
+        title_texts = [c[2] for c in drawn_calls]
+        assert any("< [,] PREV THEME" in t for t in title_texts)
+        assert any("NEXT THEME [.] >" in t for t in title_texts)
+        assert any("[L] LORE & LEARN TO PLAY" in t for t in title_texts)
+        assert any("PRESS ARROWS OR HERE TO START" in t for t in title_texts)
+
+        # Title screen touch button clicks:
+        import pyxel
+        orig_btnp = pyxel.btnp
+        orig_mx, orig_my = pyxel.mouse_x, pyxel.mouse_y
+        try:
+            # Prev theme button click [x=100, y=340]
+            app.current_theme_index = 5
+            pyxel.mouse_x, pyxel.mouse_y = 100, 340
+            pyxel.btnp = lambda b: b == pyxel.MOUSE_BUTTON_LEFT
+            app.update()
+            assert app.current_theme_index == 4, "Clicking Prev Theme button must decrement theme index"
+
+            # Next theme button click [x=350, y=340]
+            pyxel.mouse_x, pyxel.mouse_y = 350, 340
+            app.update()
+            assert app.current_theme_index == 5, "Clicking Next Theme button must increment theme index"
+
+            # Lore button click [x=200, y=400]
+            pyxel.mouse_x, pyxel.mouse_y = 200, 400
+            app.update()
+            assert app.state.current_state == GameState.LORE, "Clicking Lore button must navigate to Lore screen"
+
+            # 11. Lore page 1 rewrite #3 check
+            drawn_calls.clear()
+            app.lore_page = 0
+            app.draw_lore_screen()
+            l1_texts = [c[2] for c in drawn_calls]
+            assert any("You doubt your own decisions of which" in t for t in l1_texts)
+            assert any("pact to choose during Kairos time," in t for t in l1_texts)
+
+            # 12. Lore pages 3 & 4 layout: 1. PACT NAME -> narrative -> PRO: -> CON:
+            drawn_calls.clear()
+            app.lore_page = 2
+            app.draw_lore_screen()
+            l3_texts = [c[2] for c in drawn_calls]
+            assert any("1. PRIDE" in t for t in l3_texts)
+            assert any("PRO: +Sand Clusters" in t for t in l3_texts)
+            assert any("CON: -Compound Fall Speed" in t for t in l3_texts)
+
+            drawn_calls.clear()
+            app.lore_page = 3
+            app.draw_lore_screen()
+            l4_texts = [c[2] for c in drawn_calls]
+            assert any("6. WRATH" in t for t in l4_texts)
+            assert any("7. SLOTH" in t for t in l4_texts)
+            assert any("PRO: +Wrath Blast" in t for t in l4_texts)
+            assert any("CON: -Control Inversion" in t for t in l4_texts)
+            assert any("PRO: +Lazy Reprieve" in t for t in l4_texts)
+            assert any("CON: -Delayed Danger" in t for t in l4_texts)
+
+            # 13. UI Game Over screen big [X] RETURN TO MENU button & click handling
+            drawn_calls.clear()
+            app.state.current_state = GameState.GAMEOVER
+            app.game_over_timer = 90
+            app.draw_game_over_screen()
+            go_texts = [c[2] for c in drawn_calls]
+            assert any("[X] RETURN TO MENU" in t for t in go_texts)
+
+            # Click on [X] RETURN TO MENU button [x=250, y=650]
+            pyxel.mouse_x, pyxel.mouse_y = 250, 650
+            pyxel.btnp = lambda b: b == pyxel.MOUSE_BUTTON_LEFT
+            app.update()
+            assert app.state.current_state == GameState.TITLE, "Clicking [X] RETURN TO MENU must return to TITLE screen"
+        finally:
+            pyxel.btnp = orig_btnp
+            pyxel.mouse_x, pyxel.mouse_y = orig_mx, orig_my
+    finally:
+        main.draw_text_scaled = orig_scaled
+        main.draw_text_centered = orig_centered
+
 
 
 

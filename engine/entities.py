@@ -316,10 +316,10 @@ class GlassShard:
                player_x: float, player_y: float, attract_radius: float = 0.0):
         effective_speed = scroll_speed * hazard_speed_mod * self.speed_variance
         base_vy = -effective_speed
-        base_vx = self.lateral_drift + math.sin(self.rotation_angle) * 0.6
+        base_vx = self.lateral_drift + math.sin(self.rotation_angle) * (1.2 if getattr(self, "sloth_vengeance", False) else 0.6)
 
         # Aerodynamic rotation: angular velocity is proportional to horizontal airspeed
-        aerodynamic_spin = 0.045 * (base_vx + self.vx)
+        aerodynamic_spin = 0.045 * (base_vx + self.vx) * (2.0 if getattr(self, "sloth_vengeance", False) else 1.0)
         flutter = self.spin_speed * 0.25
         self.rotation_angle += (flutter + aerodynamic_spin)
 
@@ -479,15 +479,14 @@ class EntityManager:
         aoe_horizontal: float = 1600.0,
         aoe_down: float = 1600.0,
         impulse_speed: float = 38.0,
-        burst_frames: int = 12,
+        burst_frames: int = 16,
         radius: float = None,
         screen_width_factor: float = None,
     ) -> SlothResult:
         """Sloth Boon & Con:
-        Area of effect: 1600px to left, right, and down from player.
-        Time: ~2 seconds (60 frames).
-        Push shards down: Shards within AOE are hurled downward to clear descent space.
-        Sands in AOE: Pushed linearly toward center (x=300), and stay in the middle once there!
+        All points arranged neatly below you so you don't have to do anything to get them.
+        All shards pushed down so you don't have to do anything to avoid them for 5.0 seconds.
+        Delayed danger does not disappear; it accumulates deep below and returns with a vengeance!
         """
         if radius is not None:
             aoe_horizontal = radius
@@ -508,38 +507,39 @@ class EntityManager:
                 shard.burst_ax = 0.0
                 shard.burst_ay = 6.0
                 shard.burst_timer = burst_frames
-                shard.spin_speed *= 1.5
+                shard.spin_speed *= 2.0
+                shard.sloth_vengeance = True
                 thrown += 1
 
-                # Overlap hazard at bottom horizon
-                overlap_x = shard.x + random.uniform(-35.0, 35.0)
-                overlap_y = random.uniform(1050.0, 1450.0)
-                new_oncoming.append(GlassShard(overlap_x, overlap_y))
+                # Overlap hazard deep at bottom horizon (delayed danger accumulating)
+                overlap_x = px + random.uniform(-160.0, 160.0)
+                overlap_y = random.uniform(2200.0, 3200.0)
+                vengeance_shard = GlassShard(overlap_x, overlap_y)
+                vengeance_shard.speed_variance = random.uniform(1.35, 1.60)
+                vengeance_shard.spin_speed *= 2.5
+                vengeance_shard.sloth_vengeance = True
+                new_oncoming.append(vengeance_shard)
 
         self.shards.extend(new_oncoming)
 
         centered = 0
         target_x = float(px) if px is not None else 300.0
-        for sand in self.sands:
-            if not sand.alive:
-                continue
-            dx = sand.x - px
-            dy = sand.y - py
-            # AOE: 1600 to left, right, and down
-            if abs(dx) <= aoe_horizontal and (0.0 <= dy <= aoe_down):
-                sand.sloth_centering = True
-                sand.sloth_target_x = target_x
-                sand.lateral_drift = 0.0
-                sand.vx = 0.0
-                # Move linearly towards target_x (the current x location of player hourglass)
-                dist_to_target = target_x - sand.x
-                step = 16.0
-                if abs(dist_to_target) <= step:
-                    sand.x = target_x
-                    sand.stay_in_middle = True
-                else:
-                    sand.x += math.copysign(step, dist_to_target)
-                centered += 1
+        affected_sands = [
+            s for s in self.sands
+            if s.alive and abs(s.x - px) <= aoe_horizontal and (0.0 <= s.y - py <= aoe_down)
+        ]
+        affected_sands.sort(key=lambda s: s.y)
+
+        for idx, sand in enumerate(affected_sands):
+            sand.sloth_centering = True
+            sand.stay_in_middle = True
+            sand.sloth_target_x = target_x
+            sand.lateral_drift = 0.0
+            sand.vx = 0.0
+            sand.x = target_x
+            # Neatly spaced column directly below player so player does nothing to collect all
+            sand.y = max(sand.y, py + 80.0 + idx * 50.0)
+            centered += 1
 
         return SlothResult(thrown, centered)
 
@@ -575,6 +575,7 @@ class EntityManager:
         pride_level: int = 0,
         speed_multiplier: float = 1.0,
         gluttony_level: int = 0,
+        sloth_active: bool = False,
     ):
         if wrath_active:
             return
@@ -628,26 +629,50 @@ class EntityManager:
                         offsets.append((random.uniform(-25.0, 25.0), random.uniform(-25.0, 25.0)))
 
                 for ox, oy in offsets:
-                    self.sands.append(
-                        SandGrain(
-                            spawn_x + ox,
+                    if sloth_active:
+                        # Sloth: All points arranged neatly below you so you don't have to do anything to get them
+                        sand = SandGrain(
+                            self.player.x,
                             spawn_y + oy,
                             speed_variance=shared_spd,
-                            lateral_drift=shared_drift,
+                            lateral_drift=0.0,
                             shimmer_phase=shared_shimmer,
                             is_fat=is_fat_sand,
                         )
-                    )
+                        sand.stay_in_middle = True
+                        sand.sloth_centering = True
+                        sand.sloth_target_x = self.player.x
+                        self.sands.append(sand)
+                    else:
+                        self.sands.append(
+                            SandGrain(
+                                spawn_x + ox,
+                                spawn_y + oy,
+                                speed_variance=shared_spd,
+                                lateral_drift=shared_drift,
+                                shimmer_phase=shared_shimmer,
+                                is_fat=is_fat_sand,
+                            )
+                        )
             else:
                 is_fat_shard = (random.random() < fat_prob)
-                self.shards.append(GlassShard(spawn_x, spawn_y, is_fat=is_fat_shard))
-                # Under Pride, as descent speed picks up, allow occasional hazard pairs/triplets
-                # to maintain thrilling obstacle density
-                cluster_prob = min(0.40, 0.20 + 0.05 * pride_level)
-                if random.random() < cluster_prob:
-                    offset_x = spawn_x + random.choice([-55.0, 55.0])
-                    offset_y = spawn_y + random.uniform(20.0, 45.0)
-                    self.shards.append(GlassShard(offset_x, offset_y, is_fat=is_fat_shard))
+                if sloth_active:
+                    # Sloth: All shards pushed down; danger accumulates deep below and returns with a vengeance
+                    deep_y = random.uniform(2200.0, 3200.0)
+                    shard = GlassShard(spawn_x, deep_y, is_fat=is_fat_shard)
+                    shard.sloth_vengeance = True
+                    shard.speed_variance = random.uniform(1.35, 1.60)
+                    shard.spin_speed *= 2.5
+                    self.shards.append(shard)
+                else:
+                    self.shards.append(GlassShard(spawn_x, spawn_y, is_fat=is_fat_shard))
+                    # Under Pride, as descent speed picks up, allow occasional hazard pairs/triplets
+                    # to maintain thrilling obstacle density
+                    cluster_prob = min(0.40, 0.20 + 0.05 * pride_level)
+                    if random.random() < cluster_prob:
+                        offset_x = spawn_x + random.choice([-55.0, 55.0])
+                        offset_y = spawn_y + random.uniform(20.0, 45.0)
+                        self.shards.append(GlassShard(offset_x, offset_y, is_fat=is_fat_shard))
 
     def update(self, state):
         if state.current_state != state.current_state.__class__.CHRONOS:
@@ -663,6 +688,7 @@ class EntityManager:
 
         # Spawning across camera horizon
         wrath_active = (state.wrath_wipe_timer > 0)
+        sloth_active = (getattr(state, "sloth_active_timer", 0) > 0)
         cam_x = self.player.x - self.screen_w / 2.0
         self.spawn_wave(
             state.spawn_rate_multiplier,
@@ -671,6 +697,7 @@ class EntityManager:
             pride_level=getattr(state, "pride_level", 0),
             speed_multiplier=getattr(state, "speed_multiplier", 1.0),
             gluttony_level=getattr(state, "gluttony_level", 0),
+            sloth_active=sloth_active,
         )
 
         # Update Sand grains

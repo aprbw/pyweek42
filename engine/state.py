@@ -56,11 +56,13 @@ class StateManager:
         self.envy_level: int = 0
         self.gluttony_level: int = 0
 
-        # Wrath zero-yield timer
+        # Wrath state (3.0s wipe & permanent control inversion error: +5% per pact, cap 50%)
         self.wrath_wipe_timer: int = 0
         self.wrath_zero_yield_timer: int = 0
+        self.wrath_level: int = 0
+        self.wrath_error_chance: float = 0.0
 
-        # Sloth active timer (~2s = 60 frames) & player speed modifier
+        # Sloth active timer (5.0s = 150 frames) & player speed modifier
         self.sloth_freeze_timer: int = 0
         self.sloth_active_timer: int = 0
         self.sloth_player_speed_mod: float = 1.0

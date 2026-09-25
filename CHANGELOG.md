@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.1.6] - 2026-09-25
+### Added & Changed
+- **Pact Distribution (Addictive Sins)**:
+  - Implemented the addictive distribution formula $P(P) = \frac{1 + N(P)}{7 + \text{total\_pacts}}$ with weighted sampling without replacement in Kairos card selection.
+- **Duration Adjustments**:
+  - Sloth duration adjusted to 5.0 seconds (150 frames).
+  - Wrath duration adjusted to 3.0 seconds (90 frames).
+- **Wrath Overhaul**:
+  - Permanently adds +5% chance of control error (inverted steering button) per Wrath pact, capped at 50%, with press stroke latching.
+  - Kinetic explosion pushes shards 1600px and sand 3200px.
+- **Sloth Overhaul**:
+  - All sand grains neatly spaced and aligned directly below player ($x = \text{player}.x$) so the player does not have to move to collect them.
+  - All shards pushed downward for a 5s reprieve; delayed danger accumulates deep below ($y \ge 2200$) before returning with a vengeance.
+- **Dev UI Bottom Box**:
+  - Removed greed timer, pride level, and score.
+  - Added Wrath error % and Sloth / Wrath timer metrics with compact font.
+- **UI Kairos Header & Cards**:
+  - Header changed to centered `"KAIROS TIME"` (scale=3); circuit breaker and "borrow your time" lines removed.
+  - All pact titles unified to scale=4 (derived from Gluttony card width); Gluttony card outline bends around the title.
+- **Theme Pastel Sakura**:
+  - Sand changed to pure leaf green (`body=11, border=11, glint=7, shadow=4`, `sand_a=11, sand_b=11`) with zero teal/blue.
+  - Kairos modal uses tree soil/branch brown (`4`) and purple (`2`) instead of hard-to-read pink.
+- **E-Reader Mode UI Kairos**:
+  - Narrative KJV description paragraph maximized to `scale=2` (matching Ecclesiastes 3 font size).
+- **Dunes in Cosmic Hourglass Waves**:
+  - Randomized horizontal dune curves using deterministic pseudo-random hashing ($h_1, h_2, h_3, h_4$) across layers.
+- **Title Screen & Game Over Touch Buttons**:
+  - Big touchable buttons for `< [,] PREV THEME`, `NEXT THEME [.] >`, and `[L] LORE & LEARN TO PLAY`.
+  - Start prompt updated to `"PRESS ARROWS OR HERE TO START"`.
+  - Game Over screen features a big `[X] RETURN TO MENU` button with tap/click detection.
+- **Lore & Learn Screen**:
+  - Page 1 rewritten #3: `"3. You doubt your own decisions of which pact to choose during Kairos time, hesitating as the clock runs down."`
+  - Pages 3 & 4 structured as `1. PACT NAME` $\rightarrow$ `[narrative]` $\rightarrow$ `PRO:` $\rightarrow$ `CON:`.
+
 ## [v1.1.5] - 2026-09-25
 ### Changed
 - **Menu Page Controls & Spacing**:

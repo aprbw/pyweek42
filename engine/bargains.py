@@ -119,20 +119,20 @@ BARGAIN_REGISTRY: Dict[SinType, BargainDefinition] = {
         sin=SinType.WRATH,
         name="Wrath",
         latin_name="Ira",
-        boon_name="Shard Shockwave (1600px)",
-        curse_name="Sand Grain Blast (3200px)",
-        boon_base=1600.0,  # radius in pixels
-        curse_base=3200.0,  # radius in pixels
-        boon_unit="px blast",
-        curse_unit="px blast",
+        boon_name="Wrath Blast (3.0s Wipe)",
+        curse_name="Control Inversion (+5%)",
+        boon_base=3.0,
+        curse_base=5.0,
+        boon_unit="s wipe",
+        curse_unit="% error",
     ),
     SinType.SLOTH: BargainDefinition(
         sin=SinType.SLOTH,
         name="Sloth",
         latin_name="Acedia",
-        boon_name="Lazy Reprieve (1600px, 2s)",
-        curse_name="Center Locked Sands & Drag",
-        boon_base=2.0,
+        boon_name="Lazy Reprieve (5.0s Neatly Aligned)",
+        curse_name="Delayed Danger Returns with Vengeance",
+        boon_base=5.0,
         curse_base=0.20,
         boon_unit="s safe",
         curse_unit="drag",
@@ -152,10 +152,26 @@ class BargainManager:
     def get_selection_count(self, sin: SinType) -> int:
         return self.selection_counts[sin]
 
-    def draw_options(self, count: int = 3) -> List[Tuple[SinType, BargainDefinition, int]]:
-        """Draw 3 distinct sins for Kairos circuit breaker."""
-        sins = list(SinType)
-        chosen = random.sample(sins, min(count, len(sins)))
+    def get_pact_probability(self, sin: SinType) -> float:
+        """Addictive sin probability: P(P) = (1 + N(P)) / (7 + total_pacts)."""
+        total_pacts = sum(self.selection_counts.values())
+        return (1.0 + self.selection_counts.get(sin, 0)) / (7.0 + total_pacts)
+
+    def draw_options(self, count: int = 2) -> List[Tuple[SinType, BargainDefinition, int]]:
+        """Draw distinct sins for Kairos circuit breaker using addictive weighted distribution without replacement.
+        The more a pact is chosen, the higher chance it appears again in the future.
+        P(P) = (1 + N(P)) / (7 + total_pacts).
+        """
+        available = list(SinType)
+        num_to_draw = min(count, len(available))
+        chosen: List[SinType] = []
+
+        for _ in range(num_to_draw):
+            weights = [1.0 + self.selection_counts[s] for s in available]
+            picked = random.choices(available, weights=weights, k=1)[0]
+            chosen.append(picked)
+            available.remove(picked)
+
         options = []
         for sin in chosen:
             defn = BARGAIN_REGISTRY[sin]
@@ -240,34 +256,41 @@ class BargainManager:
         elif sin == SinType.WRATH:
             # Wrath is an explosion!
             # Blast radius: Shards = 1600px; Sand grains = 3200px.
-            # No zero yield con! Con is the blast on the grains.
+            # Duration is 3 seconds (90 frames at 30 FPS).
+            # Permanently add error to control: +5% chance when pressing a button, it will do the opposite (cap at 50%).
+            state.wrath_level += 1
+            state.wrath_error_chance = min(0.50, state.wrath_level * 0.05)
+            state.wrath_wipe_timer = 90  # 3.0 seconds at 30 FPS
+
             shards_hit = 0
             sands_hit = 0
             if entities_manager:
                 shards_hit, sands_hit = entities_manager.wrath_explosion(shard_radius=1600.0, grain_radius=3200.0, impulse_strength=46.0)
             state.trigger_shake(duration=20, intensity=12.0)
-            state.wrath_zero_yield_timer = 0  # No zero-yield con; blast on grains IS the con!
+            state.wrath_zero_yield_timer = 0
             summary = {
                 "sin": defn.name,
-                "boon": f"Wrath Blast: {shards_hit} shards blasted (1600px)",
-                "curse": f"Grain Blast: {sands_hit} sands hurled away (3200px)",
+                "boon": f"Wrath Blast: {shards_hit} shards blasted (3.0s wipe)",
+                "curse": f"Control Error: +{state.wrath_error_chance * 100:.0f}% inverted steering (cap 50%)",
             }
 
         elif sin == SinType.SLOTH:
-            # Sloth: Area of effect 1600px (L, R, Down), ~2 seconds
-            # Shards pushed down; sands pushed linearly to middle (x=300) and stay there
+            # Sloth: Area of effect 1600px (L, R, Down), now 5.0 seconds (150 frames)
+            # All points arranged neatly below you and you don't have to do anything to get them
+            # All shards pushed down and you don't have to do anything to avoid them
+            # Danger delayed does not disappear; comes back with a vengeance!
             thrown_count = 0
             sands_centered = 0
             if entities_manager:
                 thrown_count, sands_centered = entities_manager.sloth_hurl_shards_downward(aoe_horizontal=1600.0, aoe_down=1600.0)
-            state.sloth_active_timer = 60  # ~2 seconds at 30 FPS
+            state.sloth_active_timer = 150  # 5.0 seconds at 30 FPS
             # Curse: Aggressive lateral drag: 0.20 * 1.5^k reduction, min 0.20
             drag_reduction = 0.20 * (1.5 ** k)
             state.sloth_player_speed_mod = max(0.20, state.sloth_player_speed_mod - drag_reduction)
             summary = {
                 "sin": defn.name,
-                "boon": f"Lazy Reprieve: {thrown_count} shards hurled down (~2s safe)",
-                "curse": f"Sand Locked to Hourglass X & -{drag_reduction * 100:.1f}% drag (mod={state.sloth_player_speed_mod:.2f})",
+                "boon": f"Lazy Reprieve: {thrown_count} shards hurled down (5.0s safe)",
+                "curse": f"Vengeful Danger Delayed & -{drag_reduction * 100:.1f}% drag",
             }
 
         self.selection_counts[sin] += 1
@@ -353,12 +376,15 @@ class BargainManager:
             }
 
         elif sin == SinType.WRATH:
-            state.wrath_wipe_timer = 0
-            state.wrath_zero_yield_timer = 0
+            state.wrath_level = max(0, getattr(state, "wrath_level", 1) - 1)
+            state.wrath_error_chance = min(0.50, state.wrath_level * 0.05)
+            if state.wrath_level == 0:
+                state.wrath_wipe_timer = 0
+                state.wrath_zero_yield_timer = 0
             summary = {
                 "sin": defn.name,
-                "boon": "Wrath Reset",
-                "curse": "Curse Cleared",
+                "boon": f"Wrath Level: {state.wrath_level}",
+                "curse": f"Control Error: {state.wrath_error_chance * 100:.0f}%",
             }
 
         elif sin == SinType.SLOTH:
