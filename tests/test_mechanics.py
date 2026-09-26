@@ -2718,7 +2718,7 @@ def test_v113_comprehensive_feedback_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.1.3", "v1.1.4", "v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2")
+    assert app.VERSION in ("v1.1.3", "v1.1.4", "v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3")
     assert app.MAX_LORE_PAGES == 5
 
     # 1. God mode toggle via [G]
@@ -2895,7 +2895,7 @@ def test_v114_comprehensive_feedback_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.1.4", "v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2")
+    assert app.VERSION in ("v1.1.4", "v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3")
 
     # 1. E-Reader Mode: Telemetry is 3rd paragraph (after 3:1-8 and 3:9-13, before 3:14-15)
     from engine.themes import render_reader_mode_text
@@ -3095,7 +3095,7 @@ def test_v115_comprehensive_feedback_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2")
+    assert app.VERSION in ("v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3")
 
     # 1. Menu Page Controls & Line Breaks
     drawn_calls = []
@@ -3246,7 +3246,7 @@ def test_v116_comprehensive_feedback_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2")
+    assert app.VERSION in ("v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3")
 
     # 1. Pact distribution: Addictive formula P(P) = (1 + N_chosen) / (7 + total_pacts)
     bm = BargainManager()
@@ -3406,7 +3406,7 @@ def test_v116_comprehensive_feedback_validation():
         glut_call = [c for c in drawn_calls if c[2] == "GLUTTONY"][0]
         pride_call = [c for c in drawn_calls if c[2] == "PRIDE"][0]
         assert glut_call[4] in (4, 5)
-        assert pride_call[4] == 4
+        assert pride_call[4] in (4, 5)
 
         # 7. Theme Pastel Sakura colors (leaf green 11 or dark green 3)
         t_sakura = get_theme(9)
@@ -3558,7 +3558,7 @@ def test_v117_comprehensive_feedback_validation():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version increment
-    assert app.VERSION in ("v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2"), f"Expected version in v1.1.7-v1.2.2, got {app.VERSION}"
+    assert app.VERSION in ("v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3"), f"Expected version in v1.1.7-v1.2.3, got {app.VERSION}"
 
     # 2. UI Kairos: identical card background for both cards in non-pro themes
     app.state.current_state = GameState.KAIROS
@@ -3729,7 +3729,7 @@ def test_v118_comprehensive_feedback_validation():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version
-    assert app.VERSION in ("v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2"), f"Expected v1.1.8, v1.1.9, v1.2.0, v1.2.1 or v1.2.2, got {app.VERSION}"
+    assert app.VERSION in ("v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3"), f"Expected v1.1.8-v1.2.3, got {app.VERSION}"
 
     # 2. Sakura Theme Dark Green Sand
     t_sakura = get_theme(9)
@@ -3769,7 +3769,7 @@ def test_v118_comprehensive_feedback_validation():
         coords = {c[2]: c[1] for c in drawn_calls}
         assert "[X] QUIT GAME" in coords
         y_quit = coords["[X] QUIT GAME"]
-        box_bottom = 496 if app.VERSION in ("v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2") else (188 + 286)
+        box_bottom = 496 if app.VERSION in ("v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3") else (188 + 286)
         assert (box_bottom - (y_quit + 14)) >= 16, f"Expected >=16px space below quit, got {box_bottom - (y_quit + 14)}"
     finally:
         main.draw_text_scaled = orig_scaled
@@ -3847,7 +3847,7 @@ def test_v119_comprehensive_feedback_validation():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version is v1.1.9, v1.2.0, v1.2.1 or v1.2.2
-    assert app.VERSION in ("v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2"), f"Expected v1.1.9, v1.2.0, v1.2.1 or v1.2.2, got {app.VERSION}"
+    assert app.VERSION in ("v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3"), f"Expected v1.1.9-v1.2.3, got {app.VERSION}"
 
     # 2. Main Menu 3-Line Buttons (h=54) and click bounds
     app.state.current_state = GameState.TITLE
@@ -4008,7 +4008,7 @@ def test_v120_milestone_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.2.0", "v1.2.1", "v1.2.2"), f"Expected v1.2.0, v1.2.1 or v1.2.2, got {app.VERSION}"
+    assert app.VERSION in ("v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3"), f"Expected v1.2.0-v1.2.3, got {app.VERSION}"
 
 
 def test_v121_comprehensive_feedback_validation():
@@ -4029,7 +4029,7 @@ def test_v121_comprehensive_feedback_validation():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version
-    assert app.VERSION in ("v1.2.1", "v1.2.2"), f"Expected v1.2.1 or v1.2.2, got {app.VERSION}"
+    assert app.VERSION in ("v1.2.1", "v1.2.2", "v1.2.3"), f"Expected v1.2.1-v1.2.3, got {app.VERSION}"
 
     # 2. Theme Reorganization
     assert len(ALL_THEMES) == 10
@@ -4111,9 +4111,9 @@ def test_v121_comprehensive_feedback_validation():
         glut_calls = [c for c in drawn_calls if c[2] == "GLUTTONY"]
         assert len(glut_calls) >= 1
         g_call = glut_calls[0]
-        assert g_call[0] == 62, f"GLUTTONY must start at cx=62 with zero margins, got {g_call[0]}"
+        assert g_call[0] in (59, 62), f"GLUTTONY must start at cx=59 or 62, got {g_call[0]}"
         assert g_call[4] == 5, f"GLUTTONY scale must be 5, got {g_call[4]}"
-        assert g_call[5] == 4, f"GLUTTONY char_gap must be 4, got {g_call[5]}"
+        assert g_call[5] in (None, 4), f"GLUTTONY char_gap must be None or 4, got {g_call[5]}"
     finally:
         main.draw_text_scaled = orig_scaled
 
@@ -4150,7 +4150,7 @@ def test_v122_sumie_strictly_no_color():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version
-    assert app.VERSION == "v1.2.2", f"Expected v1.2.2, got {app.VERSION}"
+    assert app.VERSION in ("v1.2.2", "v1.2.3"), f"Expected v1.2.2 or v1.2.3, got {app.VERSION}"
 
     # Pure grayscale set in Pyxel: 0=Black, 7=White, 13=Neutral Grey
     # Blue colors (1=Navy, 5=Slate, 6=Periwinkle, 12=Sky Blue) and chromatic colors MUST NOT appear!
@@ -4260,6 +4260,240 @@ def test_v122_sumie_strictly_no_color():
                 assert c_col not in forbidden_blue, f"{th.name} Button/Banner text '{c_text}' has blue color {c_col}!"
         finally:
             main.draw_text_scaled = orig_scaled
+
+
+def test_v123_comprehensive_requirements():
+    """Verify all v1.2.3 2do.md requirements:
+    1. Version is v1.2.3.
+    2. No consecutive pacts: the 2 pacts that just appeared cannot appear in the next round.
+    3. Kairos UI titles: All pact names have the exact same font size (scale=5).
+       Gluttony width is 235px, strictly greater than unbent card width (228px).
+    4. Wrath inverted control motion lines:
+       When Wrath inverts movement, 3 staggered horizontal lines are rendered on the intended/resisted side.
+       Lines fade over 4-6 frames, anchored at hourglass waist.
+       Theme compliant color: 13 for Sumi-e, 8 for standard themes. Zero screen shake.
+    5. Sumi-e background:
+       Lines do not jump every second (static base lines).
+       Nearing Kairos, wavy lines flatten into straight lines and move closer together without flickering.
+    6. Dune theme background:
+       x-axis parallax: top dunes move less horizontally with cam_x than bottom dunes.
+    7. Sakura theme background:
+       Sparse random small white dots moving up with x-axis parallax.
+       Nearing Kairos, white lines become earthy ground brown (Color 4), become thicker, and completely cover the screen in brown.
+    8. Main menu mobile advisory:
+       Under 'PRESS ARROWS OR HERE TO START', asks mobile users to change to desktop mode.
+    9. E-reader mode:
+       Screen is never shaken (ox=0, oy=0), even with shake_intensity > 0.
+       End game screen delivers the whole info in paragraph KJV style: death reason, time survived,
+       final score, sand reaped, shards evaded, total pacts and breakdown of all sealed sins.
+    """
+    import main
+    from main import GrainOfDoubtApp, get_text_width_5x7
+    from engine.themes import ALL_THEMES, get_theme
+    from engine.state import GameState
+    from engine.bargains import SinType, BargainManager, BARGAIN_REGISTRY
+
+    import pyxel
+    try:
+        pyxel.init(600, 800, headless=True)
+    except BaseException:
+        pass
+
+    app = GrainOfDoubtApp(headless=True)
+
+    # 1. Version
+    assert app.VERSION == "v1.2.3", f"Expected v1.2.3, got {app.VERSION}"
+
+    # 2. No consecutive pacts
+    bm = BargainManager()
+    prev_sins = set()
+    for _ in range(25):
+        opts = bm.draw_options(2)
+        assert len(opts) == 2
+        cur_sins = {o[0] for o in opts}
+        if prev_sins:
+            assert len(cur_sins & prev_sins) == 0, f"Consecutive pacts appeared! prev={prev_sins}, cur={cur_sins}"
+        prev_sins = cur_sins
+
+    # Verify reset clears last_offered_pacts
+    assert len(bm.last_offered_pacts) == 2
+    bm.reset()
+    assert len(bm.last_offered_pacts) == 0
+
+    # 3. Kairos UI Titles: All have same font size (scale=5) and Gluttony width > unbent card width (228px)
+    assert get_text_width_5x7("GLUTTONY", scale=5) == 235
+    assert get_text_width_5x7("GLUTTONY", scale=5) > 228
+    assert get_text_width_5x7("PRIDE", scale=5) == 145
+    assert get_text_width_5x7("GREED", scale=5) == 145
+    assert get_text_width_5x7("LUST", scale=5) == 115
+    assert get_text_width_5x7("ENVY", scale=5) == 115
+    assert get_text_width_5x7("WRATH", scale=5) == 145
+    assert get_text_width_5x7("SLOTH", scale=5) == 145
+
+    app.state.current_state = GameState.KAIROS
+    app.current_theme_index = 0
+    app.active_options = [
+        (SinType.GLUTTONY, BARGAIN_REGISTRY[SinType.GLUTTONY], 0),
+        (SinType.WRATH, BARGAIN_REGISTRY[SinType.WRATH], 0),
+    ]
+    drawn_calls = []
+    orig_scaled = main.draw_text_scaled
+    try:
+        main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2, char_gap=None: drawn_calls.append((x, y, s, col, scale))
+        app.draw_kairos_modal()
+        titles = [c for c in drawn_calls if c[2] in ("GLUTTONY", "WRATH")]
+        assert len(titles) == 2
+        # Both must have the exact same font size: scale=5!
+        assert titles[0][4] == 5, f"Expected Gluttony scale=5, got {titles[0][4]}"
+        assert titles[1][4] == 5, f"Expected Wrath scale=5, got {titles[1][4]}"
+        # Gluttony starts at cx=59 (spilling 3px past left unbent card boundary cx=62)
+        assert titles[0][0] == 59
+    finally:
+        main.draw_text_scaled = orig_scaled
+
+    # 4. Wrath Inverted Control Motion Lines
+    app.start_new_game()
+    app.state.wrath_error_chance = 1.0  # Force inversion
+    eff_l, eff_r = app.apply_control_inversion(True, False)
+    assert eff_r is True and eff_l is False  # Inverted!
+    assert app.wrath_motion_lines_timer == 6
+    assert app.wrath_motion_lines_side == -1  # Resisted direction was Left
+
+    # Timer decrements during Chronos updates
+    app.state.current_state = GameState.CHRONOS
+    app.update()
+    assert app.wrath_motion_lines_timer == 5
+
+    # Check drawing: lines are drawn on resisted side with theme-compliant colors
+    line_draws = []
+    orig_line = pyxel.line
+    try:
+        pyxel.line = lambda x1, y1, x2, y2, col: line_draws.append((x1, y1, x2, y2, col))
+        # Standard theme: color 8 (Crimson)
+        app.current_theme_index = 0
+        app.draw_player_hourglass()
+        assert any(c[4] == 8 for c in line_draws)
+
+        # Sumi-e theme: color 13 (Neutral Grey strictly, no red/blue)
+        line_draws.clear()
+        app.current_theme_index = 7
+        app.draw_player_hourglass()
+        assert any(c[4] == 13 for c in line_draws)
+        assert not any(c[4] in (1, 5, 6, 8, 12) for c in line_draws)
+    finally:
+        pyxel.line = orig_line
+
+    # 5. Sumi-e background: Static lines & flattening warning
+    t_sumie = get_theme(7)
+    # prog=0.0: wavy lines
+    # prog=0.9: warning active, straight lines and converging
+    app.current_theme_index = 7
+    line_draws.clear()
+    try:
+        pyxel.line = lambda x1, y1, x2, y2, col: line_draws.append((x1, y1, x2, y2, col))
+        t_sumie.render(pyxel, cam_x=0, prog=0.0, dist=100, screen_w=600, screen_h=800, is_greed=False)
+        assert len(line_draws) > 0
+
+        line_draws.clear()
+        t_sumie.render(pyxel, cam_x=0, prog=0.95, dist=100, screen_w=600, screen_h=800, is_greed=False)
+        # Verify all lines strictly in {0, 7, 13}
+        for l in line_draws:
+            assert l[4] in {0, 7, 13}
+    finally:
+        pyxel.line = orig_line
+
+    # 6. Dune theme background x-axis parallax
+    t_dune = get_theme(0)
+    # Check that bg_sand_dunes_landscape executes with horizontal camera shift without error
+    t_dune.render(pyxel, cam_x=100, prog=0.5, dist=50, screen_w=600, screen_h=800, is_greed=False)
+
+    # 7. Sakura theme background: sparse white dots & earthy ground Kairos transition
+    t_sakura = get_theme(9)
+    psets = []
+    rects = []
+    lines = []
+    orig_pset = pyxel.pset
+    orig_rect = pyxel.rect
+    orig_line = pyxel.line
+    try:
+        pyxel.pset = lambda x, y, col: psets.append((x, y, col))
+        pyxel.rect = lambda x, y, w, h, col: rects.append((x, y, w, h, col))
+        pyxel.line = lambda x1, y1, x2, y2, col: lines.append((x1, y1, x2, y2, col))
+        # Normal chronos (prog=0.5): white dots (col=7) present
+        t_sakura.render(pyxel, cam_x=0, prog=0.5, dist=50, screen_w=600, screen_h=800, is_greed=False)
+        assert any(p[2] == 7 for p in psets), "Expected sparse small white dots in Sakura theme"
+
+        # End of chronos / nearing Kairos (prog=0.98): full screen covered in brown (col=4)
+        rects.clear()
+        t_sakura.render(pyxel, cam_x=0, prog=0.98, dist=50, screen_w=600, screen_h=800, is_greed=False)
+        assert any(r[4] == 4 and r[2] == 600 and r[3] == 800 for r in rects), "Expected screen covered in brown nearing Kairos in Sakura"
+    finally:
+        pyxel.pset = orig_pset
+        pyxel.rect = orig_rect
+        pyxel.line = orig_line
+
+    # 8. Main menu mobile advisory
+    app.state.current_state = GameState.TITLE
+    app.is_mobile = True
+    drawn_texts = []
+    orig_scaled = main.draw_text_scaled
+    orig_centered = main.draw_text_centered
+    try:
+        main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2, char_gap=None: drawn_texts.append((s, col))
+        main.draw_text_centered = lambda y, s, col, scale=1, img_bank=2: drawn_texts.append((s, col))
+        app.draw_title_screen()
+        all_title_texts = " ".join(t[0] for t in drawn_texts)
+        assert "DESKTOP MODE" in all_title_texts, "Expected mobile advisory prompt asking to switch to desktop mode"
+    finally:
+        main.draw_text_scaled = orig_scaled
+        main.draw_text_centered = orig_centered
+
+    # 9. E-Reader Mode: No Screen Shake & Complete KJV Game Over Paragraph
+    t_reader = get_theme(3)
+    assert t_reader.is_reader_mode is True
+    app.current_theme_index = 3
+    app.state.shake_intensity = 20.0
+    cam_calls = []
+    orig_camera = pyxel.camera
+    try:
+        pyxel.camera = lambda ox, oy: cam_calls.append((ox, oy))
+        app.draw()
+        assert len(cam_calls) >= 1
+        # In E-Reader mode, screen shake is NEVER applied: ox must equal cam_x (0), oy must equal 0!
+        assert cam_calls[0] == (0, 0), f"Screen shaken in E-Reader mode! Got {cam_calls[0]}"
+    finally:
+        pyxel.camera = orig_camera
+
+    # E-Reader Game Over screen delivery of whole info in KJV style
+    app.state.current_state = GameState.GAMEOVER
+    app.state.death_reason = "Crushed by Glass Shard"
+    app.state.total_frames = 900  # 30.0s
+    app.state.score = 4200
+    app.state.total_sand_collected = 150
+    app.state.total_shards_dodged = 75
+    app.bargains.selection_counts[SinType.PRIDE] = 1
+    app.bargains.selection_counts[SinType.GREED] = 2
+    app.bargains.history = [SinType.PRIDE, SinType.GREED, SinType.GREED]
+
+    drawn_texts.clear()
+    try:
+        main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2, char_gap=None: drawn_texts.append((s, col))
+        main.draw_text_centered = lambda y, s, col, scale=1, img_bank=2: drawn_texts.append((s, col))
+        app.draw_game_over_screen()
+        all_go_texts = " ".join(t[0] for t in drawn_texts)
+        # Check whole info is present
+        assert "ECCLESIASTES 12" in all_go_texts
+        assert "Crushed by Glass Shard".lower() in all_go_texts.lower()
+        assert "30.0" in all_go_texts
+        assert "4 200" in all_go_texts or "4200" in all_go_texts
+        assert "150" in all_go_texts
+        assert "75" in all_go_texts
+        assert "Pride" in all_go_texts
+        assert "Greed" in all_go_texts
+        assert "[X] RETURN UNTO THE BEGINNING" in all_go_texts
+    finally:
+        main.draw_text_scaled = orig_scaled
+        main.draw_text_centered = orig_centered
 
 
 

@@ -146,12 +146,7 @@ def get_text_width_5x7(s: str, scale: int = 1, char_gap: Optional[int] = None) -
     """Return exact rendered pixel width of string in 5x7 font."""
     if not s:
         return 0
-    if char_gap is None:
-        if s == "GLUTTONY" and scale == 5:
-            return 228
-        actual_gap = 1 * scale
-    else:
-        actual_gap = char_gap
+    actual_gap = 1 * scale if char_gap is None else char_gap
     return len(s) * (5 * scale) + max(0, len(s) - 1) * actual_gap
 
 
@@ -315,7 +310,7 @@ def is_dev_environment() -> bool:
 
 
 class GrainOfDoubtApp:
-    VERSION: str = "v1.2.2"
+    VERSION: str = "v1.2.3"
     SCREEN_WIDTH: int = 600
     SCREEN_HEIGHT: int = 800
 
@@ -359,6 +354,8 @@ class GrainOfDoubtApp:
         self._raw_right_prev: bool = False
         self._invert_left_stroke: bool = False
         self._invert_right_stroke: bool = False
+        self.wrath_motion_lines_timer: int = 0
+        self.wrath_motion_lines_side: int = 0  # -1 for left, +1 for right
 
         # Cosmic void background stars (parallax)
         self.stars: List[List[float]] = []
@@ -406,6 +403,8 @@ class GrainOfDoubtApp:
         self._raw_right_prev = False
         self._invert_left_stroke = False
         self._invert_right_stroke = False
+        self.wrath_motion_lines_timer = 0
+        self.wrath_motion_lines_side = 0
         self.reset_stars()
 
     def apply_control_inversion(self, raw_left: bool, raw_right: bool) -> Tuple[bool, bool]:
@@ -432,12 +431,16 @@ class GrainOfDoubtApp:
         if raw_left:
             if self._invert_left_stroke:
                 eff_right = True
+                self.wrath_motion_lines_side = -1  # Resisted/intended direction was Left
+                self.wrath_motion_lines_timer = 6
             else:
                 eff_left = True
 
         if raw_right:
             if self._invert_right_stroke:
                 eff_left = True
+                self.wrath_motion_lines_side = 1   # Resisted/intended direction was Right
+                self.wrath_motion_lines_timer = 6
             else:
                 eff_right = True
 
@@ -635,6 +638,8 @@ class GrainOfDoubtApp:
             else:
                 self.update_input()
 
+            if self.wrath_motion_lines_timer > 0:
+                self.wrath_motion_lines_timer -= 1
             self.state.update_timers()
             self.entities.update(self.state)
 
@@ -796,16 +801,16 @@ class GrainOfDoubtApp:
         else:
             cam_x = 0
 
-        # Screen shake offset
+        # Get active aesthetic theme
+        theme = get_theme(self.current_theme_index)
+
+        # Screen shake offset (screen should NEVER be shaken in E-Reader mode, e.g. when taking damage)
         ox = 0
         oy = 0
-        if self.state.shake_intensity > 0:
+        if not getattr(theme, "is_reader_mode", False) and self.state.shake_intensity > 0:
             ox = random.randint(-int(self.state.shake_intensity), int(self.state.shake_intensity))
             oy = random.randint(-int(self.state.shake_intensity), int(self.state.shake_intensity))
         pyxel.camera(cam_x + ox, oy)
-
-        # Get active aesthetic theme
-        theme = get_theme(self.current_theme_index)
 
         # Clear background void according to active theme
         bg_col = theme.get_clear_color(self.state.greed_active)
@@ -1169,6 +1174,19 @@ class GrainOfDoubtApp:
         # Center reticle dot (3x3 block)
         pyxel.rect(int(round(cross_cx - 1)), int(round(cross_cy - 1)), 3, 3, col_cross)
 
+        # Wrath Inverted Control Motion Lines
+        if self.wrath_motion_lines_timer > 0 and self.wrath_motion_lines_side != 0:
+            side = self.wrath_motion_lines_side
+            fade = self.wrath_motion_lines_timer / 6.0
+            base_lens = [12, 20, 8]
+            y_offsets = [-4, 0, 4]
+            line_col = 8
+            for bl, yo in zip(base_lens, y_offsets):
+                cur_len = max(3, int(round(bl * fade)))
+                x1 = int(round(cross_cx + side * 8))
+                x2 = int(round(cross_cx + side * (8 + cur_len)))
+                pyxel.line(x1, int(round(cross_cy + yo)), x2, int(round(cross_cy + yo)), line_col)
+
     def draw_player_hourglass(self, pal: Optional[HourglassPalette] = None):
         """Draw horizontal hourglass sprite (60x40) that tilts dynamically with control velocity, or flight director in Pro Mode."""
         theme = get_theme(self.current_theme_index)
@@ -1291,6 +1309,20 @@ class GrainOfDoubtApp:
         # 9. Specular Reflections
         pyxel.line(*rot(-18, -10), *rot(-8, -5), 7)
         pyxel.line(*rot(8, -5), *rot(18, -10), 7)
+
+        # 10. Wrath Inverted Control Motion Lines (staggered speed lines on intended input side)
+        if self.wrath_motion_lines_timer > 0 and self.wrath_motion_lines_side != 0:
+            side = self.wrath_motion_lines_side
+            is_sumie = getattr(theme, "id", 0) in (7, 8) or "SUMI" in theme.name.upper()
+            line_col = 13 if is_sumie else 8
+            fade = self.wrath_motion_lines_timer / 6.0
+            base_lens = [12, 20, 8]
+            y_offsets = [-4, 0, 4]
+            for bl, yo in zip(base_lens, y_offsets):
+                cur_len = max(3, int(round(bl * fade)))
+                p_start = rot(side * 6, yo)
+                p_end = rot(side * (6 + cur_len), yo)
+                pyxel.line(p_start[0], p_start[1], p_end[0], p_end[1], line_col)
 
     def draw_glass_shard(self, shard: GlassShard, pal: Optional[ShardPalette] = None):
         if pal is None:
@@ -1718,31 +1750,23 @@ class GrainOfDoubtApp:
                     draw_text_scaled(center_x - btn_w // 2, col_y + col_h - 40, btn_lbl, txt_col, scale=2)
 
             elif getattr(theme, "is_reader_mode", False):
-                # Reader Mode: Title scale=4, Covenant level, then maximized KJV paragraph (scale=2)
+                # Reader Mode: All titles scale=5 (same font size), Gluttony slightly wider than unbent card
                 name = defn.name.upper()
                 title_col = kp.sin_title_selected if is_selected else kp.sin_title
-                if sin == SinType.GLUTTONY:
-                    title_scale = 5
-                    char_gap = 4
-                    title_w = get_text_width_5x7(name, scale=title_scale, char_gap=char_gap)
-                    try:
-                        draw_text_scaled(cx, col_y + 46, name, title_col, scale=title_scale, char_gap=char_gap)
-                    except TypeError:
-                        draw_text_scaled(cx, col_y + 46, name, title_col, scale=title_scale)
-                else:
-                    title_scale = 4
-                    title_w = get_text_width_5x7(name, scale=title_scale)
-                    draw_text_scaled(center_x - title_w // 2, col_y + 46, name, title_col, scale=title_scale)
+                title_scale = 5
+                title_w = get_text_width_5x7(name, scale=title_scale)
+                title_x = center_x - title_w // 2
+                draw_text_scaled(title_x, col_y + 44, name, title_col, scale=title_scale)
 
                 lvl_str = f"COVENANT {k + 1}"
                 lvl_w = len(lvl_str) * 12 - 2
-                draw_text_scaled(center_x - lvl_w // 2, col_y + 88, lvl_str, kp.level_text, scale=2)
+                draw_text_scaled(center_x - lvl_w // 2, col_y + 86, lvl_str, kp.level_text, scale=2)
 
-                pyxel.line(cx + 14, col_y + 110, cx + col_w - 14, col_y + 110, kp.divider)
+                pyxel.line(cx + 14, col_y + 106, cx + col_w - 14, col_y + 106, kp.divider)
 
                 # Maximized KJV narrative paragraph: text is aligned center, not justified
                 kjv_text = KJV_SIN_PARAGRAPHS.get(sin, "")
-                draw_centered_paragraph(cx + 14, col_y + 118, col_w - 28, kjv_text, kp.pro_text, scale=2, line_spacing=12)
+                draw_centered_paragraph(cx + 14, col_y + 116, col_w - 28, kjv_text, kp.pro_text, scale=2, line_spacing=12)
 
                 # Selection status button at bottom
                 if is_selected:
@@ -1757,30 +1781,20 @@ class GrainOfDoubtApp:
                     draw_text_scaled(center_x - btn_w // 2, col_y + col_h - 40, btn_lbl, kp.footer_text, scale=2)
 
             else:
-                # Standard Mode: Title scale=4 for all pacts, Gluttony scale=5 char_gap=4 spanning exact width 228
+                # Standard Mode: All titles scale=5 (same font size), Gluttony (235px) slightly wider than unbent card (228px)
                 name = defn.name.upper()
                 title_col = kp.sin_title_selected if is_selected else kp.sin_title
-                if sin == SinType.GLUTTONY:
-                    title_scale = 5
-                    char_gap = 4
-                    title_w = get_text_width_5x7(name, scale=title_scale, char_gap=char_gap)
-                    # title_w is 228, starting at cx with zero margins left and right!
-                    try:
-                        draw_text_scaled(cx, col_y + 46, name, title_col, scale=title_scale, char_gap=char_gap)
-                    except TypeError:
-                        draw_text_scaled(cx, col_y + 46, name, title_col, scale=title_scale)
-                else:
-                    title_scale = 4
-                    title_w = get_text_width_5x7(name, scale=title_scale)
-                    title_x = center_x - title_w // 2
-                    draw_text_scaled(title_x, col_y + 46, name, title_col, scale=title_scale)
+                title_scale = 5
+                title_w = get_text_width_5x7(name, scale=title_scale)
+                title_x = center_x - title_w // 2
+                draw_text_scaled(title_x, col_y + 44, name, title_col, scale=title_scale)
 
                 # Level indicator
                 lvl_str = f"LEVEL: {k}"
                 lvl_w = len(lvl_str) * 12 - 2
                 lvl_x = center_x - lvl_w // 2
                 lvl_col = kp.sin_title_selected if is_selected else kp.level_text
-                draw_text_scaled(lvl_x, col_y + 88, lvl_str, lvl_col, scale=2)
+                draw_text_scaled(lvl_x, col_y + 86, lvl_str, lvl_col, scale=2)
 
                 # Visual divider
                 pyxel.line(cx + 14, col_y + 106, cx + col_w - 14, col_y + 106, kp.divider)
@@ -2040,9 +2054,21 @@ class GrainOfDoubtApp:
             pyxel.rectb(50, 566, 500, 54, prompt_b)
             draw_text_centered(586, "PRESS ARROWS OR HERE TO START", prompt_txt, scale=2)
 
+        # Mobile advisory under start prompt
+        if self.is_mobile:
+            if is_sumie:
+                mob_col = 0 if is_sumie_white else 7
+                mob_sub = 13
+            else:
+                mob_col = 10
+                mob_sub = 7
+            draw_text_centered(626, "MOBILE BROWSER DETECTED : PLEASE SWITCH TO DESKTOP MODE", mob_col, scale=1)
+            draw_text_centered(638, "(IN BROWSER SETTINGS, ENABLE 'DESKTOP SITE' FOR BEST EXPERIENCE)", mob_sub, scale=1)
+
         # Dedicated Dev Mode box at bottom when dev_mode is active
         if self.dev_mode:
-            self.draw_dev_box(box_y=630, translucent=False)
+            dev_y = 654 if self.is_mobile else 630
+            self.draw_dev_box(box_y=dev_y, translucent=False)
 
         # Draw the 2 mobile buttons at bottom of title screen (mobile only)
         if self.is_mobile:
@@ -2424,6 +2450,9 @@ class GrainOfDoubtApp:
 
     def draw_game_over_screen(self):
         theme = get_theme(self.current_theme_index)
+        if getattr(theme, "is_reader_mode", False):
+            self.draw_reader_mode_game_over_screen()
+            return
         is_sumie = getattr(theme, "id", 0) in (7, 8) or "SUMI" in theme.name.upper()
         is_sumie_white = is_sumie and ("WHITE" in theme.name.upper() or theme.clear_color == 7)
 
@@ -2537,6 +2566,99 @@ class GrainOfDoubtApp:
 
         if self.dev_mode:
             draw_text_scaled(self.SCREEN_WIDTH - 120, self.SCREEN_HEIGHT - 20, f"[DEV] {self.VERSION}", dev_col, scale=2)
+
+    def draw_reader_mode_game_over_screen(self):
+        """Render Game Over screen for Reader Mode delivering all stats in justified KJV scriptural prose."""
+        theme = get_theme(self.current_theme_index)
+        is_light = (theme.clear_color == 15)
+        card_bg = 15 if is_light else 0
+        col_ink = 0 if is_light else 6
+        col_rule = 4 if is_light else 1
+        col_sub = 4 if is_light else 13
+
+        # Full-screen ambient backdrop
+        pyxel.cls(card_bg)
+
+        # Margin rules on book page
+        margin_l = 44
+        margin_r = self.SCREEN_WIDTH - 44
+        content_w = margin_r - margin_l
+
+        pyxel.line(margin_l - 4, 0, margin_l - 4, self.SCREEN_HEIGHT, col_rule)
+        pyxel.line(margin_r + 4, 0, margin_r + 4, self.SCREEN_HEIGHT, col_rule)
+
+        # Chapter header
+        draw_text_centered(36, "ECCLESIASTES 12", col_ink, scale=3)
+        draw_text_centered(66, "THE ACCOUNTING OF BORROWED TIME", col_sub, scale=2)
+        pyxel.line(margin_l, 90, margin_r, 90, col_rule)
+
+        # Scripture opening
+        p1 = (
+            "Or ever the silver cord be loosed, or the golden bowl be broken, "
+            "or the pitcher be broken at the fountain, or the wheel broken at the cistern. "
+            "Then shall the dust return to the earth as it was: and the spirit shall return unto God who gave it."
+        )
+        draw_justified_paragraph(margin_l, 106, content_w, p1, col_ink, scale=2, line_spacing=11)
+
+        # Survival & death cause paragraph
+        reason = self.state.death_reason or "Consumed by the Void"
+        time_survived = self.state.total_frames / 30.0
+        score_fmt = f"{self.state.score:,}".replace(",", " ")
+        sand_fmt = f"{self.state.total_sand_collected:,}".replace(",", " ")
+        shards_fmt = f"{self.state.total_shards_dodged:,}".replace(",", " ")
+
+        p2 = (
+            f"The vessel hath shattered, even being {reason.lower()}, "
+            f"after {time_survived:.1f} seconds of borrowed time under heaven. "
+            f"In that descent were {sand_fmt} sacred grains gathered from the sands, "
+            f"and {shards_fmt} perilous shards of ruin turned aside; "
+            f"wherefore the final measure of the work was {score_fmt} points in the balance."
+        )
+        draw_justified_paragraph(margin_l, 230, content_w, p2, col_ink, scale=2, line_spacing=11)
+
+        # Pacts summary paragraph
+        pacts_active = [sin for sin in CANONICAL_SINS if self.bargains.selection_counts[sin] > 0]
+        total_pacts = len(self.bargains.history) if self.bargains.history else sum(self.bargains.selection_counts.values())
+
+        if total_pacts == 0:
+            p3 = (
+                "And no faustian covenant was sealed with the darkness, "
+                "keeping the measure of the vessel unbroken unto the end."
+            )
+        else:
+            def _to_kjv_w(n: int) -> str:
+                w = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight"}
+                return w.get(n, str(n))
+            parts = [f"{_to_kjv_w(self.bargains.selection_counts[s])} of {s.name.title()}" for s in pacts_active]
+            if len(parts) == 1:
+                bk = parts[0]
+            elif len(parts) == 2:
+                bk = f"{parts[0]}, and {parts[1]}"
+            else:
+                bk = ", ".join(parts[:-1]) + f", and {parts[-1]}"
+            p3 = (
+                f"Moreover, {_to_kjv_w(total_pacts)} faustian covenants were sealed under heaven, "
+                f"to wit: {bk}. Vanity of vanities, saith the preacher; all is vanity."
+            )
+        draw_justified_paragraph(margin_l, 370, content_w, p3, col_ink, scale=2, line_spacing=11)
+
+        # Closing meditation
+        p4 = (
+            "Let us hear the conclusion of the whole matter: Fear God, and keep his commandments: "
+            "for this is the whole duty of man. For God shall bring every work into judgment, "
+            "with every secret thing, whether it be good, or whether it be evil."
+        )
+        draw_justified_paragraph(margin_l, 490, content_w, p4, col_sub, scale=2, line_spacing=11)
+
+        # Restart / Return to menu button
+        btn_y = 636
+        btn_h = 72
+        pyxel.rectb(margin_l, btn_y, content_w, btn_h, col_rule)
+        draw_text_centered(btn_y + 14, "[X] RETURN UNTO THE BEGINNING", col_ink, scale=2)
+        draw_text_centered(btn_y + 38, "PRESS [X], RETURN, OR TAP TO RETURN TO MENU", col_sub, scale=2)
+
+        if self.dev_mode:
+            draw_text_scaled(margin_l, self.SCREEN_HEIGHT - 20, f"[DEV] {self.VERSION}", col_sub, scale=2)
 
     def draw_touch_buttons(self):
         """Draw 2 high-contrast arcade buttons for mobile browser touch play."""

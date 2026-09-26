@@ -144,10 +144,12 @@ class BargainManager:
     def __init__(self):
         self.selection_counts: Dict[SinType, int] = {sin: 0 for sin in SinType}
         self.history: List[SinType] = []
+        self.last_offered_pacts: List[SinType] = []
 
     def reset(self):
         self.selection_counts = {sin: 0 for sin in SinType}
         self.history.clear()
+        self.last_offered_pacts.clear()
 
     def get_selection_count(self, sin: SinType) -> int:
         return self.selection_counts[sin]
@@ -161,8 +163,11 @@ class BargainManager:
         """Draw distinct sins for Kairos circuit breaker using addictive weighted distribution without replacement.
         The more a pact is chosen, the higher chance it appears again in the future.
         P(P) = (1 + N(P)) / (7 + total_pacts).
+        Consecutive rule: The pacts that just appeared cannot appear again in the next ones.
         """
-        available = list(SinType)
+        available = [s for s in SinType if s not in self.last_offered_pacts]
+        if len(available) < count:
+            available = list(SinType)
         num_to_draw = min(count, len(available))
         chosen: List[SinType] = []
 
@@ -171,6 +176,8 @@ class BargainManager:
             picked = random.choices(available, weights=weights, k=1)[0]
             chosen.append(picked)
             available.remove(picked)
+
+        self.last_offered_pacts = list(chosen)
 
         options = []
         for sin in chosen:

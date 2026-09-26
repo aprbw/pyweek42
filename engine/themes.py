@@ -211,12 +211,16 @@ def bg_sand_dunes_landscape(pyxel, cam_x: int, prog: float, dist: int, screen_w:
         w2_wt = 0.24 + 0.26 * h4
         w3_wt = 0.10 + 0.12 * h1
         amp_mod = 0.85 + 0.30 * h3
+        # Parallax factor: top dunes (small s, far away) move less with cam_x, bottom dunes (large s, close) move more
+        p_x = 0.20 + 0.80 * (s ** 1.25)
 
         y_curve = {}
         for xw in x_samples:
-            w1 = math.sin(k1 * xw + phi1)
-            w2 = math.sin(k2 * xw + phi2) * w2_wt
-            w3 = math.cos(k3 * xw + phi3) * w3_wt
+            x_screen = xw - cam_x
+            x_eff = cam_x * p_x + x_screen
+            w1 = math.sin(k1 * x_eff + phi1)
+            w2 = math.sin(k2 * x_eff + phi2) * w2_wt
+            w3 = math.cos(k3 * x_eff + phi3) * w3_wt
             y_curve[xw] = int(y_base - (amp * amp_mod) * (w1 + w2 + w3))
 
         curve_profiles.append((y_base, s, d, y_curve))
@@ -1018,50 +1022,61 @@ def bg_blood_moon_eclipse(pyxel, cam_x: int, prog: float, dist: int, screen_w: i
         pyxel.pset(ax, ay, col_ash)
 
 
+def _render_sumie_ink_wash(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, col_ink: int, col_seal: int):
+    """Render static monochrome ink wash mountain ridges with non-flickering Kairos transition."""
+    # Static base Y coordinates across screen so lines stay static and never jump every second
+    base_lines = [90, 190, 290, 390, 490, 590, 690]
+
+    # Non-flickering Chronos ending warning: wavy lines become straight and closer together (like dunes)
+    warn_ratio = min(1.0, max(0.0, (prog - 0.80) / 0.20)) if prog > 0.80 else 0.0
+    amp = 26.0 * (1.0 - warn_ratio)
+
+    # Lines become closer together converging smoothly towards center as Kairos approaches
+    y_center = screen_h // 2
+    for idx, base_y in enumerate(base_lines):
+        sy = int(y_center + (base_y - y_center) * (1.0 - warn_ratio * 0.60))
+
+        # Smooth horizontal parallax for lateral steering
+        p_x = 0.25 + 0.50 * (base_y / float(screen_h))
+        freq = 0.006 + 0.002 * (idx % 3)
+        phase = idx * 1.57
+
+        prev_x = cam_x
+        prev_x_eff = cam_x * p_x
+        prev_y = sy + int(amp * math.sin(prev_x_eff * freq + phase))
+
+        for x in range(cam_x + 6, cam_x + screen_w + 6, 6):
+            x_screen = x - cam_x
+            x_eff = cam_x * p_x + x_screen
+            cur_y = sy + int(amp * math.sin(x_eff * freq + phase))
+            pyxel.line(prev_x, prev_y, x, cur_y, col_ink)
+            prev_x, prev_y = x, cur_y
+
+    # When nearing Kairos, add intermediate straight lines to show them becoming more close together
+    if warn_ratio > 0.25:
+        extra_baselines = [140, 240, 340, 440, 540, 640]
+        for extra_y in extra_baselines:
+            sy = int(y_center + (extra_y - y_center) * (1.0 - warn_ratio * 0.60))
+            pyxel.line(cam_x, sy, cam_x + screen_w, sy, col_ink)
+
+    # Static calligraphic seal stamp in bottom right (stays static)
+    seal_y = screen_h - 70
+    pyxel.rectb(cam_x + screen_w - 40, seal_y, 16, 16, col_seal)
+    pyxel.pset(cam_x + screen_w - 32, seal_y + 8, col_seal)
+
+
 def bg_zen_ink_wash(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool):
     """Theme: Zen Ink Wash / Sumi-e White (Calligraphic black brushstrokes on white washi paper)."""
     col_ink = 13 if not is_greed else 0
     col_seal = 0
-
-    # Mountain ridges in monochrome wash
-    spacing = 150
-    y_off = int(dist * 0.4) % spacing
-    for base_y in range(-spacing, screen_h + spacing, spacing):
-        sy = base_y - y_off
-        prev_x = cam_x
-        prev_y = sy + int(28 * math.sin((cam_x + base_y) * 0.007))
-        for x in range(cam_x + 6, cam_x + screen_w + 6, 6):
-            cur_y = sy + int(28 * math.sin((x + base_y) * 0.007))
-            pyxel.line(prev_x, prev_y, x, cur_y, col_ink)
-            prev_x, prev_y = x, cur_y
-
-    # Seal stamp
-    seal_y = (dist // 2) % 400
-    pyxel.rectb(cam_x + screen_w - 40, seal_y, 16, 16, col_seal)
-    pyxel.pset(cam_x + screen_w - 32, seal_y + 8, col_seal)
+    _render_sumie_ink_wash(pyxel, cam_x, prog, dist, screen_w, screen_h, col_ink, col_seal)
 
 
 def bg_zen_ink_wash_black(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool):
     """Theme: Zen Ink Wash / Sumi-e Black (Calligraphic white/grey brushstrokes on deep black)."""
     col_ink = 13 if not is_greed else 7
     col_seal = 7
-
-    # Mountain ridges in monochrome wash
-    spacing = 150
-    y_off = int(dist * 0.4) % spacing
-    for base_y in range(-spacing, screen_h + spacing, spacing):
-        sy = base_y - y_off
-        prev_x = cam_x
-        prev_y = sy + int(28 * math.sin((cam_x + base_y) * 0.007))
-        for x in range(cam_x + 6, cam_x + screen_w + 6, 6):
-            cur_y = sy + int(28 * math.sin((x + base_y) * 0.007))
-            pyxel.line(prev_x, prev_y, x, cur_y, col_ink)
-            prev_x, prev_y = x, cur_y
-
-    # Seal stamp
-    seal_y = (dist // 2) % 400
-    pyxel.rectb(cam_x + screen_w - 40, seal_y, 16, 16, col_seal)
-    pyxel.pset(cam_x + screen_w - 32, seal_y + 8, col_seal)
+    _render_sumie_ink_wash(pyxel, cam_x, prog, dist, screen_w, screen_h, col_ink, col_seal)
 
 
 # =============================================================================
@@ -1324,28 +1339,32 @@ KAIROS_ZEN_INK_WASH = KAIROS_ZEN_INK_WASH_WHITE
 
 
 def bg_pastel_sakura(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool, telemetry: Optional[dict] = None):
-    """Theme 9: Pastel Sakura (Cute, girly blossom drift with floating cherry petals, soft pastel clouds, and twinkling stars)."""
-    # 1. Peaceful, non-epileptic Kairos countdown gradient over the final 2.0 seconds (prog >= 0.80).
-    # Slowly transitions background from flat pink (14) into an organic vertical gradient:
-    # Pink at top to earthy brown (4) at bottom.
-    if prog > 0.80 and not is_greed:
-        t_kairos = min(1.0, (prog - 0.80) / 0.20)
-        grad_h = int(screen_h * 0.70 * t_kairos)
-        start_gy = screen_h - grad_h
-        for gy in range(start_gy, screen_h):
-            pos = (gy - start_gy) / float(max(1, grad_h))  # 0.0 at top of gradient, 1.0 at bottom
-            # Dither bands for ultra-smooth organic gradient without color banding or flashing
-            if pos > 0.75:
-                col = 4
-            elif pos > 0.50:
-                col = 4 if ((gy + cam_x) % 2 == 0) else 15
-            elif pos > 0.25:
-                col = 15 if ((gy + cam_x) % 2 == 0) else 14
-            else:
-                col = 14 if ((gy + cam_x) % 4 != 0) else 15
-            pyxel.line(cam_x, gy, cam_x + screen_w, gy, col)
+    """Theme 9: Pastel Sakura (Cute blossom drift with petals, sparkles, white motes, and earthy ground Kairos transition)."""
+    # 1. Background nearing Kairos time (end of Chronos time, prog >= 0.80):
+    # White lines become earthy ground (color 4), become thicker, and progressively cover the whole screen in brown.
+    t_kairos = min(1.0, (prog - 0.80) / 0.15) if (prog > 0.80 and not is_greed) else 0.0
+    if t_kairos >= 0.95:
+        # Full cover of screen in earthy brown right before Kairos triggers
+        pyxel.rect(cam_x, 0, screen_w, screen_h, 4)
+    elif t_kairos > 0.0:
+        # Earthy ground lines becoming progressively thicker
+        thick = 2 + int(t_kairos * 70)
+        for w_idx in range(6):
+            wy = int((w_idx * 140 - dist * 0.8) % screen_h)
+            for th in range(thick):
+                pyxel.line(cam_x, wy + th, cam_x + screen_w, wy - 20 + th, 4)
 
-    # 2. Floating cherry blossom petals with organic sinusoidal sway and horizontal parallax
+    # 2. Sparse random small white dots that move up with horizontal camera parallax
+    num_dots = 22
+    for d_idx in range(num_dots):
+        d_seed = d_idx * 79 + 37
+        d_speed = 0.55 + 0.35 * ((d_seed % 5) / 5.0)
+        p_dot = 0.25 + 0.50 * ((d_seed % 7) / 7.0)
+        dx = int(cam_x * p_dot + (d_seed * 113) % screen_w)
+        dy = int((d_seed * 97 - dist * d_speed * 1.5) % screen_h)
+        pyxel.pset(dx, dy, 7)
+
+    # 3. Floating cherry blossom petals with organic sinusoidal sway and horizontal parallax
     num_petals = 28
     for i in range(num_petals):
         seed = i * 47 + 13
@@ -1376,7 +1395,7 @@ def bg_pastel_sakura(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, s
         pyxel.pset(px, py + 1, c_petal)
         pyxel.pset(px - 1, py - 1, 7)
 
-    # 3. Twinkling fairy sparkles with horizontal parallax for clear lateral movement feedback
+    # 4. Twinkling fairy sparkles with horizontal parallax for clear lateral movement feedback
     for s_idx in range(16):
         s_seed = s_idx * 61 + 29
         p_star = 0.30 + 0.35 * ((s_idx % 5) / 5.0)
@@ -1394,13 +1413,14 @@ def bg_pastel_sakura(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, s
         elif twinkle == 2:
             pyxel.pset(sx, sy, 15)
 
-    # 4. Soft breeze streaks
-    for w_idx in range(4):
-        wy = int((w_idx * 210 - dist * 0.8) % screen_h)
-        col_wisp = 15 if (w_idx % 2 == 0) else 7
-        if is_greed:
-            col_wisp = 2
-        pyxel.line(cam_x + 30, wy, cam_x + screen_w - 30, wy - 24, col_wisp)
+    # 5. Soft breeze streaks (during normal Chronos before earthy ground transition)
+    if t_kairos == 0.0:
+        for w_idx in range(4):
+            wy = int((w_idx * 210 - dist * 0.8) % screen_h)
+            col_wisp = 15 if (w_idx % 2 == 0) else 7
+            if is_greed:
+                col_wisp = 2
+            pyxel.line(cam_x + 30, wy, cam_x + screen_w - 30, wy - 24, col_wisp)
 
 
 # Kairos Palette for Theme 9 (Pastel Sakura):

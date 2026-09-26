@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.2.3] - 2026-09-26
+### Added & Enhanced
+- **Kairos UI Typography & Gluttony Geometry**:
+  - Unified all Kairos card titles to `scale=5` across all seven deadly sins.
+  - Authentic Gluttony styling: spanning 235px (8 chars × 25px + 7 × 5px gap), extending 3.5px beyond unbent 228px card width into the custom 22px card frame bulge.
+  - Adjusted modal vertical proportions and text padding for clean hierarchy.
+- **Sumi-e Zen Ink Wash Stability & Pre-Kairos Warning**:
+  - Fixed vertical ink wash baseline motion to eliminate 1-second modulo jump/stutter.
+  - Smooth, non-flickering pre-Kairos warning: in the final 20% of Chronos, wavy ink curves flatten into straight lines and converge together toward the horizontal center. Strictly monochrome `{0, 7, 13}`.
+- **Wrath Inversion Motion Speed Lines**:
+  - Replaced screen shake with 3 staggered horizontal motion speed lines (lengths ~12px, 20px, 8px) on the resisted input side.
+  - Anchored at hourglass waist with smooth 6-frame fade, using theme-compliant colors (Neutral Grey `Color 13` in Sumi-e, Crimson `Color 8` in standard).
+- **No Consecutive Faustian Pacts**:
+  - `BargainManager` records offered pacts, guaranteeing the 2 pacts offered in the preceding round cannot appear again consecutively in the next Kairos round.
+- **Sakura Theme Enhanced Visuals**:
+  - Added floating white motes drifting upward with horizontal camera parallax.
+  - In final 20% of Chronos, breeze lines turn into earthy ground brown (`Color 4`), thicken progressively, and form a protective canopy covering the screen.
+- **Dune Theme Horizontal Perspective Parallax**:
+  - Top dunes move slower than foreground dunes based on depth curve `p_x = 0.20 + 0.80 * (s ** 1.25)`.
+- **Mobile Desktop-Mode Advisory**:
+  - Detects mobile environment and renders a clear prompt on Title Screen asking mobile players to switch to desktop mode.
+- **E-Reader Mode KJV Paragraph Screen & Rock-Solid Stability**:
+  - Comprehensive Game Over screen presenting all run metrics in King James Version prose with book margins and rules.
+  - Completely disabled screen shake in E-reader modes to ensure stable rendering on e-paper screens.
+
 ## [v1.2.2] - 2026-09-25
 ### Fixed & Enhanced
 - **Root Cause Resolution for Blue Color in Sumi-e Modes**:
