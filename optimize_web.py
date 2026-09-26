@@ -103,7 +103,7 @@ for fname in ['grain_of_doubt.html', 'index.html']:
 </head>
 <body>
 <script>
-window.__PYXEL_IS_MOBILE__ = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+window.__PYXEL_IS_MOBILE__ = /Android.*Mobile|iPhone|iPod|Mobile/i.test(navigator.userAgent);
 if (window.location.search.toLowerCase().includes('dev')) {
   window.__DEV_MODE__ = true;
 }

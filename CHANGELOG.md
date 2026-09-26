@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.2.4] - 2026-09-26
+### Added & Enhanced
+- **Wrath Motion Lines Repositioned to Outer Edges**:
+  - Repositioned the 3 staggered horizontal motion speed lines to render strictly outside the hourglass caps on the left (`|lx| = 32..52`) and right (`|lx| = 32..52`), rather than the center waist.
+  - Pro Mode flight director similarly displays motion lines outside the navigation reticle (`|x| = 24..44`), preserving clear center instrumentation.
+- **Pastel Sakura Seamless Ground Transition**:
+  - Completely eliminated visual jumps or discrete pops during the pre-Kairos transition.
+  - Over a gentle 3.5-second ramp (`prog > 0.65`), 8 evenly spaced breeze lines continuously expand in thickness ($W = 1 + \text{int}(t^{1.3} \times 125)$) from 1px to overlapping solid ground, seamlessly transforming into a solid earthy brown (`Color 4`) screen without sudden full-screen rect flashing.
+- **Main Menu Mobile Interface Advisory**:
+  - Enhanced title screen mobile interface detection and added a prominent high-contrast advisory card right under "PRESS ARROWS OR HERE TO START".
+  - Explicitly advises mobile players to switch their browser to Desktop Mode ("Request Desktop Site") for optimal tactile and viewport controls.
+  - Refined web optimization script to recognize Desktop Site mode and clear the advisory when switched.
+- **E-Reader Mode Game Over Layout & Guaranteed Zero Overlap**:
+  - Implemented dynamic vertical paragraph stacking via `draw_justified_paragraph` returning exact line boundaries, eliminating all hardcoded Y coordinates and mathematically guaranteeing zero text overlap under all run configurations.
+  - Standardized KJV typography to `scale=2`, `line_spacing=10` ($20\text{px}$ line pitch with comfortable $6\text{px}$ leading for 14px font glyphs), and $12\text{px}$ paragraph spacing.
+  - Dynamically positioned the return bookplate with comfortable margin clearance below the scripture text.
+
 ## [v1.2.3] - 2026-09-26
 ### Added & Enhanced
 - **Kairos UI Typography & Gluttony Geometry**:

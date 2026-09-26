@@ -2718,7 +2718,7 @@ def test_v113_comprehensive_feedback_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.1.3", "v1.1.4", "v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3")
+    assert app.VERSION in ("v1.1.3", "v1.1.4", "v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4")
     assert app.MAX_LORE_PAGES == 5
 
     # 1. God mode toggle via [G]
@@ -2895,7 +2895,7 @@ def test_v114_comprehensive_feedback_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.1.4", "v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3")
+    assert app.VERSION in ("v1.1.4", "v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4")
 
     # 1. E-Reader Mode: Telemetry is 3rd paragraph (after 3:1-8 and 3:9-13, before 3:14-15)
     from engine.themes import render_reader_mode_text
@@ -3095,7 +3095,7 @@ def test_v115_comprehensive_feedback_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3")
+    assert app.VERSION in ("v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4")
 
     # 1. Menu Page Controls & Line Breaks
     drawn_calls = []
@@ -3246,7 +3246,7 @@ def test_v116_comprehensive_feedback_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3")
+    assert app.VERSION in ("v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4")
 
     # 1. Pact distribution: Addictive formula P(P) = (1 + N_chosen) / (7 + total_pacts)
     bm = BargainManager()
@@ -3558,7 +3558,7 @@ def test_v117_comprehensive_feedback_validation():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version increment
-    assert app.VERSION in ("v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3"), f"Expected version in v1.1.7-v1.2.3, got {app.VERSION}"
+    assert app.VERSION in ("v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4"), f"Expected version in v1.1.7-v1.2.3, got {app.VERSION}"
 
     # 2. UI Kairos: identical card background for both cards in non-pro themes
     app.state.current_state = GameState.KAIROS
@@ -3729,7 +3729,7 @@ def test_v118_comprehensive_feedback_validation():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version
-    assert app.VERSION in ("v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3"), f"Expected v1.1.8-v1.2.3, got {app.VERSION}"
+    assert app.VERSION in ("v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4"), f"Expected v1.1.8-v1.2.3, got {app.VERSION}"
 
     # 2. Sakura Theme Dark Green Sand
     t_sakura = get_theme(9)
@@ -3769,7 +3769,7 @@ def test_v118_comprehensive_feedback_validation():
         coords = {c[2]: c[1] for c in drawn_calls}
         assert "[X] QUIT GAME" in coords
         y_quit = coords["[X] QUIT GAME"]
-        box_bottom = 496 if app.VERSION in ("v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3") else (188 + 286)
+        box_bottom = 496 if app.VERSION in ("v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4") else (188 + 286)
         assert (box_bottom - (y_quit + 14)) >= 16, f"Expected >=16px space below quit, got {box_bottom - (y_quit + 14)}"
     finally:
         main.draw_text_scaled = orig_scaled
@@ -3847,7 +3847,7 @@ def test_v119_comprehensive_feedback_validation():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version is v1.1.9, v1.2.0, v1.2.1 or v1.2.2
-    assert app.VERSION in ("v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3"), f"Expected v1.1.9-v1.2.3, got {app.VERSION}"
+    assert app.VERSION in ("v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4"), f"Expected v1.1.9-v1.2.3, got {app.VERSION}"
 
     # 2. Main Menu 3-Line Buttons (h=54) and click bounds
     app.state.current_state = GameState.TITLE
@@ -4008,7 +4008,7 @@ def test_v120_milestone_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3"), f"Expected v1.2.0-v1.2.3, got {app.VERSION}"
+    assert app.VERSION in ("v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4"), f"Expected v1.2.0-v1.2.3, got {app.VERSION}"
 
 
 def test_v121_comprehensive_feedback_validation():
@@ -4029,7 +4029,7 @@ def test_v121_comprehensive_feedback_validation():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version
-    assert app.VERSION in ("v1.2.1", "v1.2.2", "v1.2.3"), f"Expected v1.2.1-v1.2.3, got {app.VERSION}"
+    assert app.VERSION in ("v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4"), f"Expected v1.2.1-v1.2.3, got {app.VERSION}"
 
     # 2. Theme Reorganization
     assert len(ALL_THEMES) == 10
@@ -4150,7 +4150,7 @@ def test_v122_sumie_strictly_no_color():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version
-    assert app.VERSION in ("v1.2.2", "v1.2.3"), f"Expected v1.2.2 or v1.2.3, got {app.VERSION}"
+    assert app.VERSION in ("v1.2.2", "v1.2.3", "v1.2.4"), f"Expected v1.2.2 or v1.2.3, got {app.VERSION}"
 
     # Pure grayscale set in Pyxel: 0=Black, 7=White, 13=Neutral Grey
     # Blue colors (1=Navy, 5=Slate, 6=Periwinkle, 12=Sky Blue) and chromatic colors MUST NOT appear!
@@ -4302,7 +4302,7 @@ def test_v123_comprehensive_requirements():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version
-    assert app.VERSION == "v1.2.3", f"Expected v1.2.3, got {app.VERSION}"
+    assert app.VERSION in ("v1.2.3", "v1.2.4"), f"Expected v1.2.3, got {app.VERSION}"
 
     # 2. No consecutive pacts
     bm = BargainManager()
@@ -4505,3 +4505,189 @@ def test_v123_comprehensive_requirements():
 
 
 
+
+
+def test_v124_comprehensive_requirements():
+    """Verify v1.2.4 requirements from 2do.md:
+    1. Version is v1.2.4.
+    2. Wrath Inverted Control Motion Lines:
+       - Placed strictly left and right of the hourglass sprite (|lx| >= 32), not the center waist neck (|lx| <= 6).
+       - When intending Left, motion lines are strictly on the left (x < px - 28).
+       - When intending Right, motion lines are strictly on the right (x > px + 28).
+    3. Sakura theme background:
+       - Ultra-smooth transition from white lines to pure brown over 3.5 seconds (prog > 0.65).
+       - No jumps/pops. By prog >= 0.98, screen is 100% covered in brown (Color 4).
+    4. Main menu:
+       - When mobile interface detected, prominent advisory box under 'PRESS ARROWS OR HERE TO START'
+         asks mobile users to switch to desktop mode.
+    5. E-Reader Mode:
+       - Check typesetting layout, number of letters, and screen size.
+       - Guaranteed NO OVERLAP between any paragraphs or lines across all run outcomes.
+       - Complete KJV scriptural prose with run metrics and itemized sin breakdown.
+       - Dynamic return button placement with comfortable margin clearance below text.
+    """
+    import main
+    from main import GrainOfDoubtApp
+    from engine.themes import get_theme
+    from engine.state import GameState
+    from engine.bargains import SinType
+    import pyxel
+
+    try:
+        pyxel.init(600, 800, headless=True)
+    except BaseException:
+        pass
+
+    app = GrainOfDoubtApp(headless=True)
+
+    # 1. Version
+    assert app.VERSION == "v1.2.4", f"Expected v1.2.4, got {app.VERSION}"
+
+    # 2. Wrath Inverted Control Motion Lines: Left and Right of hourglass, not center
+    app.start_new_game()
+    app.state.wrath_error_chance = 1.0  # Force inversion
+    px = app.entities.player.x
+    py = app.entities.player.y
+
+    # Test Left intention (inverted to right):
+    eff_l, eff_r = app.apply_control_inversion(True, False)
+    assert eff_r is True and eff_l is False
+    assert app.wrath_motion_lines_side == -1  # Left
+    assert app.wrath_motion_lines_timer == 6
+
+    line_draws = []
+    orig_line = pyxel.line
+    try:
+        pyxel.line = lambda x1, y1, x2, y2, col: line_draws.append((x1, y1, x2, y2, col))
+        app.draw_player_hourglass()
+        # Filter for Wrath motion lines (col=8)
+        wrath_lines = [l for l in line_draws if l[4] == 8]
+        assert len(wrath_lines) == 3, f"Expected 3 motion lines, got {len(wrath_lines)}"
+        # Verify lines are on the LEFT of the hourglass (x <= px - 30)
+        for x1, y1, x2, y2, col in wrath_lines:
+            assert x1 <= px - 30 and x2 <= px - 30, f"Wrath line {x1}..{x2} not left of hourglass (px={px})"
+
+        # Test Right intention (inverted to left):
+        line_draws.clear()
+        eff_l, eff_r = app.apply_control_inversion(False, True)
+        assert eff_l is True and eff_r is False
+        assert app.wrath_motion_lines_side == 1  # Right
+        assert app.wrath_motion_lines_timer == 6
+        app.draw_player_hourglass()
+        wrath_lines = [l for l in line_draws if l[4] == 8]
+        assert len(wrath_lines) == 3
+        # Verify lines are on the RIGHT of the hourglass (x >= px + 30)
+        for x1, y1, x2, y2, col in wrath_lines:
+            assert x1 >= px + 30 and x2 >= px + 30, f"Wrath line {x1}..{x2} not right of hourglass (px={px})"
+    finally:
+        pyxel.line = orig_line
+
+    # 3. Sakura theme background: Smooth continuous transition, no jumps
+    t_sakura = get_theme(9)
+    rects = []
+    lines = []
+    psets = []
+    orig_rect = pyxel.rect
+    orig_pset = pyxel.pset
+    try:
+        pyxel.rect = lambda x, y, w, h, col: rects.append((x, y, w, h, col))
+        pyxel.line = lambda x1, y1, x2, y2, col: lines.append((x1, y1, x2, y2, col))
+        pyxel.pset = lambda x, y, col: psets.append((x, y, col))
+
+        # At prog = 0.5 (normal Chronos): white motes present
+        t_sakura.render(pyxel, cam_x=0, prog=0.5, dist=50, screen_w=600, screen_h=800, is_greed=False)
+        assert any(p[2] == 7 for p in psets)
+        assert len(rects) == 0  # No full-screen rect jump during normal gameplay
+
+        # At prog = 0.75 (during 3.5s transition): lines have thickened smoothly, earthy brown lines appear
+        lines.clear()
+        t_sakura.render(pyxel, cam_x=0, prog=0.75, dist=50, screen_w=600, screen_h=800, is_greed=False)
+        assert any(l[4] == 4 for l in lines), "Expected earthy brown lines during transition"
+
+        # At prog = 0.98 (Kairos arrival): 100% brown cover
+        rects.clear()
+        t_sakura.render(pyxel, cam_x=0, prog=0.98, dist=50, screen_w=600, screen_h=800, is_greed=False)
+        assert any(r[4] == 4 and r[2] == 600 and r[3] == 800 for r in rects)
+    finally:
+        pyxel.rect = orig_rect
+        pyxel.line = orig_line
+        pyxel.pset = orig_pset
+
+    # 4. Main Menu: Mobile interface advisory box under start prompt
+    app.state.current_state = GameState.TITLE
+    app.is_mobile = True
+    drawn_texts = []
+    orig_scaled = main.draw_text_scaled
+    orig_centered = main.draw_text_centered
+    try:
+        main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2, char_gap=None: drawn_texts.append((y, s, col, scale))
+        main.draw_text_centered = lambda y, s, col, scale=1, img_bank=2: drawn_texts.append((y, s, col, scale))
+        app.draw_title_screen()
+        all_title_texts = " ".join(t[1] for t in drawn_texts)
+        assert "MOBILE BROWSER DETECTED" in all_title_texts
+        assert "DESKTOP MODE" in all_title_texts
+        # Confirm advisory is located beneath start prompt (start prompt is at y=566..620)
+        mob_prompts = [t for t in drawn_texts if "DESKTOP MODE" in t[1] or "MOBILE BROWSER" in t[1]]
+        for y, s, col, sc in mob_prompts:
+            assert y >= 620, f"Expected mobile advisory under start prompt (>= 620), got {y}"
+    finally:
+        main.draw_text_scaled = orig_scaled
+        main.draw_text_centered = orig_centered
+
+    # 5. E-Reader Mode Typesetting: Check layout, letter fitting, zero overlap across outcomes
+    app.state.current_state = GameState.GAMEOVER
+    app.current_theme_index = 3  # Reader Light
+
+    test_runs = [
+        # (death_reason, frames, score, sand, shards, dict_of_pacts)
+        ("Consumed by the Void", 150, 200, 10, 5, {}),
+        ("Pierced by Scalene Glass Shard", 1200, 8500, 350, 120, {SinType.PRIDE: 1, SinType.SLOTH: 2}),
+        ("Catastrophic Terminal Collision with Boundary Manifold", 9000, 1500000, 50000, 1200, {
+            SinType.PRIDE: 3, SinType.GREED: 2, SinType.LUST: 1, SinType.ENVY: 4,
+            SinType.GLUTTONY: 2, SinType.WRATH: 1, SinType.SLOTH: 3
+        }),
+    ]
+
+    for reason, frames, score, sand, shards, pact_dict in test_runs:
+        app.state.death_reason = reason
+        app.state.total_frames = frames
+        app.state.score = score
+        app.state.total_sand_collected = sand
+        app.state.total_shards_dodged = shards
+        app.bargains.selection_counts = {s: pact_dict.get(s, 0) for s in main.CANONICAL_SINS}
+        app.bargains.history = [s for s, count in pact_dict.items() for _ in range(count)]
+
+        text_calls = []
+        rectb_calls = []
+        orig_rectb = pyxel.rectb
+        try:
+            main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2, char_gap=None: text_calls.append((x, y, s, scale))
+            main.draw_text_centered = lambda y, s, col, scale=1, img_bank=2: text_calls.append((300 - main.get_text_width_5x7(s, scale)//2, y, s, scale))
+            pyxel.rectb = lambda x, y, w, h, col: rectb_calls.append((x, y, w, h))
+            app.draw_game_over_screen()
+
+            # Verify no paragraph lines overlap:
+            y_coords = sorted({c[1] for c in text_calls})
+            for i in range(len(y_coords) - 1):
+                y1 = y_coords[i]
+                y2 = y_coords[i+1]
+                max_sc = max(c[3] for c in text_calls if c[1] == y1)
+                glyph_h = 7 * max_sc
+                assert y2 >= y1 + glyph_h, f"Overlap detected between y={y1} (glyph_h={glyph_h}) and y={y2}!"
+
+            # Verify all text fits horizontally within screen width
+            for x, y, s, sc in text_calls:
+                w = main.get_text_width_5x7(s, sc)
+                assert x >= 20 and x + w <= 580, f"Text '{s}' overflows margins: x={x}, w={w}, right={x+w}"
+
+            # Verify return button fits within screen height (800) and is below text
+            assert len(rectb_calls) >= 1
+            btn_x, btn_y, btn_w, btn_h = rectb_calls[-1]
+            body_calls = [c for c in text_calls if "RETURN" not in c[2] and "DEV" not in c[2]]
+            last_body_y = max(c[1] for c in body_calls)
+            assert btn_y >= last_body_y + 14, f"Button at {btn_y} overlaps text at {last_body_y}"
+            assert btn_y + btn_h <= 780, f"Button at {btn_y}+{btn_h} overflows screen"
+        finally:
+            main.draw_text_scaled = orig_scaled
+            main.draw_text_centered = orig_centered
+            pyxel.rectb = orig_rectb

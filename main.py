@@ -233,8 +233,8 @@ def draw_centered_paragraph(x: int, y: int, width: int, text: str, col: int, sca
         cur_y += line_spacing * scale
 
 
-def draw_justified_paragraph(x: int, y: int, width: int, text: str, col: int, scale: int = 1, line_spacing: int = 12):
-    """Draw text paragraph justified flush to left and right margins."""
+def draw_justified_paragraph(x: int, y: int, width: int, text: str, col: int, scale: int = 1, line_spacing: int = 12) -> int:
+    """Draw text paragraph justified flush to left and right margins. Returns next y position."""
     words = text.split()
     lines = []
     cur_line = []
@@ -271,6 +271,7 @@ def draw_justified_paragraph(x: int, y: int, width: int, text: str, col: int, sc
                     slot_w = base_slot_space + (1 if w_idx < extra_pixels else 0)
                     slot_x += slot_w
         cur_y += line_spacing * scale
+    return cur_y
 
 
 
@@ -280,13 +281,12 @@ def is_mobile_environment() -> bool:
     if sys.platform == "emscripten":
         try:
             import js
-            if getattr(js.window, "__PYXEL_IS_MOBILE__", False):
-                return True
+            if hasattr(js, "window") and getattr(js.window, "__PYXEL_IS_MOBILE__", None) is not None:
+                return bool(js.window.__PYXEL_IS_MOBILE__)
             nav = getattr(js, "navigator", None)
             if nav:
-                max_touch = getattr(nav, "maxTouchPoints", 0)
                 ua = str(getattr(nav, "userAgent", "")).lower()
-                return max_touch > 0 or any(m in ua for m in ["android", "iphone", "ipad", "ipod", "mobile"])
+                return any(m in ua for m in ["iphone", "ipod", "mobile"]) or ("android" in ua and "mobile" in ua)
         except Exception:
             pass
     return False
@@ -310,7 +310,7 @@ def is_dev_environment() -> bool:
 
 
 class GrainOfDoubtApp:
-    VERSION: str = "v1.2.3"
+    VERSION: str = "v1.2.4"
     SCREEN_WIDTH: int = 600
     SCREEN_HEIGHT: int = 800
 
@@ -1174,17 +1174,17 @@ class GrainOfDoubtApp:
         # Center reticle dot (3x3 block)
         pyxel.rect(int(round(cross_cx - 1)), int(round(cross_cy - 1)), 3, 3, col_cross)
 
-        # Wrath Inverted Control Motion Lines
+        # Wrath Inverted Control Motion Lines (left or right of reticle, not center)
         if self.wrath_motion_lines_timer > 0 and self.wrath_motion_lines_side != 0:
             side = self.wrath_motion_lines_side
             fade = self.wrath_motion_lines_timer / 6.0
             base_lens = [12, 20, 8]
-            y_offsets = [-4, 0, 4]
+            y_offsets = [-6, 0, 6]
             line_col = 8
             for bl, yo in zip(base_lens, y_offsets):
                 cur_len = max(3, int(round(bl * fade)))
-                x1 = int(round(cross_cx + side * 8))
-                x2 = int(round(cross_cx + side * (8 + cur_len)))
+                x1 = int(round(cross_cx + side * 24))
+                x2 = int(round(cross_cx + side * (24 + cur_len)))
                 pyxel.line(x1, int(round(cross_cy + yo)), x2, int(round(cross_cy + yo)), line_col)
 
     def draw_player_hourglass(self, pal: Optional[HourglassPalette] = None):
@@ -1310,18 +1310,19 @@ class GrainOfDoubtApp:
         pyxel.line(*rot(-18, -10), *rot(-8, -5), 7)
         pyxel.line(*rot(8, -5), *rot(18, -10), 7)
 
-        # 10. Wrath Inverted Control Motion Lines (staggered speed lines on intended input side)
+        # 10. Wrath Inverted Control Motion Lines (staggered speed lines on left or right of the hourglass, not the center)
         if self.wrath_motion_lines_timer > 0 and self.wrath_motion_lines_side != 0:
             side = self.wrath_motion_lines_side
             is_sumie = getattr(theme, "id", 0) in (7, 8) or "SUMI" in theme.name.upper()
             line_col = 13 if is_sumie else 8
             fade = self.wrath_motion_lines_timer / 6.0
             base_lens = [12, 20, 8]
-            y_offsets = [-4, 0, 4]
+            y_offsets = [-6, 0, 6]
             for bl, yo in zip(base_lens, y_offsets):
                 cur_len = max(3, int(round(bl * fade)))
-                p_start = rot(side * 6, yo)
-                p_end = rot(side * (6 + cur_len), yo)
+                # Hourglass caps are at |lx| = 24..30. Motion lines start at |lx| = 32 on left/right and extend outward
+                p_start = rot(side * 32, yo)
+                p_end = rot(side * (32 + cur_len), yo)
                 pyxel.line(p_start[0], p_start[1], p_end[0], p_end[1], line_col)
 
     def draw_glass_shard(self, shard: GlassShard, pal: Optional[ShardPalette] = None):
@@ -2054,16 +2055,24 @@ class GrainOfDoubtApp:
             pyxel.rectb(50, 566, 500, 54, prompt_b)
             draw_text_centered(586, "PRESS ARROWS OR HERE TO START", prompt_txt, scale=2)
 
-        # Mobile advisory under start prompt
+        # Mobile advisory under start prompt: ask mobile users to change to desktop mode
         if self.is_mobile:
             if is_sumie:
+                mob_bg = 7 if is_sumie_white else 0
+                mob_border = 13
                 mob_col = 0 if is_sumie_white else 7
                 mob_sub = 13
             else:
+                mob_bg = 0
+                mob_border = 9
                 mob_col = 10
                 mob_sub = 7
-            draw_text_centered(626, "MOBILE BROWSER DETECTED : PLEASE SWITCH TO DESKTOP MODE", mob_col, scale=1)
-            draw_text_centered(638, "(IN BROWSER SETTINGS, ENABLE 'DESKTOP SITE' FOR BEST EXPERIENCE)", mob_sub, scale=1)
+            advisory_y = 626
+            pyxel.rect(60, advisory_y, 480, 46, mob_bg)
+            pyxel.rectb(60, advisory_y, 480, 46, mob_border)
+            draw_text_centered(advisory_y + 6, "MOBILE BROWSER DETECTED", mob_col, scale=1)
+            draw_text_centered(advisory_y + 18, "PLEASE SWITCH YOUR BROWSER TO DESKTOP MODE", mob_sub, scale=1)
+            draw_text_centered(advisory_y + 30, "(BROWSER MENU -> 'REQUEST DESKTOP SITE' FOR BEST CONTROLS)", mob_col, scale=1)
 
         # Dedicated Dev Mode box at bottom when dev_mode is active
         if self.dev_mode:
@@ -2568,7 +2577,7 @@ class GrainOfDoubtApp:
             draw_text_scaled(self.SCREEN_WIDTH - 120, self.SCREEN_HEIGHT - 20, f"[DEV] {self.VERSION}", dev_col, scale=2)
 
     def draw_reader_mode_game_over_screen(self):
-        """Render Game Over screen for Reader Mode delivering all stats in justified KJV scriptural prose."""
+        """Render Game Over screen for Reader Mode delivering all stats in justified KJV scriptural prose with guaranteed zero overlap."""
         theme = get_theme(self.current_theme_index)
         is_light = (theme.clear_color == 15)
         card_bg = 15 if is_light else 0
@@ -2588,19 +2597,24 @@ class GrainOfDoubtApp:
         pyxel.line(margin_r + 4, 0, margin_r + 4, self.SCREEN_HEIGHT, col_rule)
 
         # Chapter header
-        draw_text_centered(36, "ECCLESIASTES 12", col_ink, scale=3)
-        draw_text_centered(66, "THE ACCOUNTING OF BORROWED TIME", col_sub, scale=2)
-        pyxel.line(margin_l, 90, margin_r, 90, col_rule)
+        draw_text_centered(32, "ECCLESIASTES 12", col_ink, scale=3)
+        draw_text_centered(60, "THE ACCOUNTING OF BORROWED TIME", col_sub, scale=2)
+        pyxel.line(margin_l, 82, margin_r, 82, col_rule)
 
-        # Scripture opening
+        # Body paragraphs with dynamic vertical stacking and guaranteed zero overlap
+        line_spacing = 10  # 20px line pitch, 6px leading for scale=2
+        para_gap = 12
+
+        # 1. Scripture opening (Ecclesiastes 12:6-7)
         p1 = (
             "Or ever the silver cord be loosed, or the golden bowl be broken, "
             "or the pitcher be broken at the fountain, or the wheel broken at the cistern. "
             "Then shall the dust return to the earth as it was: and the spirit shall return unto God who gave it."
         )
-        draw_justified_paragraph(margin_l, 106, content_w, p1, col_ink, scale=2, line_spacing=11)
+        cur_y = 96
+        cur_y = draw_justified_paragraph(margin_l, cur_y, content_w, p1, col_ink, scale=2, line_spacing=line_spacing) + para_gap
 
-        # Survival & death cause paragraph
+        # 2. Survival & death cause paragraph
         reason = self.state.death_reason or "Consumed by the Void"
         time_survived = self.state.total_frames / 30.0
         score_fmt = f"{self.state.score:,}".replace(",", " ")
@@ -2614,9 +2628,9 @@ class GrainOfDoubtApp:
             f"and {shards_fmt} perilous shards of ruin turned aside; "
             f"wherefore the final measure of the work was {score_fmt} points in the balance."
         )
-        draw_justified_paragraph(margin_l, 230, content_w, p2, col_ink, scale=2, line_spacing=11)
+        cur_y = draw_justified_paragraph(margin_l, cur_y, content_w, p2, col_ink, scale=2, line_spacing=line_spacing) + para_gap
 
-        # Pacts summary paragraph
+        # 3. Pacts summary paragraph
         pacts_active = [sin for sin in CANONICAL_SINS if self.bargains.selection_counts[sin] > 0]
         total_pacts = len(self.bargains.history) if self.bargains.history else sum(self.bargains.selection_counts.values())
 
@@ -2640,25 +2654,26 @@ class GrainOfDoubtApp:
                 f"Moreover, {_to_kjv_w(total_pacts)} faustian covenants were sealed under heaven, "
                 f"to wit: {bk}. Vanity of vanities, saith the preacher; all is vanity."
             )
-        draw_justified_paragraph(margin_l, 370, content_w, p3, col_ink, scale=2, line_spacing=11)
+        cur_y = draw_justified_paragraph(margin_l, cur_y, content_w, p3, col_ink, scale=2, line_spacing=line_spacing) + para_gap
 
-        # Closing meditation
+        # 4. Closing meditation (Ecclesiastes 12:13-14)
         p4 = (
             "Let us hear the conclusion of the whole matter: Fear God, and keep his commandments: "
             "for this is the whole duty of man. For God shall bring every work into judgment, "
             "with every secret thing, whether it be good, or whether it be evil."
         )
-        draw_justified_paragraph(margin_l, 490, content_w, p4, col_sub, scale=2, line_spacing=11)
+        cur_y = draw_justified_paragraph(margin_l, cur_y, content_w, p4, col_sub, scale=2, line_spacing=line_spacing)
 
-        # Restart / Return to menu button
-        btn_y = 636
-        btn_h = 72
+        # Bottom divider and return button dynamically placed with guaranteed clearance
+        pyxel.line(margin_l, cur_y + 14, margin_r, cur_y + 14, col_rule)
+        btn_y = max(636, cur_y + 24)
+        btn_h = 58
         pyxel.rectb(margin_l, btn_y, content_w, btn_h, col_rule)
-        draw_text_centered(btn_y + 14, "[X] RETURN UNTO THE BEGINNING", col_ink, scale=2)
-        draw_text_centered(btn_y + 38, "PRESS [X], RETURN, OR TAP TO RETURN TO MENU", col_sub, scale=2)
+        draw_text_centered(btn_y + 13, "[X] RETURN UNTO THE BEGINNING", col_ink, scale=2)
+        draw_text_centered(btn_y + 35, "PRESS [X], RETURN, OR TAP TO RETURN TO MENU", col_sub, scale=1)
 
         if self.dev_mode:
-            draw_text_scaled(margin_l, self.SCREEN_HEIGHT - 20, f"[DEV] {self.VERSION}", col_sub, scale=2)
+            draw_text_scaled(margin_l, self.SCREEN_HEIGHT - 18, f"[DEV] {self.VERSION}", col_sub, scale=1)
 
     def draw_touch_buttons(self):
         """Draw 2 high-contrast arcade buttons for mobile browser touch play."""

@@ -1339,20 +1339,31 @@ KAIROS_ZEN_INK_WASH = KAIROS_ZEN_INK_WASH_WHITE
 
 
 def bg_pastel_sakura(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, screen_h: int, is_greed: bool, telemetry: Optional[dict] = None):
-    """Theme 9: Pastel Sakura (Cute blossom drift with petals, sparkles, white motes, and earthy ground Kairos transition)."""
-    # 1. Background nearing Kairos time (end of Chronos time, prog >= 0.80):
-    # White lines become earthy ground (color 4), become thicker, and progressively cover the whole screen in brown.
-    t_kairos = min(1.0, (prog - 0.80) / 0.15) if (prog > 0.80 and not is_greed) else 0.0
-    if t_kairos >= 0.95:
-        # Full cover of screen in earthy brown right before Kairos triggers
+    """Theme 9: Pastel Sakura (Cute blossom drift with petals, sparkles, white motes, and ultra-smooth earthy ground Kairos transition)."""
+    # 1. Continuous smooth transition from white breeze lines to pure earthy brown (3.5 seconds before Kairos)
+    # Starts at prog > 0.65 and smoothly widens the breeze lines into overlapping solid ground with NO jumps.
+    t_trans = min(1.0, max(0.0, (prog - 0.65) / 0.30)) if not is_greed else 0.0
+    num_bands = 8
+    band_gap = screen_h // num_bands  # 100px vertical pitch
+    thick = 1 + int((t_trans ** 1.3) * 125)
+
+    if t_trans >= 0.95:
+        # Solid ground cover right as Kairos is entered
         pyxel.rect(cam_x, 0, screen_w, screen_h, 4)
-    elif t_kairos > 0.0:
-        # Earthy ground lines becoming progressively thicker
-        thick = 2 + int(t_kairos * 70)
-        for w_idx in range(6):
-            wy = int((w_idx * 140 - dist * 0.8) % screen_h)
+    else:
+        for b_idx in range(num_bands):
+            wy = int((b_idx * band_gap - dist * 0.7) % screen_h)
             for th in range(thick):
-                pyxel.line(cam_x, wy + th, cam_x + screen_w, wy - 20 + th, 4)
+                # Color progression: white/peach -> brown core -> solid brown
+                if is_greed:
+                    col_line = 2
+                elif t_trans < 0.20:
+                    col_line = 15 if (b_idx % 2 == 0) else 7
+                elif t_trans < 0.45:
+                    col_line = 4 if (th > 0 and th < thick - 1) else (15 if b_idx % 2 == 0 else 7)
+                else:
+                    col_line = 4
+                pyxel.line(cam_x, wy + th, cam_x + screen_w, wy - 20 + th, col_line)
 
     # 2. Sparse random small white dots that move up with horizontal camera parallax
     num_dots = 22
@@ -1412,15 +1423,6 @@ def bg_pastel_sakura(pyxel, cam_x: int, prog: float, dist: int, screen_w: int, s
             pyxel.pset(sx - 1, sy, 7)
         elif twinkle == 2:
             pyxel.pset(sx, sy, 15)
-
-    # 5. Soft breeze streaks (during normal Chronos before earthy ground transition)
-    if t_kairos == 0.0:
-        for w_idx in range(4):
-            wy = int((w_idx * 210 - dist * 0.8) % screen_h)
-            col_wisp = 15 if (w_idx % 2 == 0) else 7
-            if is_greed:
-                col_wisp = 2
-            pyxel.line(cam_x + 30, wy, cam_x + screen_w - 30, wy - 24, col_wisp)
 
 
 # Kairos Palette for Theme 9 (Pastel Sakura):
