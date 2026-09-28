@@ -310,7 +310,7 @@ def is_dev_environment() -> bool:
 
 
 class GrainOfDoubtApp:
-    VERSION: str = "v1.2.4"
+    VERSION: str = "v1.2.5"
     SCREEN_WIDTH: int = 600
     SCREEN_HEIGHT: int = 800
 
@@ -609,7 +609,29 @@ class GrainOfDoubtApp:
                 self.start_new_game()
 
         elif self.state.current_state == GameState.LORE:
-            # Multi-page navigation: Left/A = previous page; Right/D = next page (or exit on last page)
+            # Touch / mouse click on the 3 bottom navigation buttons (3 text heights: 54px)
+            if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
+                mx, my = pyxel.mouse_x, pyxel.mouse_y
+                # 1. Left / Prev button [x=44..204, y=712..766]
+                if 44 <= mx <= 204 and 712 <= my <= 766:
+                    if self.lore_page > 0:
+                        self.lore_page -= 1
+                    return
+                # 2. Exit / Return button [x=220..380, y=712..766]
+                elif 220 <= mx <= 380 and 712 <= my <= 766:
+                    self.state.current_state = GameState.TITLE
+                    self.lore_page = 0
+                    return
+                # 3. Right / Next button [x=396..556, y=712..766]
+                elif 396 <= mx <= 556 and 712 <= my <= 766:
+                    if self.lore_page < self.MAX_LORE_PAGES - 1:
+                        self.lore_page += 1
+                    else:
+                        self.state.current_state = GameState.TITLE
+                        self.lore_page = 0
+                    return
+
+            # Keyboard navigation: Left/A = previous page; Right/D = next page (or exit on last page)
             if pyxel.btnp(pyxel.KEY_LEFT) or pyxel.btnp(pyxel.KEY_A):
                 if self.lore_page > 0:
                     self.lore_page -= 1
@@ -617,14 +639,12 @@ class GrainOfDoubtApp:
                 if self.lore_page < self.MAX_LORE_PAGES - 1:
                     self.lore_page += 1
                 else:
-                    # Pressing right on the last page returns to title screen
                     self.state.current_state = GameState.TITLE
                     self.lore_page = 0
                     return
-            # Return to Title on X, Return, L, H, or mouse/touch tap (Escape and Space do NOT exit)
+            # Return to Title on X, Return, L, H, or Escape (Space does NOT exit)
             elif (pyxel.btnp(pyxel.KEY_X) or pyxel.btnp(pyxel.KEY_RETURN) or
-                  pyxel.btnp(pyxel.KEY_L) or pyxel.btnp(pyxel.KEY_H) or
-                  pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT)):
+                  pyxel.btnp(pyxel.KEY_L) or pyxel.btnp(pyxel.KEY_H)):
                 self.state.current_state = GameState.TITLE
                 self.lore_page = 0
                 return
@@ -2441,21 +2461,91 @@ class GrainOfDoubtApp:
                 if line:
                     draw_text_scaled(box_x + 24, box_y + 500 + idx * 18, line, c, scale=2)
 
-        # Navigation Footer on all pages (No [X] on the arrow line)
-        pyxel.line(box_x + 16, box_y + 704, box_x + box_w - 16, box_y + 704, div_col)
-        if self.lore_page == 0:
-            draw_text_centered(box_y + 718, "[D / RIGHT] NEXT", nav_col, scale=2)
-        elif self.lore_page == self.MAX_LORE_PAGES - 1:
-            draw_text_centered(box_y + 718, "[A / LEFT] PREV   |   [D / RIGHT] RETURN", nav_col, scale=2)
-        else:
-            draw_text_centered(box_y + 718, "[A / LEFT] PREV   |   [D / RIGHT] NEXT", nav_col, scale=2)
+        # Navigation Footer on all pages: 3 arcade buttons (3 text heights: 54px) for Left, Exit, Right
+        nav_line_y = 698
+        pyxel.line(box_x + 16, nav_line_y, box_x + box_w - 16, nav_line_y, div_col)
 
-        blink = (pyxel.frame_count // 12) % 2 == 0
+        btn_y = 712
+        btn_h = 54
+        btn_w = 160
+
+        # Button 1: Left / Prev [x=44..204]
+        b1_x = 44
+        b1_active = (self.lore_page > 0)
+        # Button 2: Center / Exit [x=220..380]
+        b2_x = 220
+        # Button 3: Right / Next [x=396..556]
+        b3_x = 396
+        b3_is_last = (self.lore_page == self.MAX_LORE_PAGES - 1)
+
+        # Theme-aware button colors:
         if is_sumie:
-            p_col = txt_col
+            bg_act = 7 if is_sumie_white else 0
+            b1_act = 0 if is_sumie_white else 7
+            b2_act = 13
+            txt_act = 0 if is_sumie_white else 7
+            sub_act = 13
+
+            bg_dis = bg_act
+            b1_dis = 13
+            b2_dis = bg_act
+            txt_dis = 13
+            sub_dis = 13
         else:
-            p_col = 10 if blink else 7
-        draw_text_centered(box_y + 740, "[X] RETURN TO MENU", p_col, scale=2)
+            bg_act = 0
+            b1_act = 10
+            b2_act = 9
+            txt_act = 10
+            sub_act = 7
+
+            bg_dis = 0
+            b1_dis = 5
+            b2_dis = 1
+            txt_dis = 13
+            sub_dis = 5
+
+        # Render Button 1: Left / Prev
+        if b1_active:
+            pyxel.rect(b1_x, btn_y, btn_w, btn_h, bg_act)
+            pyxel.rectb(b1_x, btn_y, btn_w, btn_h, b1_act)
+            pyxel.rectb(b1_x + 1, btn_y + 1, btn_w - 2, btn_h - 2, b2_act)
+            t1_main = "< PREV"
+            t1_sub = "[A / LEFT]"
+            c1_main = txt_act
+            c1_sub = sub_act
+        else:
+            pyxel.rect(b1_x, btn_y, btn_w, btn_h, bg_dis)
+            pyxel.rectb(b1_x, btn_y, btn_w, btn_h, b1_dis)
+            t1_main = "< PREV"
+            t1_sub = "(FIRST PAGE)"
+            c1_main = txt_dis
+            c1_sub = sub_dis
+        w1_m = get_text_width_5x7(t1_main, scale=2)
+        w1_s = get_text_width_5x7(t1_sub, scale=1)
+        draw_text_scaled(b1_x + (btn_w - w1_m) // 2, btn_y + 12, t1_main, c1_main, scale=2)
+        draw_text_scaled(b1_x + (btn_w - w1_s) // 2, btn_y + 32, t1_sub, c1_sub, scale=1)
+
+        # Render Button 2: Center / Exit
+        pyxel.rect(b2_x, btn_y, btn_w, btn_h, bg_act)
+        pyxel.rectb(b2_x, btn_y, btn_w, btn_h, b1_act)
+        pyxel.rectb(b2_x + 1, btn_y + 1, btn_w - 2, btn_h - 2, b2_act)
+        t2_main = "[X] EXIT"
+        t2_sub = "RETURN TO MENU"
+        w2_m = get_text_width_5x7(t2_main, scale=2)
+        w2_s = get_text_width_5x7(t2_sub, scale=1)
+        draw_text_scaled(b2_x + (btn_w - w2_m) // 2, btn_y + 12, t2_main, txt_act, scale=2)
+        draw_text_scaled(b2_x + (btn_w - w2_s) // 2, btn_y + 32, t2_sub, sub_act, scale=1)
+
+        # Render Button 3: Right / Next
+        pyxel.rect(b3_x, btn_y, btn_w, btn_h, bg_act)
+        pyxel.rectb(b3_x, btn_y, btn_w, btn_h, b1_act)
+        pyxel.rectb(b3_x + 1, btn_y + 1, btn_w - 2, btn_h - 2, b2_act)
+        t3_main = "FINISH >" if b3_is_last else "NEXT >"
+        t3_sub = "[D / RIGHT]"
+        w3_m = get_text_width_5x7(t3_main, scale=2)
+        w3_s = get_text_width_5x7(t3_sub, scale=1)
+        draw_text_scaled(b3_x + (btn_w - w3_m) // 2, btn_y + 12, t3_main, txt_act, scale=2)
+        draw_text_scaled(b3_x + (btn_w - w3_s) // 2, btn_y + 32, t3_sub, sub_act, scale=1)
 
     def draw_game_over_screen(self):
         theme = get_theme(self.current_theme_index)

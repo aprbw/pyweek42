@@ -2718,7 +2718,7 @@ def test_v113_comprehensive_feedback_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.1.3", "v1.1.4", "v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4")
+    assert app.VERSION in ("v1.1.3", "v1.1.4", "v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5")
     assert app.MAX_LORE_PAGES == 5
 
     # 1. God mode toggle via [G]
@@ -2895,7 +2895,7 @@ def test_v114_comprehensive_feedback_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.1.4", "v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4")
+    assert app.VERSION in ("v1.1.4", "v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5")
 
     # 1. E-Reader Mode: Telemetry is 3rd paragraph (after 3:1-8 and 3:9-13, before 3:14-15)
     from engine.themes import render_reader_mode_text
@@ -3095,7 +3095,7 @@ def test_v115_comprehensive_feedback_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4")
+    assert app.VERSION in ("v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5")
 
     # 1. Menu Page Controls & Line Breaks
     drawn_calls = []
@@ -3246,7 +3246,7 @@ def test_v116_comprehensive_feedback_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4")
+    assert app.VERSION in ("v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5")
 
     # 1. Pact distribution: Addictive formula P(P) = (1 + N_chosen) / (7 + total_pacts)
     bm = BargainManager()
@@ -3558,7 +3558,7 @@ def test_v117_comprehensive_feedback_validation():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version increment
-    assert app.VERSION in ("v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4"), f"Expected version in v1.1.7-v1.2.3, got {app.VERSION}"
+    assert app.VERSION in ("v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5"), f"Expected version in v1.1.7-v1.2.5, got {app.VERSION}"
 
     # 2. UI Kairos: identical card background for both cards in non-pro themes
     app.state.current_state = GameState.KAIROS
@@ -3729,7 +3729,7 @@ def test_v118_comprehensive_feedback_validation():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version
-    assert app.VERSION in ("v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4"), f"Expected v1.1.8-v1.2.3, got {app.VERSION}"
+    assert app.VERSION in ("v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5"), f"Expected v1.1.8-v1.2.5, got {app.VERSION}"
 
     # 2. Sakura Theme Dark Green Sand
     t_sakura = get_theme(9)
@@ -3769,7 +3769,7 @@ def test_v118_comprehensive_feedback_validation():
         coords = {c[2]: c[1] for c in drawn_calls}
         assert "[X] QUIT GAME" in coords
         y_quit = coords["[X] QUIT GAME"]
-        box_bottom = 496 if app.VERSION in ("v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4") else (188 + 286)
+        box_bottom = 496 if app.VERSION in ("v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5") else (188 + 286)
         assert (box_bottom - (y_quit + 14)) >= 16, f"Expected >=16px space below quit, got {box_bottom - (y_quit + 14)}"
     finally:
         main.draw_text_scaled = orig_scaled
@@ -3847,7 +3847,7 @@ def test_v119_comprehensive_feedback_validation():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version is v1.1.9, v1.2.0, v1.2.1 or v1.2.2
-    assert app.VERSION in ("v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4"), f"Expected v1.1.9-v1.2.3, got {app.VERSION}"
+    assert app.VERSION in ("v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5"), f"Expected v1.1.9-v1.2.5, got {app.VERSION}"
 
     # 2. Main Menu 3-Line Buttons (h=54) and click bounds
     app.state.current_state = GameState.TITLE
@@ -4008,7 +4008,7 @@ def test_v120_milestone_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4"), f"Expected v1.2.0-v1.2.3, got {app.VERSION}"
+    assert app.VERSION in ("v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5"), f"Expected v1.2.0-v1.2.5, got {app.VERSION}"
 
 
 def test_v121_comprehensive_feedback_validation():
@@ -4029,7 +4029,7 @@ def test_v121_comprehensive_feedback_validation():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version
-    assert app.VERSION in ("v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4"), f"Expected v1.2.1-v1.2.3, got {app.VERSION}"
+    assert app.VERSION in ("v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5"), f"Expected v1.2.1-v1.2.5, got {app.VERSION}"
 
     # 2. Theme Reorganization
     assert len(ALL_THEMES) == 10
@@ -4150,7 +4150,7 @@ def test_v122_sumie_strictly_no_color():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version
-    assert app.VERSION in ("v1.2.2", "v1.2.3", "v1.2.4"), f"Expected v1.2.2 or v1.2.3, got {app.VERSION}"
+    assert app.VERSION in ("v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5"), f"Expected v1.2.2 or v1.2.3, got {app.VERSION}"
 
     # Pure grayscale set in Pyxel: 0=Black, 7=White, 13=Neutral Grey
     # Blue colors (1=Navy, 5=Slate, 6=Periwinkle, 12=Sky Blue) and chromatic colors MUST NOT appear!
@@ -4302,7 +4302,7 @@ def test_v123_comprehensive_requirements():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version
-    assert app.VERSION in ("v1.2.3", "v1.2.4"), f"Expected v1.2.3, got {app.VERSION}"
+    assert app.VERSION in ("v1.2.3", "v1.2.4", "v1.2.5"), f"Expected v1.2.3, got {app.VERSION}"
 
     # 2. No consecutive pacts
     bm = BargainManager()
@@ -4541,7 +4541,7 @@ def test_v124_comprehensive_requirements():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version
-    assert app.VERSION == "v1.2.4", f"Expected v1.2.4, got {app.VERSION}"
+    assert app.VERSION in ("v1.2.4", "v1.2.5"), f"Expected v1.2.4 or v1.2.5, got {app.VERSION}"
 
     # 2. Wrath Inverted Control Motion Lines: Left and Right of hourglass, not center
     app.start_new_game()
@@ -4691,3 +4691,193 @@ def test_v124_comprehensive_requirements():
             main.draw_text_scaled = orig_scaled
             main.draw_text_centered = orig_centered
             pyxel.rectb = orig_rectb
+
+
+def test_v125_comprehensive_requirements():
+    """Verify all v1.2.5 2do.md requirements:
+    1. Version is v1.2.5.
+    2. Lore and Learn Pages Bottom Navigation:
+       - The bottom navigation: left, right, and exit.
+       - All buttons need to be bigger (3 text heights: 54px tall).
+       - Visual arcade button frame with background, double borders, centered text.
+       - Mobile touch / mouse click navigation:
+         - Clicking Left button decrements lore_page (disabled on page 0).
+         - Clicking Exit button exits to GameState.TITLE and resets lore_page to 0.
+         - Clicking Right button increments lore_page (exits to GameState.TITLE on last page).
+         - Clicking outside buttons does NOT exit prematurely back to title.
+    3. Sumi-e themes strictly adhere to {0, 7, 13} palette on lore screen.
+    """
+    import main
+    from main import GrainOfDoubtApp
+    from engine.state import GameState
+    import pyxel
+
+    try:
+        pyxel.init(600, 800, headless=True)
+    except BaseException:
+        pass
+
+    app = GrainOfDoubtApp(headless=True)
+
+    # 1. Version is v1.2.5
+    assert app.VERSION == "v1.2.5", f"Expected v1.2.5, got {app.VERSION}"
+
+    # 2. Lore and Learn Bottom Navigation Click Dispatch
+    app.state.current_state = GameState.LORE
+    app.lore_page = 0
+
+    orig_btnp = pyxel.btnp
+    orig_mx, orig_my = pyxel.mouse_x, pyxel.mouse_y
+
+    try:
+        # A. Click outside buttons (e.g., middle of lore text at x=300, y=400)
+        # MUST NOT exit prematurely!
+        pyxel.btnp = lambda k: k == pyxel.MOUSE_BUTTON_LEFT
+        pyxel.mouse_x = 300
+        pyxel.mouse_y = 400
+        app.update()
+        assert app.state.current_state == GameState.LORE, "Clicking outside buttons must not exit to TITLE!"
+        assert app.lore_page == 0
+
+        # B. Click Left / Prev button on Page 0 (x=100, y=735) -> Page 0 is first page, stays at 0
+        pyxel.mouse_x = 100
+        pyxel.mouse_y = 735
+        app.update()
+        assert app.state.current_state == GameState.LORE
+        assert app.lore_page == 0
+
+        # C. Click Right / Next button on Page 0 (x=450, y=735) -> Increments to Page 1
+        pyxel.mouse_x = 450
+        pyxel.mouse_y = 735
+        app.update()
+        assert app.state.current_state == GameState.LORE
+        assert app.lore_page == 1
+
+        # D. Click Right / Next button again -> Increments to Page 2
+        app.update()
+        assert app.state.current_state == GameState.LORE
+        assert app.lore_page == 2
+
+        # E. Click Left / Prev button on Page 2 (x=100, y=735) -> Decrements to Page 1
+        pyxel.mouse_x = 100
+        pyxel.mouse_y = 735
+        app.update()
+        assert app.state.current_state == GameState.LORE
+        assert app.lore_page == 1
+
+        # F. Test Exit / Return button (x=300, y=735) -> Returns to GameState.TITLE and resets lore_page = 0
+        pyxel.mouse_x = 300
+        pyxel.mouse_y = 735
+        app.update()
+        assert app.state.current_state == GameState.TITLE, "Exit button must transition to TITLE!"
+        assert app.lore_page == 0, "lore_page must reset to 0 upon exit!"
+
+        # G. Test Last Page Right / Finish Button -> Returns to GameState.TITLE
+        app.state.current_state = GameState.LORE
+        app.lore_page = app.MAX_LORE_PAGES - 1  # Last page (page 4)
+        pyxel.mouse_x = 450
+        pyxel.mouse_y = 735
+        app.update()
+        assert app.state.current_state == GameState.TITLE, "Right button on last page must transition to TITLE!"
+        assert app.lore_page == 0
+
+    finally:
+        pyxel.btnp = orig_btnp
+        pyxel.mouse_x = orig_mx
+        pyxel.mouse_y = orig_my
+
+    # 3. Visual Layout Verification in draw_lore_screen()
+    rect_calls = []
+    rectb_calls = []
+    text_calls = []
+
+    orig_rect = pyxel.rect
+    orig_rectb = pyxel.rectb
+    orig_scaled = main.draw_text_scaled
+    orig_centered = main.draw_text_centered
+
+    try:
+        pyxel.rect = lambda x, y, w, h, col: rect_calls.append((x, y, w, h, col))
+        pyxel.rectb = lambda x, y, w, h, col: rectb_calls.append((x, y, w, h, col))
+        main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2, char_gap=None: text_calls.append((x, y, s, col, scale))
+        main.draw_text_centered = lambda y, s, col, scale=1, img_bank=2: text_calls.append((300, y, s, col, scale))
+
+        app.state.current_state = GameState.LORE
+        app.lore_page = 0
+        app.current_theme_index = 0  # Default Theme
+        app.draw_lore_screen()
+
+        # Check that 3 buttons of height 54 (3 text heights) are rendered:
+        # Button 1: Left (x=44, y=712, w=160, h=54)
+        # Button 2: Center / Exit (x=220, y=712, w=160, h=54)
+        # Button 3: Right (x=396, y=712, w=160, h=54)
+        btn_rects = [r for r in rect_calls if r[1] == 712 and r[3] == 54]
+        assert len(btn_rects) == 3, f"Expected 3 button rect fills at y=712, h=54, found {len(btn_rects)}"
+        assert [r[0] for r in btn_rects] == [44, 220, 396]
+        assert all(r[2] == 160 for r in btn_rects), "All 3 buttons must have width 160px"
+
+        # Check button border frames (rectb)
+        btn_borders = [r for r in rectb_calls if r[1] == 712 and r[3] == 54]
+        assert len(btn_borders) == 3, f"Expected 3 button outer borders at y=712, h=54, found {len(btn_borders)}"
+
+        # Check primary and secondary button text labels on Page 0
+        texts_rendered = [c[2] for c in text_calls]
+        assert "< PREV" in texts_rendered
+        assert "(FIRST PAGE)" in texts_rendered
+        assert "[X] EXIT" in texts_rendered
+        assert "RETURN TO MENU" in texts_rendered
+        assert "NEXT >" in texts_rendered
+        assert "[D / RIGHT]" in texts_rendered
+
+        # Check Last Page Labels
+        rect_calls.clear()
+        rectb_calls.clear()
+        text_calls.clear()
+        app.lore_page = app.MAX_LORE_PAGES - 1
+        app.draw_lore_screen()
+        texts_rendered_last = [c[2] for c in text_calls]
+        assert "FINISH >" in texts_rendered_last
+        assert "[A / LEFT]" in texts_rendered_last
+
+    finally:
+        pyxel.rect = orig_rect
+        pyxel.rectb = orig_rectb
+        main.draw_text_scaled = orig_scaled
+        main.draw_text_centered = orig_centered
+
+    # 4. Sumi-e Theme Strict Grayscale Compliance ({0, 7, 13})
+    pure_grayscale = {0, 7, 13}
+    for theme_idx in (7, 8):  # Sumi-e White, Sumi-e Black
+        app.current_theme_index = theme_idx
+        for page in range(app.MAX_LORE_PAGES):
+            app.lore_page = page
+            colors_used = set()
+
+            def track_col(col):
+                colors_used.add(col)
+
+            orig_rect = pyxel.rect
+            orig_rectb = pyxel.rectb
+            orig_line = pyxel.line
+            orig_scaled = main.draw_text_scaled
+            orig_centered = main.draw_text_centered
+
+            try:
+                pyxel.rect = lambda x, y, w, h, col: track_col(col)
+                pyxel.rectb = lambda x, y, w, h, col: track_col(col)
+                pyxel.line = lambda x1, y1, x2, y2, col: track_col(col)
+                main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2, char_gap=None: track_col(col)
+                main.draw_text_centered = lambda y, s, col, scale=1, img_bank=2: track_col(col)
+
+                app.draw_lore_screen()
+                illegal_colors = colors_used - pure_grayscale
+                assert not illegal_colors, (
+                    f"Sumi-e theme {theme_idx} page {page} used illegal non-grayscale colors: {illegal_colors}"
+                )
+            finally:
+                pyxel.rect = orig_rect
+                pyxel.rectb = orig_rectb
+                pyxel.line = orig_line
+                main.draw_text_scaled = orig_scaled
+                main.draw_text_centered = orig_centered
+

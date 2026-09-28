@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.2.5] - 2026-09-28
+### Added & Enhanced
+- **Tactile Mobile-Friendly Buttons on Lore & Learn Pages**:
+  - Upgraded bottom navigation across all 5 Lore & Learn pages from small text labels to three prominent arcade buttons (`< PREV`, `[X] EXIT`, and `NEXT >` / `FINISH >`).
+  - Sized to 3 text heights ($54\text{px}$ tall by $160\text{px}$ wide) with arcade double borders, background fills, and centered primary labels with keyboard shortcut sub-captions.
+  - Complete mobile touch and mouse click responsiveness: touching or clicking within button bounding boxes dispatches page navigation or exits to title screen.
+  - Tapping or clicking outside the buttons no longer triggers unintended premature exits back to the menu.
+  - Disabled state styling on Page 1 for the `< PREV` button (`(FIRST PAGE)`).
+  - Strict theme compliance across all 11 themes, including monochrome ink styling `{0, 7, 13}` in Sumi-e White and Sumi-e Black modes.
+
 ## [v1.2.4] - 2026-09-26
 ### Added & Enhanced
 - **Wrath Motion Lines Repositioned to Outer Edges**:
