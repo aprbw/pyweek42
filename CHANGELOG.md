@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.2.6] - 2026-10-07
+### Changed
+- Version bump to v1.2.6.
+- Rebuilt Pyxel WebAssembly bundle and standalone distribution package.
+- Deployed update to GitHub Pages.
+
 ## [v1.2.5] - 2026-09-28
 ### Added & Enhanced
 - **Tactile Mobile-Friendly Buttons on Lore & Learn Pages**:

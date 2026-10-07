@@ -2718,7 +2718,7 @@ def test_v113_comprehensive_feedback_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.1.3", "v1.1.4", "v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5")
+    assert app.VERSION in ("v1.1.3", "v1.1.4", "v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5", "v1.2.6")
     assert app.MAX_LORE_PAGES == 5
 
     # 1. God mode toggle via [G]
@@ -2895,7 +2895,7 @@ def test_v114_comprehensive_feedback_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.1.4", "v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5")
+    assert app.VERSION in ("v1.1.4", "v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5", "v1.2.6")
 
     # 1. E-Reader Mode: Telemetry is 3rd paragraph (after 3:1-8 and 3:9-13, before 3:14-15)
     from engine.themes import render_reader_mode_text
@@ -3095,7 +3095,7 @@ def test_v115_comprehensive_feedback_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5")
+    assert app.VERSION in ("v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5", "v1.2.6")
 
     # 1. Menu Page Controls & Line Breaks
     drawn_calls = []
@@ -3246,7 +3246,7 @@ def test_v116_comprehensive_feedback_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5")
+    assert app.VERSION in ("v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5", "v1.2.6")
 
     # 1. Pact distribution: Addictive formula P(P) = (1 + N_chosen) / (7 + total_pacts)
     bm = BargainManager()
@@ -3558,7 +3558,7 @@ def test_v117_comprehensive_feedback_validation():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version increment
-    assert app.VERSION in ("v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5"), f"Expected version in v1.1.7-v1.2.5, got {app.VERSION}"
+    assert app.VERSION in ("v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5", "v1.2.6"), f"Expected version in v1.1.7-v1.2.6, got {app.VERSION}"
 
     # 2. UI Kairos: identical card background for both cards in non-pro themes
     app.state.current_state = GameState.KAIROS
@@ -3729,7 +3729,7 @@ def test_v118_comprehensive_feedback_validation():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version
-    assert app.VERSION in ("v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5"), f"Expected v1.1.8-v1.2.5, got {app.VERSION}"
+    assert app.VERSION in ("v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5", "v1.2.6"), f"Expected v1.1.8-v1.2.6, got {app.VERSION}"
 
     # 2. Sakura Theme Dark Green Sand
     t_sakura = get_theme(9)
@@ -3769,7 +3769,7 @@ def test_v118_comprehensive_feedback_validation():
         coords = {c[2]: c[1] for c in drawn_calls}
         assert "[X] QUIT GAME" in coords
         y_quit = coords["[X] QUIT GAME"]
-        box_bottom = 496 if app.VERSION in ("v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5") else (188 + 286)
+        box_bottom = 496 if app.VERSION in ("v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5", "v1.2.6") else (188 + 286)
         assert (box_bottom - (y_quit + 14)) >= 16, f"Expected >=16px space below quit, got {box_bottom - (y_quit + 14)}"
     finally:
         main.draw_text_scaled = orig_scaled
@@ -3847,7 +3847,7 @@ def test_v119_comprehensive_feedback_validation():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version is v1.1.9, v1.2.0, v1.2.1 or v1.2.2
-    assert app.VERSION in ("v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5"), f"Expected v1.1.9-v1.2.5, got {app.VERSION}"
+    assert app.VERSION in ("v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5", "v1.2.6"), f"Expected v1.1.9-v1.2.6, got {app.VERSION}"
 
     # 2. Main Menu 3-Line Buttons (h=54) and click bounds
     app.state.current_state = GameState.TITLE
@@ -4008,7 +4008,7 @@ def test_v120_milestone_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5"), f"Expected v1.2.0-v1.2.5, got {app.VERSION}"
+    assert app.VERSION in ("v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5", "v1.2.6"), f"Expected v1.2.0-v1.2.6, got {app.VERSION}"
 
 
 def test_v121_comprehensive_feedback_validation():
@@ -4029,7 +4029,7 @@ def test_v121_comprehensive_feedback_validation():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version
-    assert app.VERSION in ("v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5"), f"Expected v1.2.1-v1.2.5, got {app.VERSION}"
+    assert app.VERSION in ("v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5", "v1.2.6"), f"Expected v1.2.1-v1.2.6, got {app.VERSION}"
 
     # 2. Theme Reorganization
     assert len(ALL_THEMES) == 10
@@ -4150,7 +4150,7 @@ def test_v122_sumie_strictly_no_color():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version
-    assert app.VERSION in ("v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5"), f"Expected v1.2.2 or v1.2.3, got {app.VERSION}"
+    assert app.VERSION in ("v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5", "v1.2.6"), f"Expected v1.2.2-v1.2.6, got {app.VERSION}"
 
     # Pure grayscale set in Pyxel: 0=Black, 7=White, 13=Neutral Grey
     # Blue colors (1=Navy, 5=Slate, 6=Periwinkle, 12=Sky Blue) and chromatic colors MUST NOT appear!
@@ -4302,7 +4302,7 @@ def test_v123_comprehensive_requirements():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version
-    assert app.VERSION in ("v1.2.3", "v1.2.4", "v1.2.5"), f"Expected v1.2.3, got {app.VERSION}"
+    assert app.VERSION in ("v1.2.3", "v1.2.4", "v1.2.5", "v1.2.6"), f"Expected v1.2.3-v1.2.6, got {app.VERSION}"
 
     # 2. No consecutive pacts
     bm = BargainManager()
@@ -4541,7 +4541,7 @@ def test_v124_comprehensive_requirements():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version
-    assert app.VERSION in ("v1.2.4", "v1.2.5"), f"Expected v1.2.4 or v1.2.5, got {app.VERSION}"
+    assert app.VERSION in ("v1.2.4", "v1.2.5", "v1.2.6"), f"Expected v1.2.4-v1.2.6, got {app.VERSION}"
 
     # 2. Wrath Inverted Control Motion Lines: Left and Right of hourglass, not center
     app.start_new_game()
@@ -4719,8 +4719,8 @@ def test_v125_comprehensive_requirements():
 
     app = GrainOfDoubtApp(headless=True)
 
-    # 1. Version is v1.2.5
-    assert app.VERSION == "v1.2.5", f"Expected v1.2.5, got {app.VERSION}"
+    # 1. Version is v1.2.5 or v1.2.6
+    assert app.VERSION in ("v1.2.5", "v1.2.6"), f"Expected v1.2.5 or v1.2.6, got {app.VERSION}"
 
     # 2. Lore and Learn Bottom Navigation Click Dispatch
     app.state.current_state = GameState.LORE
@@ -4880,4 +4880,21 @@ def test_v125_comprehensive_requirements():
                 pyxel.line = orig_line
                 main.draw_text_scaled = orig_scaled
                 main.draw_text_centered = orig_centered
+
+
+def test_v126_comprehensive_requirements():
+    """Verify all v1.2.6 release requirements:
+    1. Version is v1.2.6.
+    """
+    from main import GrainOfDoubtApp
+    import pyxel
+
+    try:
+        pyxel.init(600, 800, headless=True)
+    except BaseException:
+        pass
+
+    app = GrainOfDoubtApp(headless=True)
+    assert app.VERSION == "v1.2.6", f"Expected v1.2.6, got {app.VERSION}"
+
 
