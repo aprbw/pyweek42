@@ -2718,7 +2718,7 @@ def test_v113_comprehensive_feedback_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.1.3", "v1.1.4", "v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5", "v1.2.6", "v1.2.7")
+    assert app.VERSION in ("v1.1.3", "v1.1.4", "v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5", "v1.2.6", "v1.2.7", "v1.2.8")
     assert app.MAX_LORE_PAGES == 5
 
     # 1. God mode toggle via [G]
@@ -2895,7 +2895,7 @@ def test_v114_comprehensive_feedback_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.1.4", "v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5", "v1.2.6", "v1.2.7")
+    assert app.VERSION in ("v1.1.4", "v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5", "v1.2.6", "v1.2.7", "v1.2.8")
 
     # 1. E-Reader Mode: Telemetry is 3rd paragraph (after 3:1-8 and 3:9-13, before 3:14-15)
     from engine.themes import render_reader_mode_text
@@ -3095,7 +3095,7 @@ def test_v115_comprehensive_feedback_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5", "v1.2.6", "v1.2.7")
+    assert app.VERSION in ("v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5", "v1.2.6", "v1.2.7", "v1.2.8")
 
     # 1. Menu Page Controls & Line Breaks
     drawn_calls = []
@@ -3246,7 +3246,7 @@ def test_v116_comprehensive_feedback_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5", "v1.2.6", "v1.2.7")
+    assert app.VERSION in ("v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5", "v1.2.6", "v1.2.7", "v1.2.8")
 
     # 1. Pact distribution: Addictive formula P(P) = (1 + N_chosen) / (7 + total_pacts)
     bm = BargainManager()
@@ -3558,7 +3558,7 @@ def test_v117_comprehensive_feedback_validation():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version increment
-    assert app.VERSION in ("v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5", "v1.2.6", "v1.2.7"), f"Expected version in v1.1.7-v1.2.7, got {app.VERSION}"
+    assert app.VERSION in ("v1.1.7", "v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5", "v1.2.6", "v1.2.7", "v1.2.8"), f"Expected version in v1.1.7-v1.2.8, got {app.VERSION}"
 
     # 2. UI Kairos: identical card background for both cards in non-pro themes
     app.state.current_state = GameState.KAIROS
@@ -3729,7 +3729,7 @@ def test_v118_comprehensive_feedback_validation():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version
-    assert app.VERSION in ("v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5", "v1.2.6", "v1.2.7"), f"Expected v1.1.8-v1.2.7, got {app.VERSION}"
+    assert app.VERSION in ("v1.1.8", "v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5", "v1.2.6", "v1.2.7", "v1.2.8"), f"Expected v1.1.8-v1.2.8, got {app.VERSION}"
 
     # 2. Sakura Theme Dark Green Sand
     t_sakura = get_theme(9)
@@ -3769,7 +3769,7 @@ def test_v118_comprehensive_feedback_validation():
         coords = {c[2]: c[1] for c in drawn_calls}
         assert "[X] QUIT GAME" in coords
         y_quit = coords["[X] QUIT GAME"]
-        box_bottom = 496 if app.VERSION in ("v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5", "v1.2.6", "v1.2.7") else (188 + 286)
+        box_bottom = 496 if app.VERSION in ("v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5", "v1.2.6", "v1.2.7", "v1.2.8") else (188 + 286)
         assert (box_bottom - (y_quit + 14)) >= 16, f"Expected >=16px space below quit, got {box_bottom - (y_quit + 14)}"
     finally:
         main.draw_text_scaled = orig_scaled
@@ -3847,7 +3847,7 @@ def test_v119_comprehensive_feedback_validation():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version is v1.1.9, v1.2.0, v1.2.1 or v1.2.2
-    assert app.VERSION in ("v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5", "v1.2.6", "v1.2.7"), f"Expected v1.1.9-v1.2.7, got {app.VERSION}"
+    assert app.VERSION in ("v1.1.9", "v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5", "v1.2.6", "v1.2.7", "v1.2.8"), f"Expected v1.1.9-v1.2.8, got {app.VERSION}"
 
     # 2. Main Menu 3-Line Buttons (h=54) and click bounds
     app.state.current_state = GameState.TITLE
@@ -4008,7 +4008,7 @@ def test_v120_milestone_validation():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5", "v1.2.6", "v1.2.7"), f"Expected v1.2.0-v1.2.7, got {app.VERSION}"
+    assert app.VERSION in ("v1.2.0", "v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5", "v1.2.6", "v1.2.7", "v1.2.8"), f"Expected v1.2.0-v1.2.8, got {app.VERSION}"
 
 
 def test_v121_comprehensive_feedback_validation():
@@ -4029,7 +4029,7 @@ def test_v121_comprehensive_feedback_validation():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version
-    assert app.VERSION in ("v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5", "v1.2.6", "v1.2.7"), f"Expected v1.2.1-v1.2.7, got {app.VERSION}"
+    assert app.VERSION in ("v1.2.1", "v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5", "v1.2.6", "v1.2.7", "v1.2.8"), f"Expected v1.2.1-v1.2.8, got {app.VERSION}"
 
     # 2. Theme Reorganization
     assert len(ALL_THEMES) == 10
@@ -4150,7 +4150,7 @@ def test_v122_sumie_strictly_no_color():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version
-    assert app.VERSION in ("v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5", "v1.2.6", "v1.2.7"), f"Expected v1.2.2-v1.2.7, got {app.VERSION}"
+    assert app.VERSION in ("v1.2.2", "v1.2.3", "v1.2.4", "v1.2.5", "v1.2.6", "v1.2.7", "v1.2.8"), f"Expected v1.2.2-v1.2.8, got {app.VERSION}"
 
     # Pure grayscale set in Pyxel: 0=Black, 7=White, 13=Neutral Grey
     # Blue colors (1=Navy, 5=Slate, 6=Periwinkle, 12=Sky Blue) and chromatic colors MUST NOT appear!
@@ -4302,7 +4302,7 @@ def test_v123_comprehensive_requirements():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version
-    assert app.VERSION in ("v1.2.3", "v1.2.4", "v1.2.5", "v1.2.6", "v1.2.7"), f"Expected v1.2.3-v1.2.7, got {app.VERSION}"
+    assert app.VERSION in ("v1.2.3", "v1.2.4", "v1.2.5", "v1.2.6", "v1.2.7", "v1.2.8"), f"Expected v1.2.3-v1.2.8, got {app.VERSION}"
 
     # 2. No consecutive pacts
     bm = BargainManager()
@@ -4541,7 +4541,7 @@ def test_v124_comprehensive_requirements():
     app = GrainOfDoubtApp(headless=True)
 
     # 1. Version
-    assert app.VERSION in ("v1.2.4", "v1.2.5", "v1.2.6", "v1.2.7"), f"Expected v1.2.4-v1.2.7, got {app.VERSION}"
+    assert app.VERSION in ("v1.2.4", "v1.2.5", "v1.2.6", "v1.2.7", "v1.2.8"), f"Expected v1.2.4-v1.2.8, got {app.VERSION}"
 
     # 2. Wrath Inverted Control Motion Lines: Left and Right of hourglass, not center
     app.start_new_game()
@@ -4719,8 +4719,8 @@ def test_v125_comprehensive_requirements():
 
     app = GrainOfDoubtApp(headless=True)
 
-    # 1. Version is v1.2.5, v1.2.6, or v1.2.7
-    assert app.VERSION in ("v1.2.5", "v1.2.6", "v1.2.7"), f"Expected v1.2.5-v1.2.7, got {app.VERSION}"
+    # 1. Version is v1.2.5, v1.2.6, v1.2.7, or v1.2.8
+    assert app.VERSION in ("v1.2.5", "v1.2.6", "v1.2.7", "v1.2.8"), f"Expected v1.2.5-v1.2.8, got {app.VERSION}"
 
     # 2. Lore and Learn Bottom Navigation Click Dispatch
     app.state.current_state = GameState.LORE
@@ -4895,7 +4895,7 @@ def test_v126_comprehensive_requirements():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION in ("v1.2.6", "v1.2.7"), f"Expected v1.2.6 or v1.2.7, got {app.VERSION}"
+    assert app.VERSION in ("v1.2.6", "v1.2.7", "v1.2.8"), f"Expected v1.2.6-v1.2.8, got {app.VERSION}"
 
 
 def test_v127_comprehensive_requirements():
@@ -4919,7 +4919,7 @@ def test_v127_comprehensive_requirements():
         pass
 
     app = GrainOfDoubtApp(headless=True)
-    assert app.VERSION == "v1.2.7", f"Expected v1.2.7, got {app.VERSION}"
+    assert app.VERSION in ("v1.2.7", "v1.2.8"), f"Expected v1.2.7 or v1.2.8, got {app.VERSION}"
 
     # 1. E-Reader death screen title
     app.current_theme_index = 4  # Reader Mode Dark
@@ -4984,6 +4984,90 @@ def test_v127_comprehensive_requirements():
     finally:
         main.draw_text_scaled = orig_scaled
         main.draw_text_centered = orig_centered
+
+
+def test_v128_comprehensive_requirements():
+    """Verify all v1.2.8 requirements from 2do.md:
+    1. Version is v1.2.8.
+    2. E-Reader death screen:
+       - All elements on the death screen use the exact same color,
+         including the subtitle and the last paragraph.
+       - Light mode (Theme 3): all text, subtitle, last paragraph,
+         dividers, and borders use col_ink = 0.
+       - Dark mode (Theme 4): all text, subtitle, last paragraph,
+         dividers, and borders use col_ink = 6.
+    """
+    import main
+    from main import GrainOfDoubtApp
+    from engine.state import GameState
+    import pyxel
+
+    try:
+        pyxel.init(600, 800, headless=True)
+    except BaseException:
+        pass
+
+    app = GrainOfDoubtApp(headless=True)
+    assert app.VERSION == "v1.2.8", f"Expected v1.2.8, got {app.VERSION}"
+
+    # Test Light E-Reader Mode (Theme 3)
+    app.current_theme_index = 3  # Reader Mode Light
+    app.state.current_state = GameState.GAMEOVER
+    app.state.death_reason = "Crushed by Glass Shard"
+    app.state.score = 5000
+
+    drawn_texts = []
+    line_calls = []
+    rectb_calls = []
+    orig_scaled = main.draw_text_scaled
+    orig_centered = main.draw_text_centered
+    orig_line = pyxel.line
+    orig_rectb = pyxel.rectb
+
+    try:
+        main.draw_text_scaled = lambda x, y, s, col, scale=1, img_bank=2, char_gap=None: drawn_texts.append((s, col))
+        main.draw_text_centered = lambda y, s, col, scale=1, img_bank=2: drawn_texts.append((s, col))
+        pyxel.line = lambda x1, y1, x2, y2, col: line_calls.append(col)
+        pyxel.rectb = lambda x, y, w, h, col: rectb_calls.append(col)
+
+        app.draw_game_over_screen()
+
+        # Check Light Mode: All text must be color 0
+        text_colors = {col for s, col in drawn_texts}
+        assert text_colors == {0}, f"Expected all text in Light E-Reader death screen to be color 0, got {text_colors}"
+
+        # Specifically verify subtitle and last paragraph are color 0
+        sub_items = [item for item in drawn_texts if "THE ACCOUNTING OF BORROWED TIME" in item[0]]
+        assert len(sub_items) == 1 and sub_items[0][1] == 0
+
+        # Margin rules, header line, bottom line, button box all use color 0
+        assert set(line_calls) == {0}
+        assert set(rectb_calls) == {0}
+
+        # Test Dark E-Reader Mode (Theme 4)
+        app.current_theme_index = 4  # Reader Mode Dark
+        drawn_texts.clear()
+        line_calls.clear()
+        rectb_calls.clear()
+
+        app.draw_game_over_screen()
+
+        # Check Dark Mode: All text must be color 6
+        text_colors_dark = {col for s, col in drawn_texts}
+        assert text_colors_dark == {6}, f"Expected all text in Dark E-Reader death screen to be color 6, got {text_colors_dark}"
+
+        sub_items_dark = [item for item in drawn_texts if "THE ACCOUNTING OF BORROWED TIME" in item[0]]
+        assert len(sub_items_dark) == 1 and sub_items_dark[0][1] == 6
+
+        assert set(line_calls) == {6}
+        assert set(rectb_calls) == {6}
+
+    finally:
+        main.draw_text_scaled = orig_scaled
+        main.draw_text_centered = orig_centered
+        pyxel.line = orig_line
+        pyxel.rectb = orig_rectb
+
 
 
 

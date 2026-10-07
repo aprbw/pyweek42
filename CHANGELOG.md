@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.2.8] - 2026-10-07
+### Changed
+- **E-Reader Death Screen Palette Uniformity**: Unified all text, rules, subtitle, and closing meditation paragraph to a single consistent ink color (`col_ink`) on the Game Over screen.
+- Version bump to v1.2.8.
+
 ## [v1.2.7] - 2026-10-07
 ### Changed
 - **E-Reader Death Screen Title**: Replaced top title "ECCLESIASTES 12" with "Conclusion".

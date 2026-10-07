@@ -310,7 +310,7 @@ def is_dev_environment() -> bool:
 
 
 class GrainOfDoubtApp:
-    VERSION: str = "v1.2.7"
+    VERSION: str = "v1.2.8"
     SCREEN_WIDTH: int = 600
     SCREEN_HEIGHT: int = 800
 
@@ -2675,8 +2675,8 @@ class GrainOfDoubtApp:
         is_light = (theme.clear_color == 15)
         card_bg = 15 if is_light else 0
         col_ink = 0 if is_light else 6
-        col_rule = 4 if is_light else 1
-        col_sub = 4 if is_light else 13
+        col_rule = col_ink
+        col_sub = col_ink
 
         # Full-screen ambient backdrop
         pyxel.cls(card_bg)
