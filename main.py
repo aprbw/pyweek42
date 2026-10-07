@@ -310,7 +310,7 @@ def is_dev_environment() -> bool:
 
 
 class GrainOfDoubtApp:
-    VERSION: str = "v1.2.6"
+    VERSION: str = "v1.2.7"
     SCREEN_WIDTH: int = 600
     SCREEN_HEIGHT: int = 800
 
@@ -2625,7 +2625,10 @@ class GrainOfDoubtApp:
 
         time_survived = self.state.total_frames / 30.0
         draw_text_scaled(80, 176, f"TIME SURVIVED : {time_survived:6.1f} SECONDS", stat_lbl_col, scale=2)
-        score_fmt = f"{self.state.score:,}".replace(",", " ")
+        if self.state.score > 999999:
+            score_fmt = f"{self.state.score:.2e}"
+        else:
+            score_fmt = f"{self.state.score:,}".replace(",", " ")
         sand_fmt = f"{self.state.total_sand_collected:,}".replace(",", " ")
         shards_fmt = f"{self.state.total_shards_dodged:,}".replace(",", " ")
         pacts_fmt = f"{len(self.bargains.history):,}".replace(",", " ")
@@ -2687,7 +2690,7 @@ class GrainOfDoubtApp:
         pyxel.line(margin_r + 4, 0, margin_r + 4, self.SCREEN_HEIGHT, col_rule)
 
         # Chapter header
-        draw_text_centered(32, "ECCLESIASTES 12", col_ink, scale=3)
+        draw_text_centered(32, "Conclusion", col_ink, scale=3)
         draw_text_centered(60, "THE ACCOUNTING OF BORROWED TIME", col_sub, scale=2)
         pyxel.line(margin_l, 82, margin_r, 82, col_rule)
 
@@ -2707,7 +2710,10 @@ class GrainOfDoubtApp:
         # 2. Survival & death cause paragraph
         reason = self.state.death_reason or "Consumed by the Void"
         time_survived = self.state.total_frames / 30.0
-        score_fmt = f"{self.state.score:,}".replace(",", " ")
+        if self.state.score > 999999:
+            score_fmt = f"{self.state.score:.2e}"
+        else:
+            score_fmt = f"{self.state.score:,}".replace(",", " ")
         sand_fmt = f"{self.state.total_sand_collected:,}".replace(",", " ")
         shards_fmt = f"{self.state.total_shards_dodged:,}".replace(",", " ")
 

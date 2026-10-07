@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.2.7] - 2026-10-07
+### Changed
+- **E-Reader Death Screen Title**: Replaced top title "ECCLESIASTES 12" with "Conclusion".
+- **Death Screen Score Scientific Notation**: Scores above 999 999 now display formatted in scientific e notation (`1.00e+06`) across all visual themes and e-reader modes.
+- Version bump to v1.2.7.
+
 ## [v1.2.6] - 2026-10-07
 ### Changed
 - Version bump to v1.2.6.
